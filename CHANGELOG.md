@@ -1,11 +1,12 @@
 # Changelog
 
-## 4.0.0-preview.1 — Public friend playtest preparation
+## 4.0.0-preview.1 — Public friend playtest
 
+- Deployed [Borrowed Time](https://borrowed-time.onrender.com) with public HTTPS and same-origin secure WebSockets, backed by the private GitHub repository.
 - Added a single-instance Render Free Docker configuration and a reusable public HTTP/WebSocket smoke check.
 - Fixed the Docker context to include the character preview and started Node directly so shutdown signals reach the server.
 - Added phone safe-area padding, larger input text, touch controls independent of narrow screen width, and a compact landscape course/HUD arrangement.
-- Documented physical-phone and friend playtesting. Actual deployment status is recorded in the [V4 release record](docs/versions/V4_RELEASE.md).
+- Documented physical-phone and friend playtesting. Deployment evidence and the remaining actual-device checks are recorded in the [V4 release record](docs/versions/V4_RELEASE.md).
 
 ### Included demo follow-up — independent strategies
 

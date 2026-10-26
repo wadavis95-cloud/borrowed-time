@@ -1,10 +1,10 @@
 # Borrowed Time: understand the V4 preview end to end
 
-The game asks one question: **does buying an advantage save more time than it costs?** You run forward automatically, choose a lane, and spend countdown seconds on boosts or long jumps. Version **4.0.0-preview.1** adds deployment preparation and phone layouts to V3.1's visuals and movement presentation. The gameplay remains: solo practice, private multiplayer, an accelerating pace, a simple HUD, four animated characters, timed barrier clearance, and a four-client watch demo.
+The game asks one question: **does buying an advantage save more time than it costs?** You run forward automatically, choose a lane, and spend countdown seconds on boosts or long jumps. Version **4.0.0-preview.1** adds public deployment and phone layouts to V3.1's visuals and movement presentation. The gameplay remains: solo practice, private multiplayer, an accelerating pace, a simple HUD, four animated characters, timed barrier clearance, and a four-client watch demo.
 
-The railway tunnel grows brighter as you approach its exit. Falling masonry has gameplay rules, while the surrounding collapse is a visual setting rather than a structural physics simulation. The implementation can run locally, on a LAN or as a single hosted service; the [V4 release record](versions/V4_RELEASE.md) records the actual deployment status.
+The railway tunnel grows brighter as you approach its exit. Falling masonry has gameplay rules, while the surrounding collapse is a visual setting rather than a structural physics simulation. [Play the hosted game](https://borrowed-time.onrender.com), or run it locally or on a LAN; the [V4 release record](versions/V4_RELEASE.md) records deployment evidence and remaining phone tests.
 
-V3.1 develops the original procedural art with more deliberate character contours, garment details, material separation and smoother visual transitions. The assets are original code-generated work, not Blender-authored or artist-sculpted models. Public deployment and physical-device testing belong to V4. Consult the [V3.1 design](versions/V3_1_DESIGN.md) and [V3.1 release record](versions/V3_1_RELEASE.md) for scope and actual verification. [V3](versions/V3_RELEASE.md), [V2](versions/V2_RELEASE.md) and [V1](versions/V1_RELEASE.md) remain preserved in Git.
+V3.1 develops the original procedural art with more deliberate character contours, garment details, material separation and smoother visual transitions. The assets are original code-generated work, not Blender-authored or artist-sculpted models. V4 deploys that game for friend playtesting; physical-device validation remains pending. Consult the [V3.1 design](versions/V3_1_DESIGN.md) and [V3.1 release record](versions/V3_1_RELEASE.md) for scope and actual verification. [V3](versions/V3_RELEASE.md), [V2](versions/V2_RELEASE.md) and [V1](versions/V1_RELEASE.md) remain preserved in Git.
 
 ## Start in your editor
 
@@ -208,7 +208,7 @@ A rematch uses the normal host request and starts automatically when the next fo
 
 These are the kinds of scope and scale questions used in an Alex Xu-style system-design discussion; the answers below describe this project, not a forecast.
 
-| Question | V3 preview answer |
+| Question | V4 preview answer |
 | --- | --- |
 | Who uses it, and how many use it now? | Known use is development/playtesting. Production users and measured demand are unknown. |
 | What must work? | Solo practice, private 2–4-player rooms, four unique characters, shared course/start and falling schedule, fair purchases, readable opponents, simple results/rematches, and a labeled four-client demo. |
@@ -228,7 +228,7 @@ These are planning scenarios, not predictions or tested capacity. The server per
 
 1. **Understand:** change a boost price in `ABILITIES`, predict its effect, and compare solo runs on the same seed.
 2. **Improve:** change a character material/profile in `scripts/build-avatars.mjs`, run `npm run build:avatars`, and refresh; or change a light in `src/renderer.js`. Observe why presentation changes do not alter gameplay. For rule changes such as `CONFIG.encounterSpacing`, update relevant tests; this also affects the spaces available for falling events. Three lanes are assumed in several places; `laneCount` alone cannot redesign the course.
-3. **Operate:** verify two real clients, measure latency, then deploy on a chosen host and document the actual limits.
+3. **Operate:** run the public deployment check, measure latency during friend races, and document the host and device limits you observe.
 
 Use `npm test` for rules, rooms, avatar assets, and demo behavior; `npm run test:network` for real HTTP/WebSocket integration; and `npm run check` for syntax. Socket tests are skipped in the ordinary test command. Browser playtesting still matters for controls and visual clarity. Keep documentation and initial HTML fallback text aligned with configuration changes.
 
@@ -236,9 +236,9 @@ Explain these before presenting the project: Why separate rules from drawing? Wh
 
 Résumé draft, once verified and understood:
 
-> Built an AI-assisted JavaScript/Three.js multiplayer game with server-authoritative WebSocket rooms, timer-based ability purchases, synchronized falling hazards, and automated rule/network tests.
+> Built and deployed an AI-assisted JavaScript/Three.js multiplayer game with server-authoritative WebSocket rooms, timer-based ability purchases, synchronized falling hazards, and automated rule/network tests.
 
-Adjust the wording to your own contribution and demonstrated verification. Only claim public deployment, user counts, or production scale once those exist.
+Adjust the wording to your own contribution and demonstrated verification. Public deployment is recorded in V4; user counts and production scale are not established.
 
 ## Optional audio
 
@@ -273,7 +273,7 @@ Public hosting and tests on physical phones belong to V4. V3.1's browser checks 
 
 ## V4: put the same game on the internet
 
-The game still has the same frontend and backend. Deployment moves the Node process from your computer to a hosted server, where your phone and friends can reach it through one address. Render provides the HTTPS endpoint; the browser automatically uses secure `wss:` for `/race` on that address.
+The game still has the same frontend and backend. Deployment moves the Node process from your computer to a hosted server, where your phone and friends can reach it at [borrowed-time.onrender.com](https://borrowed-time.onrender.com). Render provides the HTTPS endpoint; the browser automatically uses secure `wss:` for `/race` on that address. Your computer no longer needs to stay running for friends to play.
 
 ```mermaid
 flowchart LR
@@ -287,7 +287,9 @@ flowchart LR
 
 `Dockerfile` is the packaging recipe: install the exact locked dependencies, copy the runtime files, then run `node server.js`. `.dockerignore` keeps unnecessary files out of the build context. `render.yaml` describes the host configuration, including one free instance and the `/health` check. The health route tells the host that the process is responding; it does not prove that a complete race works.
 
-That is why `scripts/check-deployment.mjs` goes further. It checks the public game assets, connects two real WebSocket clients, creates and joins a room, starts a race, purchases one player's boost, and checks movement and cleanup. Run it with `npm run check:deployment -- https://YOUR-SERVICE.onrender.com` after deploying your service.
+That is why `scripts/check-deployment.mjs` goes further. It checks the public game assets, connects two real WebSocket clients, creates and joins a room, starts a race, purchases one player's boost, and checks movement and cleanup. Run it with `npm run check:deployment -- https://borrowed-time.onrender.com` after deploying a change.
+
+The source lives in the private `wadavis95-cloud/borrowed-time` GitHub repository. Render watches its `main` branch and builds the Docker image when a change is pushed there. Saving a local file alone does not update the public game. Make and test the change, commit it, push it to the deployment branch, then verify that Render reports the new revision live. Avoid deploying during a friend race because replacing the process clears its rooms.
 
 One process matters because each room is stored in that process's memory. Starting a second instance without shared room routing could send two friends to different room lists. Deploying or restarting clears the existing rooms. The free service may sleep while idle and need about a minute to wake; open it before gathering friends.
 

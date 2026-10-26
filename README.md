@@ -2,7 +2,9 @@
 
 A browser escape runner for **solo practice or private races with 2–4 players**. Race through a crumbling Victorian railway tunnel, dodge falling masonry, and spend your remaining seconds on abilities. Real opponents appear as translucent 3D runners and cannot collide with you.
 
-Version **4.0.0-preview.1** prepares public friend play and improves phone layouts while retaining V3.1's characters, graphics and game rules. See the [V4 release record](docs/versions/V4_RELEASE.md) for the public deployment status, verification and real-phone test steps. The game also runs locally or on your LAN.
+Version **4.0.0-preview.1** is deployed for public friend play and improves phone layouts while retaining V3.1's characters, graphics and game rules. See the [V4 release record](docs/versions/V4_RELEASE.md) for verification and real-phone test steps. The game also runs locally or on your LAN.
+
+**[Play Borrowed Time](https://borrowed-time.onrender.com)** on your phone or computer. Create a room, send friends the same link and six-character room code, and start when 2–4 players have joined. No installation or account is needed. The free host can take about a minute to wake after inactivity. Physical-phone performance and touch feel still need actual-device testing.
 
 ## Run it
 
@@ -68,7 +70,7 @@ npm run test:network  # Real HTTP/WebSocket integration tests
 npm run check         # JavaScript syntax
 npm run dev           # Watch/restart the Node server
 npm run build:avatars # Regenerate the four original GLB character assets
-npm run check:deployment -- https://YOUR-SERVICE.onrender.com # Check your live service
+npm run check:deployment -- https://borrowed-time.onrender.com # Check the live service
 ```
 
 Socket tests are skipped in the ordinary test command. Save browser files and refresh the page to see edits. `npm run dev` does not reload the browser. Restarting Node discards all rooms.
@@ -79,6 +81,6 @@ The character pipeline uses original procedural Three.js geometry and animation 
 
 This is a more developed procedural art pass, with contoured skinned characters, varied tunnel surfaces and architecture, lighting, dust, impact feedback, and restrained boost/camera effects. The assets were generated in Node with Three.js; they were not sculpted or authored in Blender. Final art polish, physical mobile-device validation, and broad performance testing remain work for later releases.
 
-The included `Dockerfile` packages the Node service and public assets. With Docker installed, use `docker build -t borrowed-time .` and `docker run --rm -p 4173:4173 borrowed-time`. The container defaults to port 4173 and honors the host's `PORT` environment variable. `render.yaml` configures one free Docker web service with `/health`; use one instance because rooms live in memory. Restarts or deploys end active rooms. An idle free service can take about a minute to wake.
+The included `Dockerfile` packages the Node service and public assets. With Docker installed, use `docker build -t borrowed-time .` and `docker run --rm -p 4173:4173 borrowed-time`. The container defaults to port 4173 and honors the host's `PORT` environment variable. The live Render Free service uses one Docker instance in Virginia and `/health`, as recorded in `render.yaml`. It deploys from `main` in the private [GitHub repository](https://github.com/wadavis95-cloud/borrowed-time). Keep one instance because rooms live in memory; restarts or deploys end active rooms. An idle free service can take about a minute to wake.
 
 Read the [beginner project guide](docs/PROJECT_GUIDE.md), [V4 design](docs/versions/V4_DESIGN.md), [V4 release record](docs/versions/V4_RELEASE.md), and [changelog](CHANGELOG.md). [V3.1](docs/versions/V3_1_RELEASE.md), [V3](docs/versions/V3_RELEASE.md), [V2](docs/versions/V2_RELEASE.md) and [V1](docs/versions/V1_RELEASE.md) remain preserved in their release tags.
