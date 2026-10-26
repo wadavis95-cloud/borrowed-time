@@ -3,7 +3,15 @@ import { connectRace } from './network.js';
 
 const NAMES = ['Demo · Ash', 'Demo · Briar', 'Demo · Cleo', 'Demo · Drew'];
 const PREFERRED_LANES = [0, 1, 2, 1];
-const BOOST_OFFSETS = [.36, 0, .18, .54];
+// Each runner spends its own clock on a different plan. Ash is the camera's
+// viewpoint: an early breakaway lets rivals fall behind before their later
+// purchases bring them back. These are inputs, never forced race positions.
+const BOOST_PLANS = [
+  [10.5, 31, 42], // Ash: early burst, recover, then push for the exit.
+  [16, 34],       // Briar: patient chaser with a longer recovery between bursts.
+  [20, 28, 36],   // Cleo: save for repeated mid-race sprints.
+  [24, 40],       // Drew: conserve time, then make two late pushes.
+];
 const RECOVERABLE_ERRORS = new Set(['ACTION_UNAVAILABLE', 'NOT_RACING', 'STALE_INPUT', 'STALE_ROUND']);
 
 // Predict only the runner's own motion to time ordinary inputs. This does not
@@ -26,8 +34,8 @@ function travelDistance(game, duration) {
   return distance;
 }
 
-// Equal rules and planned boost windows keep the runners near one another.
-// Different lanes naturally produce different hops, paid jumps and dodges.
+// Every strategy uses the same rules and reacts to its own hazards first.
+// Different spending times create natural separation, catches and overtakes.
 export function chooseDemoAction(game, index) {
   if (game.phase !== 'running') return null;
   const preferred = PREFERRED_LANES[index % PREFERRED_LANES.length];
@@ -72,7 +80,7 @@ export function chooseDemoAction(game, index) {
     }
   }
   if (!game.boostCooldown && !game.stunRemaining && game.timeLeft > ABILITIES.boost.cost + 5
-    && [10.5, 24.5, 38.5].some(start => game.elapsed >= start + BOOST_OFFSETS[index % BOOST_OFFSETS.length]
+    && BOOST_PLANS[index % BOOST_PLANS.length].some(start => game.elapsed >= start
       && game.elapsed < start + 1.35)) {
     return 'boost';
   }

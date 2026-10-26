@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — Independent demo strategies
+
+- Replaced the demo's nearly simultaneous boosts with four different purchase plans so runners can pull ahead, fall out of view and catch up through normal gameplay.
+- Preserved the authoritative race, ability prices, visibility limits, opening falling-debris encounter, rematches and cleanup. Only demo input choices change; human-player rules remain the same.
+- Updated demo regressions to check separation and catch-up rather than requiring the runners to stay clustered.
+- Browser verification completed a full four-player race without console errors; actual captures show the [early breakaway](docs/images/demo-boost-breakaway.png) and [later catch-up](docs/images/demo-boost-catchup.png).
+
 ## 3.1.0-preview.1 — Character and motion refinement
 
 V3.1 refines presentation while retaining V3's rules, difficulty, timer, abilities, hazards and multiplayer protocol. See the [V3.1 design](docs/versions/V3_1_DESIGN.md) and [release record](docs/versions/V3_1_RELEASE.md) for measurements, verification and limitations. V3 remains available at `v3.0.0-preview.1`.

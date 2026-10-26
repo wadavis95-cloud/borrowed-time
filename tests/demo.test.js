@@ -146,7 +146,7 @@ function applyAction(game, action) {
   return true;
 }
 
-test('four demo policies complete a seeded course using normal inputs while staying nearby', () => {
+test('four demo strategies complete a seeded course using normal inputs and build meaningful leads', () => {
   const games = Array.from({ length: 4 }, () => createGame({ seed: 42 }));
   games.forEach(startGame);
   const actions = new Set();
@@ -166,7 +166,7 @@ test('four demo policies complete a seeded course using normal inputs while stay
     }
   }
   assert.ok(games.every(game => game.phase === 'won'), JSON.stringify(games.map(({ phase, hits, timeLeft }) => ({ phase, hits, timeLeft }))));
-  assert.ok(largestSpread < 24, `runners spread across ${largestSpread}m`);
+  assert.ok(largestSpread > 60, `independent purchases should separate runners, spread was ${largestSpread}m`);
   assert.ok(actions.has('longJump'));
   assert.ok(actions.has('jump'));
   assert.ok(actions.has('boost'));
@@ -198,7 +198,7 @@ test('the opening timed impact occurs beside the demo runners before their first
   assert.equal(game.hits, 0);
 });
 
-test('demo runners route around extra barriers to preserve their shared boost budget', () => {
+test('demo runners route around extra barriers to preserve their own time budget', () => {
   const game = createGame({ course: [{ z: 15.5, lane: 1, type: 'barrier' }] });
   startGame(game);
   game.elapsed = 30;
@@ -207,14 +207,23 @@ test('demo runners route around extra barriers to preserve their shared boost bu
   assert.ok(['left', 'right'].includes(chooseDemoAction(game, 0)));
 });
 
-test('the first boosts give all four runners visible depth without scattering the group', () => {
+test('the early burst leaves unboosted rivals behind and a later chaser returns into view', () => {
   const games = Array.from({ length: 4 }, () => createGame({ seed: 42 }));
   games.forEach(startGame);
-  for (let tick = 0; tick < 13 * 60; tick += 1) {
+  let earlyBreakaway = false, chaserWasHidden = false, chaserReturned = false;
+  for (let tick = 0; tick < 27 * 60; tick += 1) {
     if (tick % 9 === 0) games.forEach((game, index) => applyAction(game, chooseDemoAction(game, index)));
     games.forEach(game => updateGame(game, 1 / 60));
+    const [viewpoint, chaser, ...others] = games;
+    const rivals = [chaser, ...others];
+    // The renderer stops drawing rivals more than 18 game metres behind.
+    if (viewpoint.boostRemaining > 0 && rivals.every(game => game.boostRemaining === 0
+      && game.distance - viewpoint.distance < -18)) earlyBreakaway = true;
+    const chaserRelative = chaser.distance - viewpoint.distance;
+    if (chaserRelative < -18) chaserWasHidden = true;
+    if (chaserWasHidden && chaserRelative >= -18 && chaser.boostRemaining > 0
+      && viewpoint.boostRemaining === 0) chaserReturned = true;
   }
-  const distances = games.map(game => game.distance);
-  assert.equal(new Set(distances.map(distance => Math.round(distance))).size, 4);
-  assert.ok(Math.max(...distances) - Math.min(...distances) < 14);
+  assert.ok(earlyBreakaway, 'one early boost should leave the other three unboosted runners out of view');
+  assert.ok(chaserReturned, 'a separate later purchase should bring a previously hidden rival back into view');
 });
