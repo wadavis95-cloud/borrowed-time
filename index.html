@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0c1417">
+  <meta name="description" content="Race out of a collapsing building. Spend your remaining seconds on speed boosts and long jumps.">
+  <title>Borrowed Time — Escape Run</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Borrowed Time home"><img src="/favicon.svg" alt="" width="34" height="34"><span>BORROWED<span class="brand-light">TIME</span></span></a>
+      <div class="header-actions"><span class="version"><i></i> MULTIPLAYER · V1.0</span><button id="guide-button" class="quiet-button">How it works <span aria-hidden="true">↗</span></button></div>
+    </header>
+
+    <main>
+      <div class="page-heading"><div><p class="eyebrow">THE ESCAPE RUN</p><h1>Time is all you have.</h1></div><p class="heading-note">Spend it wisely.<br>Make it out alive.</p></div>
+      <section class="race-menu" id="race-menu" aria-label="Multiplayer setup">
+        <div class="race-invite"><strong>Race your friends</strong><small>2–4 runners. One way out.</small></div>
+        <label>Your name<input id="player-name" maxlength="20" placeholder="Runner" autocomplete="nickname"></label>
+        <button id="create-room" class="room-button">Create room</button>
+        <span class="room-or">or</span>
+        <label>Room code<input id="join-code" maxlength="6" placeholder="ABC123" autocapitalize="characters" autocomplete="off" spellcheck="false"></label>
+        <button id="join-room" class="room-button secondary">Join room</button>
+      </section>
+      <section class="room-panel" id="room-panel" aria-label="Multiplayer room" hidden>
+        <div><span class="eyebrow">ROOM CODE</span><strong id="room-code">Connecting…</strong></div>
+        <div class="room-presence"><p id="room-status" role="status">Connecting to the race server…</p><ul id="room-players" aria-label="Players in room"></ul></div>
+        <button id="leave-room" class="quiet-button">Leave room</button>
+      </section>
+      <p id="network-error" class="network-error" role="alert" hidden></p>
+      <div class="game-layout">
+        <section class="arena" aria-label="Escape race">
+          <canvas id="game-canvas" aria-label="Three-lane running course. Dodge concrete barriers, hop rubble, and use long jump to cross gaps.">This game needs a browser with Canvas support.</canvas>
+          <div class="arena-top"><span class="location"><i></i> TOWER 09 <b>/</b> SERVICE CORRIDOR</span><button id="pause-button" class="pause-button" aria-label="Pause game" disabled>Ⅱ</button></div>
+          <div id="event-toast" class="event-toast" role="status" aria-live="polite"></div>
+          <div class="arena-bottom"><span id="sector-label">SECTOR 01 / 03</span><span id="race-mode-label">SOLO PRACTICE</span></div>
+
+          <div id="screen-overlay" class="screen-overlay">
+            <div class="intro-card">
+              <span id="overlay-kicker" class="eyebrow">60 SECONDS. ONE WAY OUT.</span>
+              <h2 id="overlay-title">Buy an edge.<br>Borrow a second.</h2>
+              <p id="overlay-description">The building is coming down. Dodge the debris and spend seconds on abilities to reach the exit.</p>
+              <div id="result-stats" class="result-stats" hidden></div>
+              <button id="start-button" class="primary-button">Practice solo →</button>
+              <p id="overlay-hint" class="overlay-hint">Move ← → &nbsp; · &nbsp; Jump SPACE &nbsp; · &nbsp; Abilities 1 / 2</p>
+            </div>
+          </div>
+        </section>
+
+        <aside class="dashboard" aria-label="Race controls and status">
+          <section class="clock-panel">
+            <div class="panel-label"><span>YOUR TIME</span><span id="status-label" class="status-label">READY</span></div>
+            <div class="clock"><span id="time-value">60.0</span><span class="unit">SEC</span></div>
+            <div class="time-track"><div id="time-fill"></div></div>
+            <p id="clock-note">Your lifeline. Your currency.</p>
+          </section>
+          <section class="progress-panel">
+            <div class="panel-label"><span>DISTANCE TO EXIT</span><strong id="distance-value">900 m</strong></div>
+            <div class="progress-track"><div id="distance-fill"></div><i style="left:33.33%"></i><i style="left:66.66%"></i></div>
+            <p>Checkpoints restore <span id="checkpoint-bonus">+5 seconds</span></p>
+          </section>
+          <section class="abilities-panel">
+            <div class="panel-label"><span>SPEND TIME</span><span class="muted">BUY + ACTIVATE</span></div>
+            <button id="boost-button" class="ability-button boost" disabled>
+              <span class="ability-icon" aria-hidden="true">ϟ</span><span class="ability-copy"><strong>Speed boost <kbd>1</kbd></strong><small id="boost-description">Run faster for 4 seconds</small></span><span class="cost">−3<span>SEC</span></span>
+            </button>
+            <button id="long-jump-button" class="ability-button leap" disabled>
+              <span class="ability-icon" aria-hidden="true">↗</span><span class="ability-copy"><strong>Long jump <kbd>2</kbd></strong><small id="jump-description">Clear gaps and low debris</small></span><span class="cost">−2<span>SEC</span></span>
+            </button>
+            <p class="purchase-note">Each purchase takes time off your clock.</p>
+          </section>
+          <section class="controls-panel"><div class="panel-label">STAY MOVING</div><div><span><kbd>←</kbd><kbd>→</kbd> Switch lanes</span><span><kbd>SPACE</kbd> Hop rubble</span><span><kbd>P</kbd> Pause solo</span></div></section>
+          <div class="run-stats"><div><span id="hits-value">0</span><small>HITS TAKEN</small></div><div><span id="spent-value">0s</span><small>TIME SPENT</small></div></div>
+        </aside>
+      </div>
+      <div class="touch-controls" aria-label="Movement controls"><button id="left-button" aria-label="Move left">←<span>LEFT</span></button><button id="hop-button">↑<span>HOP</span></button><button id="right-button" aria-label="Move right">→<span>RIGHT</span></button></div>
+      <footer class="game-footer"><span><i></i> A SMALL GAME. A BIG TRADE-OFF.</span><span>Built to play, learn &amp; iterate.</span><button id="restart-button" class="quiet-button">Restart run ↻</button></footer>
+    </main>
+  </div>
+
+  <dialog id="guide-dialog">
+    <div class="dialog-heading"><span class="eyebrow">UNDER THE HOOD</span><button id="close-guide" class="quiet-button" aria-label="Close guide">Close ×</button></div>
+    <h2>A game loop you can understand.</h2>
+    <p>This game uses <strong>plain JavaScript, HTML, CSS, and Canvas 2D</strong>. Node.js serves the files and runs multiplayer races. The <code>ws</code> package keeps browsers connected to the server.</p>
+    <ol class="code-tour">
+      <li><span>01</span><div><strong>You press a button</strong><p><code>src/main.js</code> listens to the keyboard, touch controls, and ability buttons.</p></div></li>
+      <li><span>02</span><div><strong>The server checks your action</strong><p>In multiplayer, <code>src/network.js</code> sends the button press. The server uses <code>src/game.js</code> to charge time, move you, and check obstacles. Solo practice runs these same rules in your browser.</p></div></li>
+      <li><span>03</span><div><strong>The world gets drawn</strong><p><code>src/renderer.js</code> turns the current game state into the corridor, runner, and obstacles using Canvas.</p></div></li>
+      <li><span>04</span><div><strong>Keep everyone in the same race</strong><p>The server sends updated positions 20 times per second. Your browser smooths the motion and draws other runners as transparent models. It receives your own stats, but no opponent timers or ability status.</p></div></li>
+    </ol>
+    <div class="guide-note">Multiplayer races keep running when you switch tabs or open this guide. Rooms last only while the server is running. There are no accounts or saved leaderboards in V1.</div>
+    <p class="guide-more">For setup, code examples, and the full project walkthrough, open <code>README.md</code> and <code>docs/PROJECT_GUIDE.md</code> in your editor.</p>
+  </dialog>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

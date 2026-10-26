@@ -1,0 +1,20 @@
+{
+  "name": "borrowed-time",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A lane-switching escape racer where your countdown is also your currency.",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test",
+    "check": "node --check server.js && node --check src/main.js && node --check src/game.js && node --check src/renderer.js && node --check src/network.js && node --check src/server/app.js && node --check src/server/rooms.js",
+    "test:network": "RUN_NETWORK_TESTS=1 node --test tests/server.test.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "ws": "8.22.0"
+  }
+}
