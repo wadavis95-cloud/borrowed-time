@@ -1,0 +1,220 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createDemoRace, chooseDemoAction } from '../src/demo.js';
+import { createRoomManager } from '../src/server/rooms.js';
+import { createGame, startGame, updateGame, moveLane, jump, buyAbility } from '../src/game.js';
+
+const flush = () => new Promise(resolve => setImmediate(resolve));
+
+// Only the browser socket boundary is replaced. Room capacity, snapshots,
+// countdowns, rematches, identities and membership cleanup are the real rules.
+function roomTransport(options = {}) {
+  let time = 0;
+  const manager = createRoomManager({ now: () => time, makeSeed: () => 42, ...options });
+  const records = [];
+  function broadcast() {
+    queueMicrotask(() => {
+      for (const record of records) {
+        const snapshot = manager.snapshot(record.id);
+        if (!record.closed && snapshot) record.callbacks.onSnapshot(snapshot);
+      }
+    });
+  }
+  function connect(callbacks) {
+    const record = { id: `demo-${records.length}`, callbacks, closed: false, seq: 0, roundId: null };
+    records.push(record);
+    manager.connect(record.id);
+    function send(message) {
+      if (record.closed) return false;
+      const result = manager.handle(record.id, message);
+      if (!result.ok) queueMicrotask(() => callbacks.onError(result.message, result.code));
+      broadcast();
+      return true;
+    }
+    queueMicrotask(() => {
+      if (record.closed) return;
+      callbacks.onStatus('open');
+      send(callbacks.initialMessage);
+    });
+    return {
+      send,
+      input(action) {
+        const roundId = manager.snapshot(record.id)?.room.roundId;
+        if (record.roundId !== roundId) { record.roundId = roundId; record.seq = 0; }
+        return send({ type: 'input', action, seq: ++record.seq, roundId });
+      },
+      close() {
+        if (record.closed) return;
+        record.closed = true;
+        manager.disconnect(record.id);
+      },
+    };
+  }
+  return { manager, records, connect, advance(ms) { time += ms; manager.tick(time); broadcast(); } };
+}
+
+test('demo creates a full real room, starts once, and only exposes the host view', async (t) => {
+  const transport = roomTransport();
+  const snapshots = [], errors = [];
+  const demo = createDemoRace({ connect: transport.connect, onSnapshot: value => snapshots.push(value), onStatus() {}, onError: value => errors.push(value) });
+  t.after(() => demo.close());
+  await flush();
+  assert.equal(transport.manager.rooms.size, 1);
+  const room = [...transport.manager.rooms.values()][0];
+  assert.equal(room.players.size, 4);
+  assert.equal(room.phase, 'countdown');
+  assert.deepEqual([...room.players.values()].map(player => player.name), ['Demo · Ash', 'Demo · Briar', 'Demo · Cleo', 'Demo · Drew']);
+  assert.equal(new Set([...room.players.values()].map(player => player.avatarId)).size, 4);
+  assert.ok(snapshots.length > 0);
+  assert.ok(snapshots.every(snapshot => snapshot.you.id === 'demo-0'));
+  assert.deepEqual(errors, []);
+  transport.advance(3000);
+  await flush();
+  assert.equal(snapshots.at(-1).room.phase, 'racing');
+  for (const player of room.players.values()) player.game.timeLeft = .001;
+  transport.advance(17);
+  await flush();
+  assert.equal(snapshots.at(-1).room.phase, 'finished');
+  const before = snapshots.at(-1).room.roundId;
+  assert.equal(demo.send({ type: 'rematch' }), true);
+  await flush();
+  assert.equal(snapshots.at(-1).room.phase, 'countdown');
+  assert.notEqual(snapshots.at(-1).room.roundId, before);
+  demo.close();
+  assert.equal(transport.manager.rooms.size, 0);
+  assert.ok(transport.records.every(record => record.closed));
+});
+
+test('one failed demo connection closes every membership and ignores late callbacks', async () => {
+  const transport = roomTransport();
+  const snapshots = [], errors = [], statuses = [];
+  const demo = createDemoRace({ connect: transport.connect, onSnapshot: value => snapshots.push(value), onStatus: value => statuses.push(value), onError: value => errors.push(value) });
+  await flush();
+  const late = transport.manager.snapshot('demo-0');
+  transport.records[2].callbacks.onStatus('disconnected');
+  assert.equal(transport.manager.rooms.size, 0);
+  assert.ok(transport.records.every(record => record.closed));
+  assert.equal(errors.length, 1);
+  assert.equal(statuses.at(-1), 'disconnected');
+  const count = snapshots.length;
+  transport.records[0].callbacks.onSnapshot(late);
+  transport.records[1].callbacks.onError('late error');
+  transport.records[0].callbacks.onStatus('open');
+  assert.equal(snapshots.length, count);
+  assert.equal(errors.length, 1);
+  assert.equal(demo.send({ type: 'rematch' }), false);
+  demo.close();
+});
+
+test('closing during connection setup prevents guest creation and suppresses notifications', async () => {
+  const transport = roomTransport();
+  const notices = [];
+  const demo = createDemoRace({ connect: transport.connect, onSnapshot: value => notices.push(value), onStatus: value => notices.push(value), onError: value => notices.push(value) });
+  demo.close();
+  await flush();
+  assert.equal(transport.records.length, 1);
+  assert.equal(transport.manager.rooms.size, 0);
+  assert.deepEqual(notices, []);
+});
+
+test('a server capacity failure closes the host without starting guest clients', async () => {
+  const transport = roomTransport({ maxRooms: 0 });
+  const errors = [], statuses = [];
+  const demo = createDemoRace({ connect: transport.connect, onSnapshot() {}, onStatus: value => statuses.push(value), onError: (message, code) => errors.push({ message, code }) });
+  await flush();
+  assert.equal(errors.length, 1);
+  assert.equal(errors[0].code, 'SERVER_FULL');
+  assert.equal(statuses.at(-1), 'disconnected');
+  assert.equal(transport.records.length, 1);
+  assert.equal(transport.records[0].closed, true);
+  assert.equal(demo.send({ type: 'rematch' }), false);
+});
+
+test('leaving through the public transport closes all four demo memberships', async () => {
+  const transport = roomTransport();
+  const demo = createDemoRace({ connect: transport.connect, onSnapshot() {}, onStatus() {}, onError() {} });
+  await flush();
+  assert.equal(demo.send({ type: 'leave' }), true);
+  assert.equal(transport.manager.rooms.size, 0);
+  assert.ok(transport.records.every(record => record.closed));
+});
+
+function applyAction(game, action) {
+  if (action === 'left' || action === 'right') return moveLane(game, action === 'left' ? -1 : 1);
+  if (action === 'jump') return jump(game);
+  if (action) return buyAbility(game, action).ok;
+  return true;
+}
+
+test('four demo policies complete a seeded course using normal inputs while staying nearby', () => {
+  const games = Array.from({ length: 4 }, () => createGame({ seed: 42 }));
+  games.forEach(startGame);
+  const actions = new Set();
+  let largestSpread = 0;
+  for (let tick = 0; tick < 60 * 70; tick += 1) {
+    if (tick % 9 === 0) {
+      for (const [index, game] of games.entries()) {
+        const action = chooseDemoAction(game, index);
+        if (action) actions.add(action);
+        assert.equal(applyAction(game, action), true, `${index}: invalid ${action}`);
+      }
+    }
+    games.forEach(game => updateGame(game, 1 / 60));
+    if (games.every(game => game.phase === 'running')) {
+      const distances = games.map(game => game.distance);
+      largestSpread = Math.max(largestSpread, Math.max(...distances) - Math.min(...distances));
+    }
+  }
+  assert.ok(games.every(game => game.phase === 'won'), JSON.stringify(games.map(({ phase, hits, timeLeft }) => ({ phase, hits, timeLeft }))));
+  assert.ok(largestSpread < 24, `runners spread across ${largestSpread}m`);
+  assert.ok(actions.has('longJump'));
+  assert.ok(actions.has('jump'));
+  assert.ok(actions.has('boost'));
+  assert.ok(actions.has('left') && actions.has('right'));
+});
+
+test('a delayed snapshot near boost onset cannot trigger a barrier jump too late to clear it', () => {
+  const game = createGame({ seed: 18 });
+  startGame(game);
+  let snapshot = { ...game }, previous = { ...game };
+  for (let tick = 0; tick < 4200 && game.phase === 'running'; tick += 1) {
+    if (tick % 3 === 0) { snapshot = previous; previous = { ...game }; }
+    if (tick % 9 === 0) applyAction(game, chooseDemoAction(snapshot, 0));
+    updateGame(game, 1 / 60);
+  }
+  assert.equal(game.phase, 'won');
+  assert.equal(game.hits, 0);
+});
+
+test('the opening timed impact occurs beside the demo runners before their first boost', () => {
+  const game = createGame({ seed: 42 });
+  const firstImpact = game.debris[0];
+  startGame(game);
+  for (let tick = 0; game.elapsed < firstImpact.impactAt; tick += 1) {
+    if (tick % 9 === 0) applyAction(game, chooseDemoAction(game, 0));
+    updateGame(game, 1 / 60);
+  }
+  assert.ok(Math.abs(game.distance - firstImpact.z) < 2, 'the fall should remain in the visible foreground');
+  assert.equal(game.hits, 0);
+});
+
+test('demo runners route around extra barriers to preserve their shared boost budget', () => {
+  const game = createGame({ course: [{ z: 15.5, lane: 1, type: 'barrier' }] });
+  startGame(game);
+  game.elapsed = 30;
+  game.timeSpent = 16;
+  game.timeLeft = 12;
+  assert.ok(['left', 'right'].includes(chooseDemoAction(game, 0)));
+});
+
+test('the first boosts give all four runners visible depth without scattering the group', () => {
+  const games = Array.from({ length: 4 }, () => createGame({ seed: 42 }));
+  games.forEach(startGame);
+  for (let tick = 0; tick < 13 * 60; tick += 1) {
+    if (tick % 9 === 0) games.forEach((game, index) => applyAction(game, chooseDemoAction(game, index)));
+    games.forEach(game => updateGame(game, 1 / 60));
+  }
+  const distances = games.map(game => game.distance);
+  assert.equal(new Set(distances.map(distance => Math.round(distance))).size, 4);
+  assert.ok(Math.max(...distances) - Math.min(...distances) < 14);
+});

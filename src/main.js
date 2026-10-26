@@ -3,12 +3,15 @@ import { CONFIG, ABILITIES, createGame, startGame, pauseGame, resumeGame, moveLa
 import { createRenderer } from './renderer.js';
 import { connectRace, createRaceView } from './network.js';
 import { AVATARS } from './avatars.js';
+import { preloadAvatars } from './graphics/avatars.js';
+import { createDemoRace } from './demo.js';
+import { createGameAudio } from './audio.js';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('game-canvas');
-let renderer = null, graphicsError = '';
+const audio = createGameAudio();
+let renderer = null, graphicsError = '', graphicsLoading = true;
 const graphicsMessage = '3D graphics are unavailable. Try an up-to-date browser with graphics acceleration enabled, then reload.';
-try { renderer = createRenderer(canvas); } catch { graphicsError = graphicsMessage; }
 let game = createGame();
 let mode = 'solo';
 let connection = null, snapshot = null, raceView = createRaceView();
@@ -21,7 +24,25 @@ $('player-name').placeholder = guestName;
 
 $('boost-button').querySelector('.cost').firstChild.textContent = `−${ABILITIES.boost.cost}`;
 $('long-jump-button').querySelector('.cost').firstChild.textContent = `−${ABILITIES.longJump.cost}`;
-$('checkpoint-bonus').textContent = `+${CONFIG.checkpointBonus} seconds`;
+
+async function prepareGraphics() {
+  try {
+    await preloadAvatars();
+  } catch (error) {
+    console.error('Character assets could not load:', error);
+    graphicsError = 'The runner models could not load. Check your connection, then reload to try again.';
+  }
+  if (!graphicsError) {
+    try { renderer = createRenderer(canvas); }
+    catch (error) { console.error('Graphics initialization failed:', error); graphicsError = graphicsMessage; }
+  }
+  graphicsLoading = false;
+  updateHUD();
+}
+
+function showCourse() {
+  canvas.closest('.arena').scrollIntoView({ block: 'start', behavior: 'auto' });
+}
 
 function notify(text, kind = 'info') {
   $('event-toast').textContent = text;
@@ -35,6 +56,7 @@ function showNetworkError(message = '') {
 }
 function resetVisuals() {
   renderer?.reset();
+  audio.reset();
   lastEvent = 0;
   accumulator = 0;
   lastOverlay = '';
@@ -54,15 +76,16 @@ function returnToMenu() {
   updateHUD();
 }
 function beginRun() {
-  if (mode !== 'solo' || graphicsError) return;
+  if (mode !== 'solo' || !renderer || graphicsError) return;
   game = createGame({ seed: 42, avatarId: game.avatarId });
   startGame(game);
   resetVisuals();
   showNetworkError();
   updateHUD();
+  showCourse();
 }
 function joinRace(type) {
-  if (graphicsError) return;
+  if (!renderer || graphicsError) return;
   const code = $('join-code').value.trim().toUpperCase();
   if (type === 'join' && !/^[A-Z0-9]{6}$/.test(code)) {
     showNetworkError('Enter the six-character code from your friend’s room.');
@@ -71,7 +94,7 @@ function joinRace(type) {
   }
   connection?.close();
   const generation = ++connectionGeneration;
-  mode = 'online';
+  mode = type === 'demo' ? 'demo' : 'online';
   networkStatus = 'connecting';
   snapshot = null;
   rosterKey = '';
@@ -80,8 +103,7 @@ function joinRace(type) {
   resetVisuals();
   showNetworkError();
   const name = $('player-name').value.trim() || guestName;
-  connection = connectRace({
-    initialMessage: { type, code, name },
+  const callbacks = {
     onStatus(status) {
       if (generation !== connectionGeneration) return;
       networkStatus = status;
@@ -95,6 +117,7 @@ function joinRace(type) {
     },
     onSnapshot(next) {
       if (generation !== connectionGeneration) return;
+      const starting = next.room.phase === 'countdown' && snapshot?.room.phase !== 'countdown';
       if (next.room.roundId !== snapshot?.room.roundId) resetVisuals();
       snapshot = next;
       raceView.push(next, performance.now());
@@ -102,18 +125,25 @@ function joinRace(type) {
       game = raceView.sample(performance.now() + 50).game;
       updateRoom();
       updateHUD();
+      if (starting) showCourse();
     },
-  });
+  };
+  connection = type === 'demo' ? createDemoRace(callbacks)
+    : connectRace({ ...callbacks, initialMessage: { type, code, name } });
   updateRoom();
   updateHUD();
 }
 function updateRoom() {
+  const demo = mode === 'demo';
+  $('leave-room').textContent = demo ? 'Exit demo' : 'Leave room';
   $('room-code').textContent = snapshot?.room.code || '······';
   if (networkStatus === 'disconnected') $('room-status').textContent = 'Disconnected. Return to the menu to join a new race.';
   else if (!snapshot) $('room-status').textContent = 'Connecting to the race server…';
   else {
     const count = snapshot.players.filter(player => player.connected).length;
-    $('room-status').textContent = snapshot.room.phase === 'lobby'
+    $('room-status').textContent = demo
+      ? snapshot.room.phase === 'finished' ? 'Demo complete · Four simulated runners raced on the live server.' : 'Four simulated runners · Connected to the live race server.'
+      : snapshot.room.phase === 'lobby'
       ? `${count}/4 runners · Share this code. The host starts when everyone is here.`
       : snapshot.room.phase === 'countdown' ? 'Get ready. Everyone starts together.'
       : snapshot.room.phase === 'finished' ? 'Race complete. Stay for a rematch or leave.'
@@ -127,21 +157,21 @@ function updateRoom() {
       const li = document.createElement('li');
       const dot = document.createElement('i');
       dot.style.backgroundColor = player.color;
-      li.append(dot, document.createTextNode(`${player.name}${player.id === snapshot.you.id ? ' (you)' : ''} · ${AVATARS[player.avatarId]?.name || 'Runner'}${player.id === snapshot.room.hostId ? ' · host' : ''}${player.connected ? '' : ' · left'}`));
+      li.append(dot, document.createTextNode(`${player.name}${player.id === snapshot.you.id && !demo ? ' (you)' : ''} · ${AVATARS[player.avatarId]?.name || 'Runner'}${player.id === snapshot.room.hostId && !demo ? ' · host' : ''}${player.connected ? '' : ' · left'}`));
       $('room-players').append(li);
     }
   }
   $('room-players').hidden = snapshot?.room.phase === 'racing';
 }
 function togglePause() {
-  if (mode === 'online') return;
+  if (mode !== 'solo') return;
   if (game.phase === 'running') pauseGame(game);
   else if (game.phase === 'paused') resumeGame(game);
   accumulator = 0;
   updateHUD();
 }
 function act(action) {
-  if (graphicsError) return;
+  if (!renderer || graphicsError || mode === 'demo') return;
   if (mode === 'online') {
     if (networkStatus === 'open' && snapshot?.room.phase === 'racing' && game.phase === 'running') connection.input(action);
     return;
@@ -164,19 +194,18 @@ function overlay(kicker, title, description, button, disabled = false, hint = ''
   $('overlay-hint').textContent = hint;
 }
 function updateOverlay() {
+  if (graphicsLoading) {
+    $('screen-overlay').hidden = false;
+    overlay('INTO THE LIGHT', 'Preparing your escape.', 'Loading the runners and tunnel…', 'Loading…', true);
+    return;
+  }
   if (graphicsError) {
     $('screen-overlay').hidden = false;
-    $('result-stats').hidden = true;
     overlay('GRAPHICS UNAVAILABLE', 'Let’s get you running.', graphicsError, 'Reload game →');
     return;
   }
   const ended = game.phase === 'won' || game.phase === 'lost';
-  $('result-stats').hidden = !ended;
-  if (ended) {
-    // All values below are numbers from the game; player names use textContent elsewhere.
-    $('result-stats').innerHTML = `<div><strong>${game.elapsed.toFixed(1)}s</strong><small>RUN TIME</small></div><div><strong>${game.hits}</strong><small>HITS</small></div><div><strong>${game.timeSpent}s</strong><small>SPENT</small></div>`;
-  }
-  if (mode === 'online') {
+  if (mode !== 'solo') {
     const room = snapshot?.room;
     const host = room?.hostId === snapshot?.you.id;
     $('screen-overlay').hidden = networkStatus === 'open' && room?.phase === 'racing' && !ended;
@@ -186,52 +215,50 @@ function updateOverlay() {
       overlay('MULTIPLAYER', 'Joining the race.', 'Connecting to your room. Any connection errors appear above the course.', 'Back to menu →');
     } else if (room.phase === 'lobby') {
       const count = snapshot.players.filter(player => player.connected).length;
+      if (mode === 'demo') {
+        overlay('FOUR-PLAYER DEMO', 'Meet the runners.', 'Four simulated players are joining the same race server.', 'Getting ready…', true, 'Automatic characters. Real multiplayer rules.');
+        return;
+      }
       overlay('PRIVATE RACE', 'Better with company.', 'Share the room code above. You’ll see other runners as transparent models on the same course.', host ? 'Start race →' : 'Waiting for host…', !host || count < 2, count < 2 ? 'At least two runners must join to start.' : `${count} runners ready. Everyone starts together.`);
     } else if (room.phase === 'countdown') {
       overlay('GET READY', `${room.countdown}`, 'Same course. Your own clock. Reach the exit first.', 'Starting…', true, 'Move ← → · Hop SPACE · Boost 1 · Long jump 2');
     } else if (ended) {
       const winner = snapshot.players.find(player => player.id === room.winnerId);
-      const title = room.phase !== 'finished' ? (game.phase === 'won' ? 'You made it out.' : 'Your clock ran out.')
+      const title = mode === 'demo'
+        ? room.phase !== 'finished' ? 'The others are still racing.' : winner ? `${AVATARS[winner.avatarId]?.name || winner.name} wins.` : 'The tunnel won this round.'
+        : room.phase !== 'finished' ? (game.phase === 'won' ? 'You escaped.' : 'Time ran out.')
         : winner ? (winner.id === snapshot.you.id ? 'You won the race.' : `${winner.name} won the race.`) : 'The tunnel won this round.';
       overlay(room.phase === 'finished' ? 'RACE COMPLETE' : 'WAITING FOR RUNNERS', title,
         room.phase === 'finished' ? 'Another route. Another chance to spend your seconds wisely.' : 'The remaining runners are still racing. Stay for the result and rematch.',
-        room.phase !== 'finished' ? 'Race still in progress…' : host ? 'Set up rematch →' : 'Waiting for host…', room.phase !== 'finished' || !host, 'Your run stats are shown below.');
+        room.phase !== 'finished' ? 'Race still in progress…' : mode === 'demo' ? 'Watch again →' : host ? 'Set up rematch →' : 'Waiting for host…', room.phase !== 'finished' || !host);
     }
     return;
   }
   $('screen-overlay').hidden = game.phase === 'running';
   if (game.phase === 'ready') overlay(`${CONFIG.initialTime} SECONDS. ONE WAY OUT.`, 'Daylight is ahead.', 'Watch for falling stone. Dodge, jump, and spend seconds to escape. Create a room above to race friends.', 'Practice solo →', false, 'Move ← → · Hop SPACE · Abilities 1 / 2');
   else if (game.phase === 'paused') overlay('TAKE A BREATH', 'Time stands still.', 'Your solo run is paused. The clock and the building will wait.', 'Resume run →', false, 'Press P or ESC to resume');
-  else if (ended) overlay(game.phase === 'won' ? 'ESCAPE COMPLETE' : 'THE CLOCK RAN OUT', game.phase === 'won' ? 'Seconds to spare.' : 'Out of borrowed time.', game.phase === 'won' ? 'You made it out. Try the same course again and see if you can escape faster.' : `You made it ${Math.floor(game.distance)} meters. Dodge the barriers, watch for gaps, and save enough time for the exit.`, 'Run it again →', false, 'Same route. A different strategy.');
+  else if (ended) overlay(game.phase === 'won' ? 'ESCAPE COMPLETE' : 'THE CLOCK RAN OUT', game.phase === 'won' ? 'You escaped.' : 'Time ran out.', game.phase === 'won' ? 'A little daylight. A second chance. Ready to go again?' : 'Dodge, leap, and save enough seconds for the exit.', 'Run it again →');
 }
 function updateHUD() {
-  const online = mode === 'online';
-  const running = !graphicsError && game.phase === 'running' && (!online || networkStatus === 'open');
+  const online = mode !== 'solo';
+  const running = Boolean(renderer) && !graphicsError && mode !== 'demo' && game.phase === 'running' && (!online || networkStatus === 'open');
   $('race-menu').hidden = online;
   $('room-panel').hidden = !online;
   $('restart-button').hidden = online;
-  $('race-mode-label').textContent = online ? 'LIVE MULTIPLAYER' : 'SOLO PRACTICE';
+  $('race-mode-label').textContent = mode === 'demo' ? 'DEMO · SIMULATED RUNNERS' : online ? 'LIVE MULTIPLAYER' : 'SOLO PRACTICE';
   $('avatar-label').textContent = AVATARS[game.avatarId]?.name || 'Runner';
-  $('location-label').textContent = game.distance < 300 ? 'DEEP TUNNEL' : game.distance < 660 ? 'BROKEN VAULTS' : 'DAYLIGHT AHEAD';
-  $('create-room').disabled = Boolean(graphicsError);
-  $('join-room').disabled = Boolean(graphicsError);
+  for (const id of ['create-room', 'join-room', 'restart-button']) $(id).disabled = !renderer || Boolean(graphicsError);
+  $('demo-button').disabled = !renderer || Boolean(graphicsError) || online;
   $('time-value').textContent = Math.max(0, game.timeLeft).toFixed(1);
   $('time-fill').style.width = `${Math.min(100, game.timeLeft / CONFIG.initialTime * 100)}%`;
   $('time-value').closest('.clock-panel').classList.toggle('low', game.timeLeft < 15);
   $('status-label').textContent = online && networkStatus === 'disconnected' ? 'OFFLINE' : ({ ready:'READY', running:'RUNNING', paused:'PAUSED', won:'ESCAPED', lost:'TIME OUT' })[game.phase];
-  $('clock-note').textContent = game.timeLeft < 15 && running ? 'Low time. Make every second count.' : 'Your lifeline. Your currency.';
-  $('distance-value').textContent = `${Math.max(0, Math.ceil(CONFIG.courseLength - game.distance))} m`;
-  $('distance-fill').style.width = `${Math.min(100, game.distance / CONFIG.courseLength * 100)}%`;
-  const sector = game.checkpoints.filter(checkpoint => checkpoint.passed).length + 1;
-  $('sector-label').textContent = `SECTOR ${String(sector).padStart(2, '0')} / ${String(game.checkpoints.length + 1).padStart(2, '0')}`;
-  $('hits-value').textContent = game.hits;
-  $('spent-value').textContent = `${game.timeSpent}s`;
   $('boost-button').disabled = !running || game.timeLeft <= ABILITIES.boost.cost || game.boostCooldown > 0;
   $('long-jump-button').disabled = !running || game.timeLeft <= ABILITIES.longJump.cost || game.jumpKind === 'long';
   $('boost-button').classList.toggle('active', game.boostRemaining > 0);
   $('long-jump-button').classList.toggle('active', game.jumpKind === 'long');
-  $('boost-description').textContent = game.boostRemaining > 0 ? `Boosting · ${game.boostRemaining.toFixed(1)}s` : game.boostCooldown > 0 ? `Recharging · ${game.boostCooldown.toFixed(1)}s` : `Run faster for ${ABILITIES.boost.duration} seconds`;
-  $('jump-description').textContent = game.jumpKind === 'long' ? 'Long jump active' : 'Clear gaps and low debris';
+  $('boost-description').textContent = game.boostRemaining > 0 ? 'Boosting' : game.boostCooldown > 0 ? `Ready in ${Math.ceil(game.boostCooldown)}s` : 'Break away';
+  $('jump-description').textContent = game.jumpKind === 'long' ? 'Airborne' : 'Leap over obstacles';
   $('pause-button').disabled = online || (!running && game.phase !== 'paused');
   $('pause-button').textContent = game.phase === 'paused' ? '▷' : 'Ⅱ';
   $('pause-button').setAttribute('aria-label', online ? 'Multiplayer cannot be paused' : game.phase === 'paused' ? 'Resume game' : 'Pause game');
@@ -240,7 +267,7 @@ function updateHUD() {
     lastEvent = game.recentEvent.id;
     notify(game.recentEvent.text, game.recentEvent.kind);
   }
-  const key = [graphicsError, mode, networkStatus, game.phase, snapshot?.room.phase, snapshot?.room.countdown, snapshot?.room.hostId, snapshot?.room.winnerId, rosterKey].join(':');
+  const key = [graphicsLoading, graphicsError, mode, networkStatus, game.phase, snapshot?.room.phase, snapshot?.room.countdown, snapshot?.room.hostId, snapshot?.room.winnerId, rosterKey].join(':');
   if (key !== lastOverlay) { updateOverlay(); lastOverlay = key; }
 }
 
@@ -253,10 +280,20 @@ $('start-button').addEventListener('click', () => {
 });
 $('create-room').addEventListener('click', () => joinRace('create'));
 $('join-room').addEventListener('click', () => joinRace('join'));
+$('demo-button').addEventListener('click', () => joinRace('demo'));
 $('join-code').addEventListener('keydown', event => { if (event.key === 'Enter') joinRace('join'); });
 $('leave-room').addEventListener('click', returnToMenu);
 $('restart-button').addEventListener('click', beginRun);
 $('pause-button').addEventListener('click', togglePause);
+$('sound-button').addEventListener('click', async () => {
+  const button = $('sound-button');
+  button.disabled = true;
+  try { await audio.toggle(); }
+  catch (error) { notify(error.message, 'warning'); }
+  button.textContent = audio.enabled ? 'Sound on' : 'Sound off';
+  button.setAttribute('aria-pressed', String(audio.enabled));
+  button.disabled = false;
+});
 for (const [id, action] of [['boost-button','boost'], ['long-jump-button','longJump'], ['left-button','left'], ['right-button','right'], ['hop-button','jump']]) {
   $(id).addEventListener('click', () => act(action));
 }
@@ -303,7 +340,7 @@ function frame(now) {
     while (accumulator >= STEP) { updateGame(game, STEP); accumulator -= STEP; }
   } else accumulator = 0;
   updateHUD();
-  const view = mode === 'online' && snapshot ? raceView.sample(now) : null;
+  const view = mode !== 'solo' && snapshot ? raceView.sample(now) : null;
   if (renderer && !graphicsError) {
     try {
       renderer.draw(view?.game || game, now / 1000, dt, view?.opponents || []);
@@ -318,11 +355,17 @@ function frame(now) {
       pauseGame(game);
       try { renderer.dispose?.(); } catch { /* Context may already be gone. */ }
       renderer = null;
+      audio.reset();
       updateHUD();
     }
+  }
+  if (!document.hidden && !graphicsError) {
+    try { audio.update(view?.game || game); }
+    catch { audio.reset(); } // Optional sound must never interrupt rendering.
   }
   if (now > toastUntil) $('event-toast').classList.remove('visible');
   requestAnimationFrame(frame);
 }
 updateHUD();
+prepareGraphics();
 requestAnimationFrame(frame);

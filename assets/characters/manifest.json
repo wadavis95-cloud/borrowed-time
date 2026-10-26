@@ -1,0 +1,55 @@
+{
+  "generator": "node scripts/build-avatars.mjs",
+  "original": true,
+  "version": 3,
+  "avatars": {
+    "courier": {
+      "bytes": 1327252,
+      "triangles": 44880,
+      "vertices": 26188,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 1.91
+    },
+    "engineer": {
+      "bytes": 1191440,
+      "triangles": 40140,
+      "vertices": 23196,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 1.99
+    },
+    "guard": {
+      "bytes": 1415548,
+      "triangles": 48000,
+      "vertices": 28121,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 2.12
+    },
+    "runner": {
+      "bytes": 985472,
+      "triangles": 32608,
+      "vertices": 18757,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 1.72
+    }
+  }
+}

@@ -17,7 +17,7 @@ function closeTo(actual, expected) {
 
 test('games use an automatic valid avatar and retain explicit server identity', () => {
   const game = createGame({ course: [] });
-  assert.ok(['courier', 'engineer'].includes(game.avatarId));
+  assert.ok(['courier', 'engineer', 'guard', 'runner'].includes(game.avatarId));
   const assigned = createGame({ course: [], avatarId: 'engineer', playerColor: '#abcdef' });
   startGame(assigned);
   updateGame(assigned, 1);
@@ -33,7 +33,7 @@ test('the clock and movement start together and freeze while paused', () => {
   assert.equal(game.timeLeft, 60);
   startGame(game);
   updateGame(game, 1);
-  closeTo(game.distance, 18);
+  closeTo(game.distance, 22.1);
   closeTo(game.timeLeft, 59);
   pauseGame(game);
   const paused = structuredClone(game);
@@ -41,7 +41,7 @@ test('the clock and movement start together and freeze while paused', () => {
   assert.deepEqual(game, paused);
   resumeGame(game);
   updateGame(game, 1);
-  closeTo(game.distance, 36);
+  closeTo(game.distance, 44.4);
   closeTo(game.elapsed, 2);
 });
 
@@ -65,7 +65,7 @@ test('an unobstructed run is winnable and stops exactly at the exit', () => {
   const game = running();
   updateGame(game, 90);
   assert.equal(game.phase, 'won');
-  assert.equal(game.distance, 900);
+  assert.equal(game.distance, 1350);
   closeTo(game.elapsed, 50);
   closeTo(game.finishTime, 50);
   closeTo(game.timeLeft, 20);
@@ -81,14 +81,14 @@ test('running out of time stops movement at the moment the clock expires', () =>
   updateGame(game, 10);
   assert.equal(game.phase, 'lost');
   assert.equal(game.timeLeft, 0);
-  closeTo(game.distance, 9);
+  closeTo(game.distance, 11.025);
   closeTo(game.elapsed, 0.5);
   assert.equal(game.finishTime, null);
 });
 
 test('reaching the exit exactly as the clock expires counts as an escape', () => {
   const game = running();
-  game.distance = 882;
+  game.distance = 1327.9;
   game.timeLeft = 1;
   game.checkpoints.forEach((checkpoint) => { checkpoint.passed = true; });
   updateGame(game, 3);
@@ -104,7 +104,7 @@ test('a boost spends time immediately, increases speed, and cannot bypass its co
   assert.equal(buyAbility(game, 'boost').ok, false);
   assert.equal(game.timeLeft, 57);
   updateGame(game, 1);
-  closeTo(game.distance, 33.3);
+  closeTo(game.distance, 40.885);
   closeTo(game.timeLeft, 56);
   updateGame(game, 3);
   assert.equal(game.boostRemaining, 0);
@@ -137,7 +137,7 @@ test('a barrier crossed during a long frame hits only once and briefly slows the
   closeTo(game.timeLeft, 56.4);
   updateGame(game, 3);
   assert.equal(game.hits, 1);
-  closeTo(game.speed, 18);
+  closeTo(game.speed, 22.72);
 });
 
 test('changing lanes avoids a barrier', () => {
@@ -183,7 +183,7 @@ test('a long jump that ends before the gap does not grant permanent protection',
 
 test('a checkpoint awards five seconds once even across multiple updates', () => {
   const game = running();
-  game.distance = 299;
+  game.distance = 449;
   game.timeLeft = 1;
   updateGame(game, 1);
   assert.equal(game.phase, 'running');
@@ -194,19 +194,19 @@ test('a checkpoint awards five seconds once even across multiple updates', () =>
 });
 
 test('a checkpoint cannot revive a runner whose collision consumed the remaining time', () => {
-  const game = running([{ id: 'wall-at-checkpoint', z: 300, lane: 1, type: 'barrier' }]);
-  game.distance = 299;
+  const game = running([{ id: 'wall-at-checkpoint', z: 450, lane: 1, type: 'barrier' }]);
+  game.distance = 449;
   game.timeLeft = 1;
   updateGame(game, 1);
   assert.equal(game.phase, 'lost');
   assert.equal(game.timeLeft, 0);
-  assert.equal(game.distance, 300);
+  assert.equal(game.distance, 450);
   assert.equal(game.checkpoints[0].passed, false);
 });
 
 test('reaching a checkpoint exactly as natural time expires still awards its bonus', () => {
   const game = running();
-  game.distance = 282;
+  game.distance = 427.9;
   game.timeLeft = 1;
   updateGame(game, 1);
   assert.equal(game.phase, 'running');
@@ -229,7 +229,7 @@ test('seeded courses are repeatable and leave at least one open lane per encount
     const lanesByDistance = new Map();
     for (const obstacle of game.obstacles) {
       assert.ok(obstacle.z >= 70);
-      assert.ok(obstacle.z < 900);
+      assert.ok(obstacle.z < 1350);
       const lanes = lanesByDistance.get(obstacle.z) ?? new Set();
       lanes.add(obstacle.lane);
       lanesByDistance.set(obstacle.z, lanes);

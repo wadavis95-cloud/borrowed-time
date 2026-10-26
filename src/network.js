@@ -74,7 +74,7 @@ export function createRaceView() {
     const result = { ...after, distance: blend(before.distance, after.distance, t), lane: blend(before.lane, after.lane, t) };
     if (Number.isFinite(before.elapsed) && Number.isFinite(after.elapsed)) result.elapsed = blend(before.elapsed, after.elapsed, t);
     // A purchase starts a new jump arc; don't blend it with an unrelated old jump.
-    if (after.jumpRemaining > 0 && before.jumpRemaining >= after.jumpRemaining && before.jumpDuration === after.jumpDuration) {
+    if (before.jumpRemaining > 0 && before.jumpRemaining >= after.jumpRemaining && before.jumpDuration === after.jumpDuration) {
       result.jumpRemaining = blend(before.jumpRemaining, after.jumpRemaining, t);
     }
     return result;

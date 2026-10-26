@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Borrowed Time · Character study</title>
+  <script type="importmap">{"imports":{"three":"/vendor/three.module.js","three/addons/":"/vendor/"}}</script>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#e9e7df;color:#243638;font:14px/1.5 system-ui,sans-serif}header{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:22px 30px 12px;flex-wrap:wrap}h1{font-size:22px;letter-spacing:-.6px;margin:2px 0}p{margin:0;color:#5d6968;font-size:12px}.eyebrow{text-transform:uppercase;letter-spacing:2.3px;font-size:10px;font-weight:750;color:#64716e}nav{display:flex;gap:6px;align-items:center;flex-wrap:wrap}button{background:#f7f6f0;border:1px solid #bfc6bf;border-radius:30px;color:#344847;padding:9px 15px;font:600 12px system-ui;cursor:pointer}button[aria-pressed=true]{background:#284c46;color:#fff;border-color:#284c46}.divider{width:1px;height:24px;background:#bfc6bf;margin:0 7px}.viewport{overflow:auto;margin:0 22px;border:1px solid #cdd1c7;border-radius:14px;background:#e2e4dc}.study{width:min(100%,calc((100vh - 210px)*1.746));min-width:900px;max-width:1400px;margin:auto;position:relative}canvas{display:block;width:100%;aspect-ratio:4.4/2.52}.labels{display:grid;grid-template-columns:repeat(4,1fr);padding:0 0 20px;text-align:center;background:linear-gradient(transparent,#e1e3db);margin-top:-6px;position:relative}.labels strong{font-size:15px;font-weight:650}.labels span{display:block;color:#60706d;font-size:11px;margin-top:3px}.status{padding:16px 30px;color:#63716c;font-size:11px}.status[data-error]{color:#a93737}@media(max-width:700px){header{padding:18px}.viewport{margin:0 10px}.status{padding:14px 18px}h1{font-size:19px}}
+  </style>
+</head>
+<body>
+  <header>
+    <div><div class="eyebrow">Borrowed Time / V3 development</div><h1>Character study</h1><p>Original GLB assets · neutral lighting · equal gameplay rules</p></div>
+    <nav aria-label="Study controls">
+      <button data-view="front" aria-pressed="true">Front</button><button data-view="back" aria-pressed="false">Back</button><button data-view="side" aria-pressed="false">Side</button><button data-view="threequarter" aria-pressed="false">¾ view</button>
+      <span class="divider"></span><button data-motion="idle" aria-pressed="true">Idle</button><button data-motion="run" aria-pressed="false">Run</button><button data-motion="jump" aria-pressed="false">Jump</button>
+    </nav>
+  </header>
+  <div class="viewport"><div class="study">
+    <canvas id="study" aria-label="Four original game characters under neutral studio lighting"></canvas>
+    <div class="labels"><div><strong>Courier</strong><span>Curly ponytail · satchel · burgundy</span></div><div><strong>Engineer</strong><span>Copper hair · goggles · canvas bib</span></div><div><strong>Station Guard</strong><span>Silver braid · navy split coat</span></div><div><strong>Rooftop Runner</strong><span>Swept crop · short sports jacket</span></div></div>
+  </div></div>
+  <p class="status" id="status">Loading original character assets…</p>
+  <script type="module">
+    import * as THREE from 'three';
+    import { preloadAvatars, createAvatar } from '/src/graphics/avatars.js';
+    const canvas = document.querySelector('canvas'), status = document.querySelector('#status');
+    try {
+      await preloadAvatars();
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.1;
+      renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      const scene = new THREE.Scene(); scene.background = new THREE.Color('#e2e4dc');
+      const camera = new THREE.OrthographicCamera(-2.2, 2.2, 1.26, -1.26, .1, 40); camera.position.set(0, 3.2, -8); camera.lookAt(0, 1.1, 0);
+      scene.add(new THREE.HemisphereLight('#fff4df', '#667b73', 2.3));
+      const key = new THREE.DirectionalLight('#fff4e3', 3.2); key.position.set(-3, 6, -5); key.castShadow = true;
+      key.shadow.mapSize.set(2048, 2048); key.shadow.camera.left = -3; key.shadow.camera.right = 3; key.shadow.camera.top = 3; key.shadow.camera.bottom = -3; key.shadow.normalBias = .015; key.shadow.bias = -.0001; scene.add(key);
+      const fill = new THREE.DirectionalLight('#d2e6ee', 1.4); fill.position.set(4, 2, -1); scene.add(fill);
+      const rim = new THREE.DirectionalLight('#fff0cc', 2.5); rim.position.set(0, 4, 4); scene.add(rim);
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.MeshStandardMaterial({ color: '#c7d0c5', roughness: 1 })); floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; floor.position.y = -.012; scene.add(floor);
+      const avatars = ['courier', 'engineer', 'guard', 'runner'].map((id, i) => { const avatar = createAvatar(id); avatar.group.position.x = -(i - 1.5) * 1.1; scene.add(avatar.group); return avatar; });
+      let view = 'front', motion = 'idle', previous = performance.now(), elapsed = 0;
+      document.querySelectorAll('[data-view]').forEach(button => button.onclick = () => { view = button.dataset.view; document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', String(b === button))); });
+      document.querySelectorAll('[data-motion]').forEach(button => button.onclick = () => { motion = button.dataset.motion; elapsed = 0; document.querySelectorAll('[data-motion]').forEach(b => b.setAttribute('aria-pressed', String(b === button))); });
+      const resize = () => { const width = canvas.clientWidth; renderer.setSize(width, width * 2.52 / 4.4, false); };
+      new ResizeObserver(resize).observe(canvas); resize();
+      status.textContent = 'Developer art preview. Original procedural meshes and animation clips; no character selection or gameplay settings. Narrow screens can scroll the study horizontally.';
+      function frame(now) {
+        const dt = Math.min((now - previous) / 1000, .05); previous = now; elapsed += dt;
+        const progress = (elapsed % 2) / 1.1, jumping = motion === 'jump' && progress < 1;
+        avatars.forEach((avatar, i) => {
+          avatar.group.rotation.y = ({front:0,back:Math.PI,side:Math.PI/2,threequarter:-Math.PI/5})[view];
+          avatar.group.position.y = jumping ? Math.sin(progress * Math.PI) * .35 : 0;
+          avatar.update({ phase: motion === 'idle' ? 'ready' : 'running', lane: 1, distance: elapsed * 22 + (motion === 'run' ? i * 1.5 : 0), jumpRemaining: jumping ? 1.1 * (1-progress) : 0, jumpDuration: 1.1, jumpKind:'long' }, dt);
+        });
+        renderer.render(scene,camera); requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    } catch(error) { status.dataset.error='true'; status.textContent = `Character preview failed: ${error.message}`; console.error(error); }
+  </script>
+</body>
+</html>

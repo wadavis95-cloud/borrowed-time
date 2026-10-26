@@ -3,29 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0c1417">
-  <meta name="description" content="Race through a crumbling tunnel toward daylight. Dodge falling stone and spend seconds on speed boosts and long jumps.">
+  <meta name="theme-color" content="#0c171b">
+  <meta name="description" content="A four-player escape through a collapsing railway tunnel. Spend seconds to leap over danger and race into daylight.">
   <title>Borrowed Time — Into the Light</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
-  <script type="importmap">{"imports":{"three":"/vendor/three.module.js"}}</script>
+  <script type="importmap">{"imports":{"three":"/vendor/three.module.js","three/addons/":"/vendor/"}}</script>
 </head>
 <body>
   <div class="app">
     <header class="site-header">
-      <a class="brand" href="/" aria-label="Borrowed Time home"><img src="/favicon.svg" alt="" width="34" height="34"><span>BORROWED<span class="brand-light">TIME</span></span></a>
-      <div class="header-actions"><span class="version"><i></i> V2 · PLAYABLE PREVIEW</span><button id="guide-button" class="quiet-button">How it works <span aria-hidden="true">↗</span></button></div>
+      <a class="brand" href="/" aria-label="Borrowed Time home"><img src="/favicon.svg" alt="" width="30" height="30"><span>BORROWED <span class="brand-light">TIME</span></span></a>
+      <div class="header-actions"><span class="version">V3 · INTO THE LIGHT</span><button id="sound-button" class="quiet-button" aria-pressed="false">Sound off</button><button id="guide-button" class="quiet-button">How to play ↗</button></div>
     </header>
-
     <main>
-      <div class="page-heading"><div><p class="eyebrow">THE ESCAPE RUN</p><h1>Run toward the light.</h1></div><p class="heading-note">Every second is a choice.<br>Make it out together.</p></div>
+      <div class="page-heading"><div><p class="eyebrow">THE ESCAPE RUN</p><h1>Every second is a choice.</h1></div><button id="demo-button" class="demo-button" disabled><span aria-hidden="true">▷</span> Watch four-player demo</button></div>
       <section class="race-menu" id="race-menu" aria-label="Multiplayer setup">
-        <div class="race-invite"><strong>Race your friends</strong><small>2–4 runners. One way out.</small></div>
-        <label>Name <span class="optional-label">optional</span><input id="player-name" maxlength="20" placeholder="Assigned automatically" autocomplete="nickname"></label>
-        <button id="create-room" class="room-button">Create room</button>
+        <div class="race-invite"><strong>Bring your friends.</strong><small>Four runners. One way out.</small></div>
+        <label><span>Name <small>optional</small></span><input id="player-name" maxlength="20" placeholder="Assigned automatically" autocomplete="nickname"></label>
+        <button id="create-room" class="room-button" disabled>Create room</button>
         <span class="room-or">or</span>
         <label>Room code<input id="join-code" maxlength="6" placeholder="ABC123" autocapitalize="characters" autocomplete="off" spellcheck="false"></label>
-        <button id="join-room" class="room-button secondary">Join room</button>
+        <button id="join-room" class="room-button secondary" disabled>Join room</button>
       </section>
       <section class="room-panel" id="room-panel" aria-label="Multiplayer room" hidden>
         <div><span class="eyebrow">ROOM CODE</span><strong id="room-code">Connecting…</strong></div>
@@ -35,66 +34,54 @@
       <p id="network-error" class="network-error" role="alert" hidden></p>
       <div class="game-layout">
         <section class="arena" aria-label="Escape race">
-          <canvas id="game-canvas" aria-label="Three-lane tunnel race toward daylight. Dodge falling stone and barriers, hop rubble, and long jump across gaps.">This game needs a browser with WebGL 2 support.</canvas>
-          <div class="arena-top"><span class="location"><i></i> <span id="location-label">CLOCKTOWER LINE</span> <b>/</b> <span id="avatar-label">RUNNER</span></span><button id="pause-button" class="pause-button" aria-label="Pause game" disabled>Ⅱ</button></div>
+          <canvas id="game-canvas" aria-label="Three-lane tunnel race toward daylight. Dodge falling stone. Hop rubble or use a long jump to clear barriers and gaps.">This game needs a browser with WebGL 2 support.</canvas>
+          <div class="arena-top"><span class="location"><i></i><span id="avatar-label">RUNNER</span></span><span id="race-mode-label" class="mode-label">SOLO PRACTICE</span><button id="pause-button" class="pause-button" aria-label="Pause game" disabled>Ⅱ</button></div>
           <div id="event-toast" class="event-toast" role="status" aria-live="polite"></div>
-          <div class="arena-bottom"><span id="sector-label">SECTOR 01 / 03</span><span id="race-mode-label">SOLO PRACTICE</span></div>
-
           <div id="screen-overlay" class="screen-overlay">
             <div class="intro-card">
-              <span id="overlay-kicker" class="eyebrow">60 SECONDS. ONE WAY OUT.</span>
-              <h2 id="overlay-title">Daylight is ahead.</h2>
-              <p id="overlay-description">The tunnel is coming down. Watch for falling stone and spend your seconds wisely.</p>
-              <div id="result-stats" class="result-stats" hidden></div>
-              <button id="start-button" class="primary-button">Practice solo →</button>
-              <p id="overlay-hint" class="overlay-hint">Move ← → &nbsp; · &nbsp; Jump SPACE &nbsp; · &nbsp; Abilities 1 / 2</p>
+              <span id="overlay-kicker" class="eyebrow">INTO THE LIGHT</span>
+              <h2 id="overlay-title">Preparing your escape.</h2>
+              <p id="overlay-description">Loading the runners and tunnel…</p>
+              <button id="start-button" class="primary-button" disabled>Loading…</button>
+              <p id="overlay-hint" class="overlay-hint"></p>
             </div>
           </div>
         </section>
-
         <aside class="dashboard" aria-label="Race controls and status">
           <section class="clock-panel">
-            <div class="panel-label"><span>YOUR TIME</span><span id="status-label" class="status-label">READY</span></div>
+            <div class="panel-label"><span>TIME LEFT</span><span id="status-label" class="status-label">READY</span></div>
             <div class="clock"><span id="time-value">60.0</span><span class="unit">SEC</span></div>
             <div class="time-track"><div id="time-fill"></div></div>
-            <p id="clock-note">Your lifeline. Your currency.</p>
           </section>
-          <section class="progress-panel">
-            <div class="panel-label"><span>DISTANCE TO EXIT</span><strong id="distance-value">900 m</strong></div>
-            <div class="progress-track"><div id="distance-fill"></div><i style="left:33.33%"></i><i style="left:66.66%"></i></div>
-            <p>Checkpoints restore <span id="checkpoint-bonus">+5 seconds</span></p>
-          </section>
-          <section class="abilities-panel">
-            <div class="panel-label"><span>SPEND TIME</span><span class="muted">BUY + ACTIVATE</span></div>
+          <section class="abilities-panel" aria-label="Spend time on abilities">
             <button id="boost-button" class="ability-button boost" disabled>
-              <span class="ability-icon" aria-hidden="true">ϟ</span><span class="ability-copy"><strong>Speed boost <kbd>1</kbd></strong><small id="boost-description">Run faster for 4 seconds</small></span><span class="cost">−3<span>SEC</span></span>
+              <span class="ability-icon" aria-hidden="true">ϟ</span><span class="ability-copy"><strong>Speed boost <kbd>1</kbd></strong><small id="boost-description">Break away</small></span><span class="cost">−3<span>SEC</span></span>
             </button>
             <button id="long-jump-button" class="ability-button leap" disabled>
-              <span class="ability-icon" aria-hidden="true">↗</span><span class="ability-copy"><strong>Long jump <kbd>2</kbd></strong><small id="jump-description">Clear gaps and low debris</small></span><span class="cost">−2<span>SEC</span></span>
+              <span class="ability-icon" aria-hidden="true">↗</span><span class="ability-copy"><strong>Long jump <kbd>2</kbd></strong><small id="jump-description">Leap over obstacles</small></span><span class="cost">−2<span>SEC</span></span>
             </button>
-            <p class="purchase-note">Each purchase takes time off your clock.</p>
+            <p class="purchase-note">Spend seconds. Stay ahead.</p>
           </section>
-          <section class="controls-panel"><div class="panel-label">STAY MOVING</div><div><span><kbd>←</kbd><kbd>→</kbd> Switch lanes</span><span><kbd>SPACE</kbd> Hop rubble</span><span><kbd>P</kbd> Pause solo</span></div></section>
-          <div class="run-stats"><div><span id="hits-value">0</span><small>HITS TAKEN</small></div><div><span id="spent-value">0s</span><small>TIME SPENT</small></div></div>
         </aside>
       </div>
-      <div class="touch-controls" aria-label="Movement controls"><button id="left-button" aria-label="Move left">←<span>LEFT</span></button><button id="hop-button">↑<span>HOP</span></button><button id="right-button" aria-label="Move right">→<span>RIGHT</span></button></div>
-      <footer class="game-footer"><span><i></i> A SMALL GAME. A BIG TRADE-OFF.</span><span>Built to play, learn &amp; iterate.</span><button id="restart-button" class="quiet-button">Restart run ↻</button></footer>
+      <div class="touch-controls" aria-label="Movement controls"><button id="left-button" aria-label="Move left" disabled>←<span>LEFT</span></button><button id="hop-button" disabled>↑<span>HOP</span></button><button id="right-button" aria-label="Move right" disabled>→<span>RIGHT</span></button></div>
+      <footer class="game-footer"><span class="keyboard-hint">← → Move <b>·</b> SPACE Hop <b>·</b> 1 / 2 Abilities <b>·</b> P Pause</span><button id="restart-button" class="quiet-button" disabled>Restart run ↻</button></footer>
     </main>
   </div>
-
   <dialog id="guide-dialog">
-    <div class="dialog-heading"><span class="eyebrow">UNDER THE HOOD</span><button id="close-guide" class="quiet-button" aria-label="Close guide">Close ×</button></div>
-    <h2>A game loop you can understand.</h2>
-    <p>This game uses <strong>JavaScript, HTML, CSS, and Three.js for 3D graphics</strong>. Node.js serves the files and runs multiplayer races. The <code>ws</code> package keeps browsers connected to the server.</p>
-    <ol class="code-tour">
-      <li><span>01</span><div><strong>You press a button</strong><p><code>src/main.js</code> listens to the keyboard, touch controls, and ability buttons.</p></div></li>
-      <li><span>02</span><div><strong>The server checks your action</strong><p>In multiplayer, <code>src/network.js</code> sends the button press. The server uses <code>src/game.js</code> to charge time, move you, and check obstacles. Solo practice runs these same rules in your browser.</p></div></li>
-      <li><span>03</span><div><strong>The world gets drawn</strong><p><code>src/renderer.js</code> uses Three.js to draw the tunnel, animated runner, and debris. The environment grows lighter as you approach the exit.</p></div></li>
-      <li><span>04</span><div><strong>Keep everyone in the same race</strong><p>The server sends updated positions 20 times per second. Your browser smooths the motion and draws other runners as transparent models. It receives your own stats, but no opponent timers or ability status.</p></div></li>
-    </ol>
-    <div class="guide-note">Your avatar is assigned automatically and stays with you for rematches. Amber ground markers warn of falling stone: switch lanes before impact, then hop the rubble left behind. Multiplayer races keep running when you switch tabs or open this guide. Rooms last only while the server is running; there are no accounts or saved leaderboards.</div>
-    <p class="guide-more">For setup, code examples, and the full project walkthrough, open <code>README.md</code> and <code>docs/PROJECT_GUIDE.md</code> in your editor.</p>
+    <div class="dialog-heading"><span class="eyebrow">MAKE IT OUT</span><button id="close-guide" class="quiet-button" aria-label="Close guide">Close ×</button></div>
+    <h2>Your time is your ticket out.</h2>
+    <p>You run forward automatically, picking up speed as you escape. Reach daylight before your clock runs out.</p>
+    <ul class="play-guide">
+      <li><strong>Switch lanes.</strong> Use ← / →, A / D, the buttons, or swipe sideways.</li>
+      <li><strong>Hop small rubble.</strong> Press SPACE, tap the course, or swipe up.</li>
+      <li><strong>Spend 3 seconds to boost.</strong> Press 1 or tap Speed boost to break away.</li>
+      <li><strong>Spend 2 seconds to leap.</strong> Press 2 or tap Long jump. Time the peak of your jump over tall barriers; clear gaps and rubble too.</li>
+      <li><strong>Watch the amber markers.</strong> Move out of the lane before falling stone lands. You can hop the rubble afterward.</li>
+      <li><strong>Find your way into daylight.</strong> Time gates restore seconds along the route.</li>
+    </ul>
+    <div class="guide-note">Create a room and share its code to race with up to three friends. Everyone gets a different character automatically. The host starts the race. Online races keep running when you switch tabs; solo practice can be paused with P or Escape.</div>
+    <p class="guide-more">The four-player demo uses simulated runners connected to the same race server. You can leave it at any time and play your own run.</p>
   </dialog>
   <script type="module" src="/src/main.js"></script>
 </body>

@@ -5,19 +5,24 @@ import { AVATAR_IDS } from './avatars.js';
 // Change these values to tune the game without touching the drawing code.
 export const CONFIG = Object.freeze({
   initialTime: 60,
-  courseLength: 900,
-  baseSpeed: 18,
+  courseLength: 1350,
+  baseSpeed: 22,
+  topSpeed: 32,
+  accelerationDuration: 50,
   laneCount: 3,
   normalJumpDuration: 0.65,
+  normalJumpHeight: 1.15,
+  longJumpHeight: 3,
+  barrierClearanceHeight: 2.2,
   hitTimePenalty: 3,
   stunDuration: 0.8,
   stunMultiplier: 0.45,
   hitFlashDuration: 0.45,
   checkpointBonus: 5,
-  checkpointDistances: Object.freeze([300, 600]),
-  firstObstacle: 80,
-  encounterSpacing: 48,
-  encounterVariation: 14,
+  checkpointDistances: Object.freeze([450, 900]),
+  firstObstacle: 90,
+  encounterSpacing: 72,
+  encounterVariation: 18,
   debrisImpactRadius: 2,
 });
 
@@ -71,7 +76,7 @@ export function createGame({
   playerColor = '#65ead3',
 } = {}) {
   const obstacles = course === undefined ? makeCourse(seed) : course;
-  const events = debris ?? (course === undefined ? createFallingDebris(seed, obstacles) : []);
+  const events = debris ?? (course === undefined ? createFallingDebris(seed, obstacles, CONFIG) : []);
   return {
     phase: 'ready',
     avatarId,
@@ -105,10 +110,29 @@ export function createGame({
   };
 }
 
-function refreshSpeed(game) {
+function speedMultiplier(game) {
   const boost = game.boostRemaining > 0 ? ABILITIES.boost.multiplier : 1;
   const stumble = game.stunRemaining > 0 ? CONFIG.stunMultiplier : 1;
-  game.speed = game.phase === 'running' ? CONFIG.baseSpeed * boost * stumble : 0;
+  return boost * stumble;
+}
+
+function baseSpeedAt(elapsed) {
+  const progress = Math.min(1, elapsed / CONFIG.accelerationDuration);
+  return CONFIG.baseSpeed + (CONFIG.topSpeed - CONFIG.baseSpeed) * progress;
+}
+
+function refreshSpeed(game) {
+  game.speed = game.phase === 'running' ? baseSpeedAt(game.elapsed) * speedMultiplier(game) : 0;
+}
+
+// Public motion fields suffice for both the local runner and private ghosts.
+// Collision clearance uses this same arc, so a paid jump must visibly rise
+// above the barrier instead of granting protection for its entire duration.
+export function getJumpHeight(state) {
+  if (!(state.jumpRemaining > 0) || !(state.jumpDuration > 0)) return 0;
+  const progress = Math.max(0, Math.min(1, 1 - state.jumpRemaining / state.jumpDuration));
+  const height = state.jumpDuration > CONFIG.normalJumpDuration ? CONFIG.longJumpHeight : CONFIG.normalJumpHeight;
+  return Math.sin(progress * Math.PI) * height;
 }
 
 export function startGame(game) {
@@ -224,7 +248,9 @@ function resolveCrossings(game) {
     if (obstacle.lane !== game.lane) continue;
     const airborne = game.jumpRemaining > 0;
     const cleared = (obstacle.type === 'rubble' && airborne)
-      || (obstacle.type === 'gap' && airborne && game.jumpKind === 'long');
+      || (obstacle.type === 'gap' && airborne && game.jumpKind === 'long')
+      || (obstacle.type === 'barrier' && game.jumpKind === 'long'
+        && getJumpHeight(game) >= CONFIG.barrierClearanceHeight - EPSILON);
     if (cleared) continue;
     const label = obstacle.type === 'gap' ? 'Missed the gap' : 'Hit debris';
     takeHit(game, label);
@@ -236,11 +262,12 @@ function resolveCrossings(game) {
     if (checkpoint.passed || checkpoint.z > game.distance + EPSILON) continue;
     checkpoint.passed = true;
     game.timeLeft += CONFIG.checkpointBonus;
-    announce(game, `Checkpoint · +${CONFIG.checkpointBonus}s`, 'success');
+    announce(game, `Time pickup · +${CONFIG.checkpointBonus}s`, 'success');
   }
 }
 
 function checkRunEnd(game) {
+  if (game.timeLeft <= EPSILON) game.timeLeft = 0;
   // Reaching the exit on the final tick still counts as escaping.
   if (game.distance >= CONFIG.courseLength - EPSILON) {
     game.distance = CONFIG.courseLength;
@@ -264,28 +291,37 @@ export function updateGame(game, dt) {
   // ending, exit, or timer expiry. Large frames behave like small frames.
   while (remaining > EPSILON && game.phase === 'running') {
     refreshSpeed(game);
-    let step = Math.min(remaining, game.timeLeft, (CONFIG.courseLength - game.distance) / game.speed);
+    const acceleration = game.elapsed < CONFIG.accelerationDuration
+      ? (CONFIG.topSpeed - CONFIG.baseSpeed) / CONFIG.accelerationDuration * speedMultiplier(game) : 0;
+    // Solve d = vt + at²/2 using the stable positive root. Every step also
+    // ends at the ramp cap and effect endpoints, keeping v and a exact here.
+    const timeTo = (distance) => 2 * distance
+      / (game.speed + Math.sqrt(game.speed * game.speed + 2 * acceleration * distance));
+    let step = Math.min(remaining, game.timeLeft, timeTo(CONFIG.courseLength - game.distance));
+    if (game.elapsed < CONFIG.accelerationDuration) {
+      step = Math.min(step, CONFIG.accelerationDuration - game.elapsed);
+    }
     for (const timer of TIMERS) {
       if (game[timer] > EPSILON) step = Math.min(step, game[timer]);
     }
     for (const obstacle of game.obstacles) {
       if (!obstacle.resolved && obstacle.z > game.distance + EPSILON) {
-        step = Math.min(step, (obstacle.z - game.distance) / game.speed);
+        step = Math.min(step, timeTo(obstacle.z - game.distance));
       }
     }
     for (const event of game.debris) {
       if (game.debrisProgress[event.id].resolved) continue;
       if (event.impactAt > game.elapsed + EPSILON) step = Math.min(step, event.impactAt - game.elapsed);
-      if (event.z > game.distance + EPSILON) step = Math.min(step, (event.z - game.distance) / game.speed);
+      if (event.z > game.distance + EPSILON) step = Math.min(step, timeTo(event.z - game.distance));
     }
     for (const checkpoint of game.checkpoints) {
       if (!checkpoint.passed && checkpoint.z > game.distance + EPSILON) {
-        step = Math.min(step, (checkpoint.z - game.distance) / game.speed);
+        step = Math.min(step, timeTo(checkpoint.z - game.distance));
       }
     }
 
     game.elapsed += step;
-    game.distance += game.speed * step;
+    game.distance += game.speed * step + acceleration * step * step / 2;
     game.timeLeft = Math.max(0, game.timeLeft - step);
     for (const timer of TIMERS) {
       game[timer] = Math.max(0, game[timer] - step);

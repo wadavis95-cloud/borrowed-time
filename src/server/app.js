@@ -7,18 +7,25 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { createRoomManager } from './rooms.js';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
-const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml' };
+const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.glb': 'model/gltf-binary' };
 // This allowlist keeps server code, repository files, and secrets off HTTP.
 const publicFiles = new Set([
   '/index.html', '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js',
   '/src/renderer.js', '/src/network.js',
   '/src/avatars.js', '/src/hazards.js', '/src/graphics/avatars.js', '/src/graphics/tunnel.js',
+  '/src/demo.js', '/src/audio.js',
+  '/docs/character-preview.html',
+  '/assets/characters/courier.glb', '/assets/characters/engineer.glb',
+  '/assets/characters/guard.glb', '/assets/characters/runner.glb',
 ]);
 // These are the only dependency files exposed to the browser. The module imports
 // ./three.core.js, so both public URLs live beside one another.
 const vendorFiles = new Map([
   ['/vendor/three.module.js', 'node_modules/three/build/three.module.js'],
   ['/vendor/three.core.js', 'node_modules/three/build/three.core.js'],
+  ['/vendor/loaders/GLTFLoader.js', 'node_modules/three/examples/jsm/loaders/GLTFLoader.js'],
+  ['/vendor/utils/BufferGeometryUtils.js', 'node_modules/three/examples/jsm/utils/BufferGeometryUtils.js'],
+  ['/vendor/utils/SkeletonUtils.js', 'node_modules/three/examples/jsm/utils/SkeletonUtils.js'],
 ]);
 
 async function serveFile(request, response) {
@@ -47,7 +54,7 @@ async function serveFile(request, response) {
   try {
     const body = await readFile(resolve(root, vendorFiles.get(file) || '.' + file));
     response.writeHead(200, {
-      'Content-Type': `${types[extname(file)] || 'application/octet-stream'}; charset=utf-8`,
+      'Content-Type': `${types[extname(file)] || 'application/octet-stream'}${extname(file) === '.glb' ? '' : '; charset=utf-8'}`,
       'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
     });
     response.end(request.method === 'HEAD' ? undefined : body);

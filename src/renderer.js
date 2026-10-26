@@ -1,9 +1,9 @@
 // Visual state only: course rules and the shared hazard clock live in game.js.
 import * as THREE from 'three';
-import { CONFIG } from './game.js';
+import { CONFIG, getJumpHeight } from './game.js';
 import { getDebrisPhase } from './hazards.js';
 import { createAvatar } from './graphics/avatars.js';
-import { createTunnel, radialTexture, DISTANCE_SCALE, LANE_WIDTH } from './graphics/tunnel.js';
+import { createTunnel, radialTexture, masonrySurface, beveledBoxGeometry, DISTANCE_SCALE, LANE_WIDTH } from './graphics/tunnel.js';
 
 const clamp = THREE.MathUtils.clamp;
 const VISIBLE_METRES = 255;
@@ -35,48 +35,49 @@ export function createRenderer(canvas) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.12;
+  renderer.toneMappingExposure = 1.04;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const scene = new THREE.Scene(); scene.background = new THREE.Color('#172c3e');
-  scene.fog = new THREE.Fog('#253b4c', 35, 210);
-  const camera = new THREE.PerspectiveCamera(58, 1, .1, 480);
-  camera.position.set(0, 3.15, 7.7);
-  const lookTarget = new THREE.Vector3(0, 2.05, -18);
-  const darkSky = new THREE.Color('#172c3e'), brightSky = new THREE.Color('#b6d1d8');
-  const darkFog = new THREE.Color('#253b4c'), brightFog = new THREE.Color('#dfd6ba');
-  const coolLight = new THREE.Color('#a7c1e1'), warmLight = new THREE.Color('#ffe0a4');
+  const scene = new THREE.Scene(); scene.background = new THREE.Color('#142b3c');
+  scene.fog = new THREE.Fog('#294657', 36, 158);
+  const camera = new THREE.PerspectiveCamera(57, 1, .1, 680);
+  camera.position.set(0, 3.45, 7.3);
+  const lookTarget = new THREE.Vector3(0, 1.95, -18);
+  const darkSky = new THREE.Color('#142b3c'), brightSky = new THREE.Color('#a8cbd9');
+  const darkFog = new THREE.Color('#294657'), brightFog = new THREE.Color('#e4d9bb');
+  const coolLight = new THREE.Color('#a9c9eb'), warmLight = new THREE.Color('#ffe0ac');
 
-  const ambient = new THREE.HemisphereLight('#9ebbdc', '#58594a', 1.7); scene.add(ambient);
-  const sun = new THREE.DirectionalLight('#f7e1ba', 2.1);
-  sun.position.set(-8, 12, 8); sun.target.position.set(0, 0, -8);
+  const ambient = new THREE.HemisphereLight('#a9c9e6', '#3e4e51', 1.36); scene.add(ambient);
+  const sun = new THREE.DirectionalLight('#bfd4e8', 2.05);
+  sun.position.set(-6, 11, 4); sun.target.position.set(0, 0, -8);
   sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
   sun.shadow.camera.left = -10; sun.shadow.camera.right = 10; sun.shadow.camera.top = 12; sun.shadow.camera.bottom = -12;
   sun.shadow.camera.near = .5; sun.shadow.camera.far = 50; sun.shadow.bias = -.0006; sun.shadow.normalBias = .035;
   scene.add(sun, sun.target);
   // A cool bounce keeps clothing and hazard silhouettes readable in the dark.
-  const bounce = new THREE.DirectionalLight('#9ec9e6', 1.3); bounce.position.set(3, 5, 7); scene.add(bounce);
-  const lampLeft = new THREE.PointLight('#ffbb70', 10, 13, 2), lampRight = new THREE.PointLight('#ffbb70', 10, 13, 2);
-  lampLeft.position.set(-3.8, 2.8, -3); lampRight.position.set(3.8, 2.8, -11); scene.add(lampLeft, lampRight);
+  const bounce = new THREE.DirectionalLight('#b1d8e8', .88); bounce.position.set(3, 5, 7); scene.add(bounce);
+  const lampLeft = new THREE.PointLight('#ffba76', 12, 12, 2), lampRight = new THREE.PointLight('#ffba76', 12, 12, 2);
+  lampLeft.position.set(-4.05, 2.55, -3); lampRight.position.set(4.05, 2.55, -11); scene.add(lampLeft, lampRight);
   const tunnel = createTunnel(scene, CONFIG.courseLength);
 
-  const stone = new THREE.MeshStandardMaterial({ color: '#92978d', roughness: .95, flatShading: true });
-  const brokenStone = new THREE.MeshStandardMaterial({ color: '#a5a090', roughness: .95, flatShading: true });
+  const hazardSurface = masonrySurface();
+  const stone = new THREE.MeshStandardMaterial({ color: '#b6b8a6', ...hazardSurface, bumpScale: .045, roughness: .9 });
+  const brokenStone = new THREE.MeshStandardMaterial({ color: '#a4b1ab', ...hazardSurface, bumpScale: .06, roughness: .96 });
   const darkIron = new THREE.MeshStandardMaterial({ color: '#39464b', roughness: .6, metalness: .35 });
   const stripe = new THREE.MeshStandardMaterial({ map: stripeTexture(), roughness: .86, emissive: '#51351b', emissiveIntensity: .15 });
   const mint = new THREE.MeshBasicMaterial({ color: '#a4e6cb', toneMapped: false });
   const gapDark = new THREE.MeshBasicMaterial({ color: '#02070c' });
   const glowMap = radialTexture();
   const shadowMaterial = new THREE.MeshBasicMaterial({ map: glowMap, color: '#07131c', transparent: true, opacity: .63, depthWrite: false });
-  const stoneGeometry = new THREE.DodecahedronGeometry(1, 0);
-  const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
+  const stoneGeometry = new THREE.IcosahedronGeometry(1, 1);
+  const boxGeometry = beveledBoxGeometry(.065);
   const ringGeometry = new THREE.RingGeometry(.88, 1.02, 40);
   const object = new THREE.Object3D();
   const localVisualState = {};
   const obstacleCache = new Map(), debrisCache = new Map(), ghosts = new Map();
-  let localAvatar = null, localAvatarKey = '', visualLane = 1, disposed = false, contextLost = false;
+  let localAvatar = null, localAvatarKey = '', visualLane = 1, boostFeel = 0, disposed = false, contextLost = false;
   const contactShadow = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), shadowMaterial);
   contactShadow.rotation.x = -Math.PI / 2; contactShadow.position.y = .025; scene.add(contactShadow);
 
@@ -103,12 +104,26 @@ export function createRenderer(canvas) {
       const sign = makeMesh(group, new THREE.PlaneGeometry(1.2, .32), new THREE.MeshBasicMaterial({ map: signTexture('LONG JUMP', '#ffe2a1', '#2a343c'), transparent: false }), 0, .025, -length * .5);
       sign.rotation.x = -Math.PI / 2;
     } else if (obstacle.type === 'barrier') {
-      // Tall blocks stay visibly taller than a hop; the jagged upper edge is stone.
-      const block = makeMesh(group, boxGeometry, stone, 0, .94, -.22, 1.95, 1.88, .7);
-      block.castShadow = block.receiveShadow = true;
-      const cap = makeMesh(group, boxGeometry, brokenStone, -.17, 1.94, -.22, 1.7, .19, .77); cap.rotation.z = .035; cap.castShadow = true;
-      makeMesh(group, boxGeometry, stripe, 0, 1.09, .145, 1.98, .32, .025);
-      makeMesh(group, boxGeometry, darkIron, -.56, 1.53, .16, .04, .72, .027).rotation.z = -.2;
+      // Broken masonry tops out below the shared 2.2m clearance plane.
+      // Separate rounded stones give the barrier a readable damaged silhouette.
+      for (let row = 0; row < 3; row++) {
+        const widths = row === 1 ? [1.18, .73] : [.63, .63, .63];
+        let left = -.98;
+        widths.forEach((width, column) => {
+          const block = makeMesh(group, boxGeometry, (row + column) % 3 ? stone : brokenStone,
+            left + width / 2, .34 + row * .62, -.22 + (column % 2) * .018,
+            width - .025, .6, .77);
+          block.rotation.z = ((row + column) % 3 - 1) * .012;
+          block.castShadow = block.receiveShadow = true; left += width;
+        });
+      }
+      const cap = makeMesh(group, boxGeometry, brokenStone, -.14, 1.96, -.22, 1.66, .22, .8);
+      cap.rotation.z = .035; cap.castShadow = true;
+      makeMesh(group, boxGeometry, stripe, 0, 1.01, .185, 1.98, .22, .035);
+      for (const x of [-.76, .76]) {
+        makeMesh(group, boxGeometry, darkIron, x, .99, .21, .065, .34, .035);
+        makeMesh(group, new THREE.SphereGeometry(.024, 6, 4), darkIron, x, .99, .245);
+      }
     } else {
       stones(group, 8, 1.2);
       makeMesh(group, boxGeometry, stripe, 0, .21, .44, 1.75, .19, .08);
@@ -152,20 +167,18 @@ export function createRenderer(canvas) {
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     // A portrait viewport widens the view enough to retain both outside lanes.
-    camera.fov = camera.aspect < .9 ? 69 : 58;
+    camera.fov = camera.aspect < .9 ? 66 : 57;
     camera.updateProjectionMatrix();
   }
   const resizeObserver = new ResizeObserver(resize); resizeObserver.observe(canvas); resize();
   function onContextLost(event) { event.preventDefault(); contextLost = true; }
   canvas.addEventListener('webglcontextlost', onContextLost);
 
-  function jumpHeight(state) {
-    if (!(state.jumpRemaining > 0 && state.jumpDuration > 0)) return 0;
-    const phase = clamp(1 - state.jumpRemaining / state.jumpDuration, 0, 1);
-    // Opponents expose jump motion, but never the private purchase/ability flag.
-    // Use duration so their visible arc matches the same jump on their screen.
-    return Math.sin(phase * Math.PI) * (state.jumpDuration > CONFIG.normalJumpDuration ? 1.6 : 1.05);
-  }
+  // The bounded trail pool is purely visual and never exposes opponent abilities.
+  const trailMaterial = new THREE.MeshBasicMaterial({ color: '#b2e7e2', transparent: true, opacity: .28,
+    blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+  const boostTrails = new THREE.InstancedMesh(boxGeometry, trailMaterial, 14);
+  boostTrails.frustumCulled = false; boostTrails.visible = false; scene.add(boostTrails);
 
   function draw(state, animationTime, dt = 1 / 60, opponents = []) {
     if (disposed) return;
@@ -174,16 +187,17 @@ export function createRenderer(canvas) {
     // Hazards, dust and actors freeze with solo pause. The online view provides
     // its interpolated authoritative race clock even after a runner finishes.
     const elapsed = state.raceElapsed ?? state.elapsed ?? 0;
-    const progression = THREE.MathUtils.smoothstep(distance, 80, CONFIG.courseLength);
-    const daylight = THREE.MathUtils.smoothstep(distance, CONFIG.courseLength - 145, CONFIG.courseLength);
-    scene.background.copy(darkSky).lerp(brightSky, progression * .55 + daylight * .45);
-    scene.fog.color.copy(darkFog).lerp(brightFog, progression * .55 + daylight * .45);
-    scene.fog.far = 210 + daylight * 110;
-    ambient.intensity = 1.45 + progression * .7;
-    sun.color.copy(coolLight).lerp(warmLight, progression);
-    sun.intensity = 1.55 + progression * 1.4;
-    lampLeft.intensity = lampRight.intensity = 10 * (1 - daylight * .75);
-    renderer.toneMappingExposure = 1.12 - daylight * .12;
+    const progression = THREE.MathUtils.smoothstep(distance, 180, CONFIG.courseLength);
+    const running = state.phase === 'running';
+    const daylight = THREE.MathUtils.smoothstep(distance, CONFIG.courseLength - 250, CONFIG.courseLength);
+    scene.background.copy(darkSky).lerp(brightSky, progression * .2 + daylight * .8);
+    scene.fog.color.copy(darkFog).lerp(brightFog, progression * .2 + daylight * .8);
+    scene.fog.far = 158 + daylight * 160;
+    ambient.intensity = 1.28 + progression * .14 + daylight * .5;
+    sun.color.copy(coolLight).lerp(warmLight, progression * .25 + daylight * .75);
+    sun.intensity = 1.92 + daylight * .9;
+    lampLeft.intensity = lampRight.intensity = 12 * (1 - daylight * .7);
+    renderer.toneMappingExposure = 1.04 - daylight * .09;
     tunnel.update(distance, elapsed, reducedMotion);
 
     const avatarKey = `${state.avatarId || 'courier'}:${state.playerColor || ''}`;
@@ -195,13 +209,18 @@ export function createRenderer(canvas) {
     visualLane += (state.lane - visualLane) * Math.min(1, dt * 18);
     Object.assign(localVisualState, state, { reducedMotion, visualLane });
     localAvatar.update(localVisualState, state.phase === 'paused' ? 0 : dt);
-    localAvatar.group.position.set((visualLane - 1) * LANE_WIDTH, jumpHeight(state), 0);
+    localAvatar.group.position.set((visualLane - 1) * LANE_WIDTH, getJumpHeight(state), 0);
     contactShadow.position.x = localAvatar.group.position.x;
     contactShadow.scale.setScalar(1 + localAvatar.group.position.y * .16);
-    shadowMaterial.opacity = .63 - localAvatar.group.position.y * .15;
+    shadowMaterial.opacity = Math.max(.16, .63 - localAvatar.group.position.y * .14);
 
-    for (const record of ghosts.values()) record.avatar.group.visible = false;
-    for (const opponent of opponents) {
+    const visibleOpponents = opponents.slice(0, 3);
+    const opponentKeys = new Set(visibleOpponents.map(opponent => opponent.id || `${opponent.avatarId}:${opponent.color}`));
+    for (const [key, record] of ghosts) {
+      if (!opponentKeys.has(key)) { scene.remove(record.avatar.group); record.avatar.dispose(); ghosts.delete(key); }
+      else record.avatar.group.visible = false;
+    }
+    for (const opponent of visibleOpponents) {
       const relative = opponent.distance - distance;
       if (opponent.connected === false || opponent.phase === 'disconnected' || !Number.isFinite(relative) || !Number.isFinite(opponent.lane) || relative < -18 || relative > VISIBLE_METRES) continue;
       const key = opponent.id || `${opponent.avatarId}:${opponent.color}`;
@@ -216,7 +235,7 @@ export function createRenderer(canvas) {
       record.lane += (opponent.lane - record.lane) * Math.min(1, dt * 18);
       Object.assign(record.visualState, opponent, { reducedMotion, visualLane: record.lane });
       record.avatar.group.visible = true; record.avatar.update(record.visualState, dt);
-      record.avatar.group.position.set((record.lane - 1) * LANE_WIDTH, jumpHeight(opponent), -relative * DISTANCE_SCALE);
+      record.avatar.group.position.set((record.lane - 1) * LANE_WIDTH, getJumpHeight(opponent), -relative * DISTANCE_SCALE);
     }
 
     for (const entry of obstacleCache.values()) entry.visible = false;
@@ -262,28 +281,74 @@ export function createRenderer(canvas) {
       entry.group.visible = relative > -10 && relative < VISIBLE_METRES;
       entry.group.position.z = -relative * DISTANCE_SCALE;
     }
-    // Follow only a fraction of lane movement; looking forward keeps all routes clear.
-    const shake = !reducedMotion && state.phase === 'running' ? (state.hitFlash || 0) * .06 : 0;
-    camera.position.x = localAvatar.group.position.x * .075 + Math.sin(elapsed * 65) * shake;
-    camera.position.y = 3.15 + Math.cos(elapsed * 49) * shake;
-    camera.position.z = camera.aspect < .9 ? 9.9 : 7.7;
-    lookTarget.x = localAvatar.group.position.x * .08;
+    // Small FOV/height responses communicate speed without sacrificing aim.
+    const activeDt = state.phase === 'paused' ? 0 : Math.min(Math.max(dt, 0), .1);
+    const boostTarget = !reducedMotion && running && state.boostRemaining > 0 ? 1 : 0;
+    boostFeel += (boostTarget - boostFeel) * (1 - Math.exp(-activeDt * 6));
+    boostTrails.visible = boostFeel > .015 && !reducedMotion;
+    if (boostTrails.visible) {
+      for (let i = 0; i < 14; i++) {
+        const t = ((elapsed * 1.5 + i / 14) % 1);
+        const side = i % 2 ? 1 : -1;
+        object.position.set(localAvatar.group.position.x + side * (.3 + (i % 3) * .13),
+          .12 + (i % 4) * .14 + localAvatar.group.position.y * .3, .4 + t * 2.4);
+        object.rotation.set(0, side * .035, 0); object.scale.set(.018, .018, .25 + .5 * t);
+        object.updateMatrix(); boostTrails.setMatrixAt(i, object.matrix);
+      }
+      boostTrails.instanceMatrix.needsUpdate = true; trailMaterial.opacity = boostFeel * .26;
+    }
+    const shake = !reducedMotion && running ? (state.hitFlash || 0) * .05 : 0;
+    const stride = !reducedMotion && running ? Math.sin(distance * 1.8) * .018 : 0;
+    camera.position.x = localAvatar.group.position.x * .065 + Math.sin(elapsed * 65) * shake;
+    camera.position.y = 3.45 + stride + Math.cos(elapsed * 49) * shake + getJumpHeight(state) * .11;
+    camera.position.z = (camera.aspect < .9 ? 9.3 : 7.3) + boostFeel * .18;
+    const targetFov = (camera.aspect < .9 ? 66 : 57) + boostFeel * 3.2;
+    if (Math.abs(camera.fov - targetFov) > .01) { camera.fov = targetFov; camera.updateProjectionMatrix(); }
+    lookTarget.x = localAvatar.group.position.x * .065;
+    lookTarget.y = 1.95 + getJumpHeight(state) * .06;
     camera.lookAt(lookTarget);
     renderer.render(scene, camera);
   }
 
+  const retainedGeometries = new Set([stoneGeometry, boxGeometry, ringGeometry]);
+  const retainedMaterials = new Set([stone, brokenStone, darkIron, stripe, mint, gapDark, shadowMaterial]);
+  function disposeDynamicGroup(group) {
+    scene.remove(group);
+    const geometries = new Set(), materials = new Set(), textures = new Set();
+    group.traverse(item => {
+      if (item.isInstancedMesh) item.dispose();
+      if (item.geometry && !retainedGeometries.has(item.geometry)) geometries.add(item.geometry);
+      if (item.material && !retainedMaterials.has(item.material)) materials.add(item.material);
+    });
+    for (const material of materials) {
+      for (const value of Object.values(material)) if (value?.isTexture && value !== glowMap) textures.add(value);
+      material.dispose();
+    }
+    for (const geometry of geometries) geometry.dispose();
+    for (const texture of textures) texture.dispose();
+    group.clear();
+  }
   function reset() {
-    visualLane = 1;
-    for (const entry of obstacleCache.values()) entry.visible = false;
-    for (const entry of debrisCache.values()) entry.group.visible = false;
+    visualLane = 1; boostFeel = 0; boostTrails.visible = false;
+    // Match-specific signs/effects are released between seeds, keeping rematches
+    // bounded even when obstacle IDs and lengths differ from the previous race.
+    for (const entry of obstacleCache.values()) disposeDynamicGroup(entry);
+    for (const entry of debrisCache.values()) disposeDynamicGroup(entry.group);
+    obstacleCache.clear(); debrisCache.clear();
     for (const entry of ghosts.values()) { scene.remove(entry.avatar.group); entry.avatar.dispose(); }
     ghosts.clear();
   }
   function dispose() {
     if (disposed) return;
     disposed = true; resizeObserver.disconnect(); canvas.removeEventListener('webglcontextlost', onContextLost);
+    // GLB geometry belongs to the reusable preload cache. Detach avatar clones
+    // before disposing scene-owned graphics; each clone disposes its own materials.
+    if (localAvatar) { scene.remove(localAvatar.group); localAvatar.dispose(); localAvatar = null; }
+    for (const record of ghosts.values()) { scene.remove(record.avatar.group); record.avatar.dispose(); }
+    ghosts.clear();
     const geometries = new Set(), materials = new Set(), textures = new Set();
     scene.traverse(item => {
+      if (item.isInstancedMesh) item.dispose();
       if (item.geometry) geometries.add(item.geometry);
       if (item.material) {
         const list = Array.isArray(item.material) ? item.material : [item.material];

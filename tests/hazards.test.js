@@ -8,7 +8,7 @@ function run(debris, course = []) {
   startGame(game);
   return game;
 }
-const chunk = { id: 'ceiling', lane: 1, z: 18, warnAt: 0, fallAt: 0.5, impactAt: 1 };
+const chunk = { id: 'ceiling', lane: 1, z: 22.1, warnAt: 0, fallAt: 0.5, impactAt: 1 };
 const near = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-7, `${actual} != ${expected}`);
 
 test('debris presentation changes phase exactly on the shared event boundaries', () => {
@@ -32,11 +32,11 @@ test('a runner can pass a warning before impact without being hit', () => {
   const game = run([{ ...chunk, z: 9, impactAt: 2 }]);
   updateGame(game, 3);
   assert.equal(game.hits, 0);
-  near(game.distance, 54);
+  near(game.distance, 66.9);
 });
 
 test('an impact covers a runner just past the landing point', () => {
-  const game = run([{ ...chunk, z: 17 }]);
+  const game = run([{ ...chunk, z: 21.1 }]);
   updateGame(game, 1);
   assert.equal(game.hits, 1);
 });
@@ -54,7 +54,7 @@ test('landed rubble can be hopped, while grounded runners receive the normal hit
 });
 
 test('an impact and its rubble charge at most once per runner and never alter the shared event', () => {
-  const events = [{ ...chunk, z: 19 }];
+  const events = [{ ...chunk, z: 23.1 }];
   const original = structuredClone(events);
   const game = run(events);
   updateGame(game, 1);
@@ -84,7 +84,7 @@ test('solo pause freezes impact time and purchases do not retime the debris sche
 });
 
 test('large updates and small updates resolve the same impacts and slowdowns', () => {
-  const events = [chunk, { ...chunk, id: 'later', z: 70, warnAt: 2, fallAt: 3, impactAt: 3.5 }];
+  const events = [chunk, { ...chunk, id: 'later', z: 68.4218, warnAt: 2, fallAt: 3, impactAt: 3.5 }];
   const whole = run(events), stepped = run(events);
   updateGame(whole, 8);
   for (let i = 0; i < 800; i += 1) updateGame(stepped, .01);
@@ -94,8 +94,8 @@ test('large updates and small updates resolve the same impacts and slowdowns', (
 });
 
 test('fatal masonry cannot be revived by a checkpoint at the same position', () => {
-  const game = run([{ ...chunk, z: 300, impactAt: 1 / 18 }]);
-  game.distance = 299;
+  const game = run([{ ...chunk, z: 450, impactAt: .1 }]);
+  game.distance = 447.799;
   game.timeLeft = 1;
   updateGame(game, 1);
   assert.equal(game.phase, 'lost');
@@ -120,4 +120,11 @@ test('normal courses contain deterministic sparse debris between regular encount
     }
   }
   assert.notDeepEqual(createGame({ seed: 1 }).debris, createGame({ seed: 2 }).debris);
+});
+
+test('the debris builder keeps its two-argument API and schedules arrivals after the speed ramp', () => {
+  const obstacles = [1200, 1400, 1480, 1560].map(z => ({ z, length: 2, lane: 0, type: 'barrier' }));
+  const [event] = hazards.createFallingDebris(42, obstacles);
+  near(event.z, 1441);
+  near(event.impactAt, 52.84375);
 });

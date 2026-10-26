@@ -69,7 +69,7 @@ test('only the host can start, with two players, and countdown starts both clock
   assert.equal(manager.snapshot('host').room.phase, 'racing');
   assert.equal(manager.snapshot('guest').you.game.phase, 'running');
   advance(1000);
-  assert.ok(Math.abs(manager.snapshot('host').you.game.distance - 18) < 1e-7);
+  assert.ok(Math.abs(manager.snapshot('host').you.game.distance - 22.1) < 1e-7);
   assert.equal(manager.snapshot('host').you.game.elapsed, manager.snapshot('guest').you.game.elapsed);
 });
 
@@ -146,7 +146,7 @@ test('winner uses earliest engine finish time even when another player is proces
   for (const player of room.players.values()) {
     player.game.obstacles = [];
     player.game.checkpoints = [];
-    player.game.distance = player.id === 'host' ? 899.8 : 899.9;
+    player.game.distance = player.id === 'host' ? 1349.8 : 1349.9;
     player.game.elapsed = 50;
   }
   advance(17);
@@ -160,7 +160,7 @@ test('the first finisher does not stop racers who are still running', () => {
   const { manager, advance, send, race } = setup();
   const code = race();
   const first = manager.rooms.get(code).players.get('host').game;
-  first.distance = 899.99;
+  first.distance = 1349.99;
   first.obstacles = [];
   first.checkpoints = [];
   advance(17);
@@ -341,7 +341,7 @@ networkTest('two real clients share a countdown but receive private state and co
   const game = app.rooms.rooms.get(created.room.code).players.get(joined.you.id).game;
   game.obstacles = [];
   game.checkpoints = [];
-  game.distance = 899.99;
+  game.distance = 1349.99;
   const finished = await guest.until((m) => m.type === 'snapshot' && m.room.phase === 'finished');
   assert.equal(finished.you.game.phase, 'won');
   assert.equal(finished.room.winnerId, joined.you.id);
@@ -405,7 +405,7 @@ networkTest('heartbeat removes a silent connection and shutdown closes active so
   assert.equal(app.rooms.rooms.size, 0);
 });
 
-test('the server balances two avatars across four players and ignores client character choices', () => {
+test('the server assigns four unique avatars across four players and ignores client character choices', () => {
   const { manager, connect, send } = setup({ random: () => 0 });
   connect('host');
   send('host', { type: 'create', name: 'Host', avatarId: 'engineer' });
@@ -415,7 +415,7 @@ test('the server balances two avatars across four players and ignores client cha
     assert.equal(send(id, { type: 'join', code, name: id, avatarId: 'invented' }).ok, true);
   }
   const snapshot = manager.snapshot('host');
-  assert.deepEqual(snapshot.players.map(player => player.avatarId), ['courier', 'engineer', 'courier', 'engineer']);
+  assert.deepEqual(snapshot.players.map(player => player.avatarId), ['courier', 'engineer', 'guard', 'runner']);
   assert.equal(new Set(snapshot.players.map(player => player.color)).size, 4);
   for (const player of snapshot.players) {
     assert.equal(manager.snapshot(player.id).you.game.avatarId, player.avatarId);
@@ -423,7 +423,7 @@ test('the server balances two avatars across four players and ignores client cha
   }
   const reversed = setup({ random: () => .99 });
   reversed.create();
-  assert.equal(reversed.manager.snapshot('host').you.game.avatarId, 'engineer');
+  assert.equal(reversed.manager.snapshot('host').you.game.avatarId, 'runner');
 });
 
 test('rematches preserve all four identities while resetting the course and debris state', () => {
@@ -431,7 +431,7 @@ test('rematches preserve all four identities while resetting the course and debr
   const code = create();
   for (const id of ['second', 'third', 'fourth']) join(code, id);
   const identities = manager.snapshot('host').players.map(({ id, avatarId, color }) => ({ id, avatarId, color }));
-  assert.ok(identities.every(player => ['courier', 'engineer'].includes(player.avatarId)));
+  assert.ok(identities.every(player => ['courier', 'engineer', 'guard', 'runner'].includes(player.avatarId)));
   send('host', { type: 'start' });
   advance(3000);
   const room = manager.rooms.get(code);
@@ -460,7 +460,7 @@ test('room race time tracks simulated time and continues after the viewing playe
   assert.equal(current.room.raceElapsed, current.you.game.elapsed);
   assert.equal(current.room.raceElapsed, manager.snapshot('guest').you.game.elapsed);
   const host = manager.rooms.get(code).players.get('host').game;
-  host.distance = 899.99;
+  host.distance = 1349.99;
   host.obstacles = [];
   host.debris = [];
   host.checkpoints = [];
@@ -494,7 +494,7 @@ test('active player clocks stay synchronized through different collisions and pu
   }
 });
 
-networkTest('four real clients race with two balanced avatars and preserve identities on rematch', async (t) => {
+networkTest('four real clients race with four distinct avatars and preserve identities on rematch', async (t) => {
   const app = createGameServer();
   t.after(() => app.close());
   const url = await listen(app);
@@ -509,8 +509,7 @@ networkTest('four real clients race with two balanced avatars and preserve ident
   }
   const lobby = await host.until(message => message.type === 'snapshot' && message.players.length === 4);
   assert.equal(new Set(lobby.players.map(player => player.color)).size, 4);
-  assert.equal(lobby.players.filter(player => player.avatarId === 'courier').length, 2);
-  assert.equal(lobby.players.filter(player => player.avatarId === 'engineer').length, 2);
+  assert.deepEqual(lobby.players.map(player => player.avatarId).sort(), ['courier', 'engineer', 'guard', 'runner']);
   const identities = lobby.players.map(({ id, avatarId, color }) => ({ id, avatarId, color }));
   host.send({ type: 'start' });
   const races = await Promise.all(clients.map(connection => connection.until(message => message.type === 'snapshot' && message.room.phase === 'racing')));

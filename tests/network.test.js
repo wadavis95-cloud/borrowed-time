@@ -107,3 +107,19 @@ test('the shared debris clock continues while a finished local runner watches op
   assert.equal(view.sample(1080).game.raceElapsed, 0);
   assert.notDeepEqual(view.sample(1080).game.debris, result.game.debris);
 });
+
+test('landing interpolates local and remote jump motion through the last snapshot interval', () => {
+  const view = createRaceView();
+  const first = snapshot(100), next = snapshot(101);
+  for (const state of [first.you.game, first.players[1]]) {
+    state.jumpRemaining = .04;
+    state.jumpDuration = 1.4;
+  }
+  for (const state of [next.you.game, next.players[1]]) state.jumpDuration = 1.4;
+  view.push(first, 1000);
+  view.push(next, 1050);
+  const result = view.sample(1075);
+  assert.equal(result.game.jumpRemaining, .02);
+  assert.equal(result.opponents[0].jumpRemaining, .02);
+  assert.equal(view.sample(5000).opponents[0].jumpRemaining, 0);
+});

@@ -75,9 +75,8 @@ export function createRoomManager({
   function addPlayer(room, id, name) {
     const usedColors = new Set([...room.players.values()].map((player) => player.color));
     const color = COLORS.find(candidate => !usedColors.has(candidate));
-    const counts = AVATAR_IDS.map(avatarId => [...room.players.values()].filter(player => player.avatarId === avatarId).length);
-    const leastUsed = Math.min(...counts);
-    const candidates = AVATAR_IDS.filter((_, index) => counts[index] === leastUsed);
+    const usedAvatars = new Set([...room.players.values()].map(player => player.avatarId));
+    const candidates = AVATAR_IDS.filter(avatarId => !usedAvatars.has(avatarId));
     const avatarId = candidates[Math.floor(random() * candidates.length)];
     room.players.set(id, {
       id, name, color, avatarId,
