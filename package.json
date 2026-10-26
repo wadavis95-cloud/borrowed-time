@@ -1,6 +1,6 @@
 {
   "name": "borrowed-time",
-  "version": "1.0.0",
+  "version": "2.0.0-preview.1",
   "private": true,
   "type": "module",
   "description": "A lane-switching escape racer where your countdown is also your currency.",
@@ -8,13 +8,14 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "test": "node --test",
-    "check": "node --check server.js && node --check src/main.js && node --check src/game.js && node --check src/renderer.js && node --check src/network.js && node --check src/server/app.js && node --check src/server/rooms.js",
-    "test:network": "RUN_NETWORK_TESTS=1 node --test tests/server.test.js"
+    "check": "node --check server.js && node --check src/main.js && node --check src/game.js && node --check src/renderer.js && node --check src/network.js && node --check src/avatars.js && node --check src/hazards.js && node --check src/graphics/avatars.js && node --check src/graphics/tunnel.js && node --check src/server/app.js && node --check src/server/rooms.js",
+    "test:network": "RUN_NETWORK_TESTS=1 node --test tests/server.test.js tests/assets.test.js"
   },
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
+    "three": "0.180.0",
     "ws": "8.22.0"
   }
 }

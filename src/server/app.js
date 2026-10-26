@@ -12,6 +12,13 @@ const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascrip
 const publicFiles = new Set([
   '/index.html', '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js',
   '/src/renderer.js', '/src/network.js',
+  '/src/avatars.js', '/src/hazards.js', '/src/graphics/avatars.js', '/src/graphics/tunnel.js',
+]);
+// These are the only dependency files exposed to the browser. The module imports
+// ./three.core.js, so both public URLs live beside one another.
+const vendorFiles = new Map([
+  ['/vendor/three.module.js', 'node_modules/three/build/three.module.js'],
+  ['/vendor/three.core.js', 'node_modules/three/build/three.core.js'],
 ]);
 
 async function serveFile(request, response) {
@@ -32,13 +39,13 @@ async function serveFile(request, response) {
     return;
   }
   const file = pathname === '/' ? '/index.html' : pathname;
-  if (!publicFiles.has(file)) {
+  if (!publicFiles.has(file) && !vendorFiles.has(file)) {
     response.writeHead(404, { 'Content-Type': 'text/plain' });
     response.end('Not found');
     return;
   }
   try {
-    const body = await readFile(resolve(root, '.' + file));
+    const body = await readFile(resolve(root, vendorFiles.get(file) || '.' + file));
     response.writeHead(200, {
       'Content-Type': `${types[extname(file)] || 'application/octet-stream'}; charset=utf-8`,
       'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',

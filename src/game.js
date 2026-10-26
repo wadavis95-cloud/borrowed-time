@@ -1,3 +1,6 @@
+import { createFallingDebris } from './hazards.js';
+import { AVATAR_IDS } from './avatars.js';
+
 // All distances are metres; all durations and prices are seconds.
 // Change these values to tune the game without touching the drawing code.
 export const CONFIG = Object.freeze({
@@ -15,6 +18,7 @@ export const CONFIG = Object.freeze({
   firstObstacle: 80,
   encounterSpacing: 48,
   encounterVariation: 14,
+  debrisImpactRadius: 2,
 });
 
 export const ABILITIES = Object.freeze({
@@ -61,10 +65,17 @@ function makeCourse(seed) {
   return obstacles;
 }
 
-export function createGame({ seed = 42, course } = {}) {
+export function createGame({
+  seed = 42, course, debris,
+  avatarId = AVATAR_IDS[Math.floor(Math.random() * AVATAR_IDS.length)],
+  playerColor = '#65ead3',
+} = {}) {
   const obstacles = course === undefined ? makeCourse(seed) : course;
+  const events = debris ?? (course === undefined ? createFallingDebris(seed, obstacles) : []);
   return {
     phase: 'ready',
+    avatarId,
+    playerColor,
     elapsed: 0,
     timeLeft: CONFIG.initialTime,
     distance: 0,
@@ -80,6 +91,8 @@ export function createGame({ seed = 42, course } = {}) {
     hits: 0,
     timeSpent: 0,
     finishTime: null,
+    debris: events.map(event => ({ ...event })),
+    debrisProgress: Object.fromEntries(events.map(event => [event.id, { impactChecked: false, resolved: false }])),
     // Copy fixtures so one run can never change another run's course.
     obstacles: obstacles.map((obstacle, index) => ({
       ...obstacle,
@@ -165,6 +178,45 @@ export function buyAbility(game, abilityName) {
   return { ok: true };
 }
 
+function takeHit(game, label = 'Hit debris') {
+  game.hits += 1;
+  game.timeLeft = Math.max(0, game.timeLeft - CONFIG.hitTimePenalty);
+  game.stunRemaining = CONFIG.stunDuration;
+  game.hitFlash = CONFIG.hitFlashDuration;
+  announce(game, `${label} · −${CONFIG.hitTimePenalty}s`, 'warning');
+}
+
+// Return true if a fatal hit must stop processing before checkpoint awards.
+function resolveDebris(game) {
+  for (const event of game.debris) {
+    const progress = game.debrisProgress[event.id];
+    if (progress.resolved) continue;
+    if (!progress.impactChecked && game.elapsed >= event.impactAt - EPSILON) {
+      progress.impactChecked = true;
+      // Falling masonry occupies the whole height of its landing footprint.
+      // A jump helps with rubble afterward, but cannot dodge this impact.
+      if (Math.abs(game.distance - event.z) <= CONFIG.debrisImpactRadius + EPSILON && game.lane === event.lane) {
+        progress.resolved = true;
+        takeHit(game, 'Falling masonry');
+        if (game.timeLeft <= EPSILON) return true;
+      }
+      // Anyone already past the landing point has no rubble left to cross.
+      if (game.distance >= event.z - EPSILON) progress.resolved = true;
+    }
+    if (progress.resolved) continue;
+    if (progress.impactChecked && game.distance >= event.z - EPSILON) {
+      progress.resolved = true;
+      if (game.lane === event.lane && game.jumpRemaining <= 0) {
+        takeHit(game);
+        if (game.timeLeft <= EPSILON) return true;
+      }
+    } else if (game.distance >= event.z + CONFIG.debrisImpactRadius + EPSILON) {
+      progress.resolved = true;
+    }
+  }
+  return false;
+}
+
 function resolveCrossings(game) {
   for (const obstacle of game.obstacles) {
     if (obstacle.resolved || obstacle.z > game.distance + EPSILON) continue;
@@ -174,15 +226,12 @@ function resolveCrossings(game) {
     const cleared = (obstacle.type === 'rubble' && airborne)
       || (obstacle.type === 'gap' && airborne && game.jumpKind === 'long');
     if (cleared) continue;
-    game.hits += 1;
-    game.timeLeft = Math.max(0, game.timeLeft - CONFIG.hitTimePenalty);
-    game.stunRemaining = CONFIG.stunDuration;
-    game.hitFlash = CONFIG.hitFlashDuration;
     const label = obstacle.type === 'gap' ? 'Missed the gap' : 'Hit debris';
-    announce(game, `${label} · −${CONFIG.hitTimePenalty}s`, 'warning');
+    takeHit(game, label);
     // A fatal hit ends the run before a checkpoint at the same position.
     if (game.timeLeft <= EPSILON) return;
   }
+  if (resolveDebris(game)) return;
   for (const checkpoint of game.checkpoints) {
     if (checkpoint.passed || checkpoint.z > game.distance + EPSILON) continue;
     checkpoint.passed = true;
@@ -223,6 +272,11 @@ export function updateGame(game, dt) {
       if (!obstacle.resolved && obstacle.z > game.distance + EPSILON) {
         step = Math.min(step, (obstacle.z - game.distance) / game.speed);
       }
+    }
+    for (const event of game.debris) {
+      if (game.debrisProgress[event.id].resolved) continue;
+      if (event.impactAt > game.elapsed + EPSILON) step = Math.min(step, event.impactAt - game.elapsed);
+      if (event.z > game.distance + EPSILON) step = Math.min(step, (event.z - game.distance) / game.speed);
     }
     for (const checkpoint of game.checkpoints) {
       if (!checkpoint.passed && checkpoint.z > game.distance + EPSILON) {

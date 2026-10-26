@@ -1,11 +1,14 @@
-// The coordinator: browser inputs, solo rules, multiplayer snapshots, Canvas, and HUD.
+// The coordinator: browser inputs, solo rules, multiplayer snapshots, 3D scene, and HUD.
 import { CONFIG, ABILITIES, createGame, startGame, pauseGame, resumeGame, moveLane, jump, buyAbility, updateGame } from './game.js';
 import { createRenderer } from './renderer.js';
 import { connectRace, createRaceView } from './network.js';
+import { AVATARS } from './avatars.js';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('game-canvas');
-const renderer = createRenderer(canvas);
+let renderer = null, graphicsError = '';
+const graphicsMessage = '3D graphics are unavailable. Try an up-to-date browser with graphics acceleration enabled, then reload.';
+try { renderer = createRenderer(canvas); } catch { graphicsError = graphicsMessage; }
 let game = createGame();
 let mode = 'solo';
 let connection = null, snapshot = null, raceView = createRaceView();
@@ -13,6 +16,8 @@ let networkStatus = '', connectionGeneration = 0, rosterKey = '';
 let lastOverlay = '', lastEvent = 0, toastUntil = 0;
 let lastFrame = performance.now(), accumulator = 0;
 const STEP = 1 / 60;
+const guestName = `Runner ${100 + Math.floor(Math.random() * 900)}`;
+$('player-name').placeholder = guestName;
 
 $('boost-button').querySelector('.cost').firstChild.textContent = `−${ABILITIES.boost.cost}`;
 $('long-jump-button').querySelector('.cost').firstChild.textContent = `−${ABILITIES.longJump.cost}`;
@@ -29,7 +34,7 @@ function showNetworkError(message = '') {
   $('network-error').hidden = !message;
 }
 function resetVisuals() {
-  renderer.reset();
+  renderer?.reset();
   lastEvent = 0;
   accumulator = 0;
   lastOverlay = '';
@@ -49,14 +54,15 @@ function returnToMenu() {
   updateHUD();
 }
 function beginRun() {
-  if (mode !== 'solo') return;
-  game = createGame({ seed: 42 });
+  if (mode !== 'solo' || graphicsError) return;
+  game = createGame({ seed: 42, avatarId: game.avatarId });
   startGame(game);
   resetVisuals();
   showNetworkError();
   updateHUD();
 }
 function joinRace(type) {
+  if (graphicsError) return;
   const code = $('join-code').value.trim().toUpperCase();
   if (type === 'join' && !/^[A-Z0-9]{6}$/.test(code)) {
     showNetworkError('Enter the six-character code from your friend’s room.');
@@ -73,7 +79,7 @@ function joinRace(type) {
   game = createGame();
   resetVisuals();
   showNetworkError();
-  const name = $('player-name').value.trim() || 'Runner';
+  const name = $('player-name').value.trim() || guestName;
   connection = connectRace({
     initialMessage: { type, code, name },
     onStatus(status) {
@@ -113,7 +119,7 @@ function updateRoom() {
       : snapshot.room.phase === 'finished' ? 'Race complete. Stay for a rematch or leave.'
       : 'Race in progress · Switching tabs does not pause your clock.';
   }
-  const key = JSON.stringify([snapshot?.players.map(p => [p.id, p.name, p.connected, p.color]), snapshot?.room.hostId]);
+  const key = JSON.stringify([snapshot?.players.map(p => [p.id, p.name, p.connected, p.color, p.avatarId]), snapshot?.room.hostId]);
   if (key !== rosterKey) {
     rosterKey = key;
     $('room-players').replaceChildren();
@@ -121,7 +127,7 @@ function updateRoom() {
       const li = document.createElement('li');
       const dot = document.createElement('i');
       dot.style.backgroundColor = player.color;
-      li.append(dot, document.createTextNode(`${player.name}${player.id === snapshot.you.id ? ' (you)' : ''}${player.id === snapshot.room.hostId ? ' · host' : ''}${player.connected ? '' : ' · left'}`));
+      li.append(dot, document.createTextNode(`${player.name}${player.id === snapshot.you.id ? ' (you)' : ''} · ${AVATARS[player.avatarId]?.name || 'Runner'}${player.id === snapshot.room.hostId ? ' · host' : ''}${player.connected ? '' : ' · left'}`));
       $('room-players').append(li);
     }
   }
@@ -135,6 +141,7 @@ function togglePause() {
   updateHUD();
 }
 function act(action) {
+  if (graphicsError) return;
   if (mode === 'online') {
     if (networkStatus === 'open' && snapshot?.room.phase === 'racing' && game.phase === 'running') connection.input(action);
     return;
@@ -157,6 +164,12 @@ function overlay(kicker, title, description, button, disabled = false, hint = ''
   $('overlay-hint').textContent = hint;
 }
 function updateOverlay() {
+  if (graphicsError) {
+    $('screen-overlay').hidden = false;
+    $('result-stats').hidden = true;
+    overlay('GRAPHICS UNAVAILABLE', 'Let’s get you running.', graphicsError, 'Reload game →');
+    return;
+  }
   const ended = game.phase === 'won' || game.phase === 'lost';
   $('result-stats').hidden = !ended;
   if (ended) {
@@ -179,7 +192,7 @@ function updateOverlay() {
     } else if (ended) {
       const winner = snapshot.players.find(player => player.id === room.winnerId);
       const title = room.phase !== 'finished' ? (game.phase === 'won' ? 'You made it out.' : 'Your clock ran out.')
-        : winner ? (winner.id === snapshot.you.id ? 'You won the race.' : `${winner.name} won the race.`) : 'The tower won this round.';
+        : winner ? (winner.id === snapshot.you.id ? 'You won the race.' : `${winner.name} won the race.`) : 'The tunnel won this round.';
       overlay(room.phase === 'finished' ? 'RACE COMPLETE' : 'WAITING FOR RUNNERS', title,
         room.phase === 'finished' ? 'Another route. Another chance to spend your seconds wisely.' : 'The remaining runners are still racing. Stay for the result and rematch.',
         room.phase !== 'finished' ? 'Race still in progress…' : host ? 'Set up rematch →' : 'Waiting for host…', room.phase !== 'finished' || !host, 'Your run stats are shown below.');
@@ -187,17 +200,21 @@ function updateOverlay() {
     return;
   }
   $('screen-overlay').hidden = game.phase === 'running';
-  if (game.phase === 'ready') overlay(`${CONFIG.initialTime} SECONDS. ONE WAY OUT.`, 'Buy an edge. Borrow a second.', 'Dodge debris and spend seconds on abilities to reach the exit. Create a room above to race friends.', 'Practice solo →', false, 'Move ← → · Hop SPACE · Abilities 1 / 2');
+  if (game.phase === 'ready') overlay(`${CONFIG.initialTime} SECONDS. ONE WAY OUT.`, 'Daylight is ahead.', 'Watch for falling stone. Dodge, jump, and spend seconds to escape. Create a room above to race friends.', 'Practice solo →', false, 'Move ← → · Hop SPACE · Abilities 1 / 2');
   else if (game.phase === 'paused') overlay('TAKE A BREATH', 'Time stands still.', 'Your solo run is paused. The clock and the building will wait.', 'Resume run →', false, 'Press P or ESC to resume');
   else if (ended) overlay(game.phase === 'won' ? 'ESCAPE COMPLETE' : 'THE CLOCK RAN OUT', game.phase === 'won' ? 'Seconds to spare.' : 'Out of borrowed time.', game.phase === 'won' ? 'You made it out. Try the same course again and see if you can escape faster.' : `You made it ${Math.floor(game.distance)} meters. Dodge the barriers, watch for gaps, and save enough time for the exit.`, 'Run it again →', false, 'Same route. A different strategy.');
 }
 function updateHUD() {
   const online = mode === 'online';
-  const running = game.phase === 'running' && (!online || networkStatus === 'open');
+  const running = !graphicsError && game.phase === 'running' && (!online || networkStatus === 'open');
   $('race-menu').hidden = online;
   $('room-panel').hidden = !online;
   $('restart-button').hidden = online;
   $('race-mode-label').textContent = online ? 'LIVE MULTIPLAYER' : 'SOLO PRACTICE';
+  $('avatar-label').textContent = AVATARS[game.avatarId]?.name || 'Runner';
+  $('location-label').textContent = game.distance < 300 ? 'DEEP TUNNEL' : game.distance < 660 ? 'BROKEN VAULTS' : 'DAYLIGHT AHEAD';
+  $('create-room').disabled = Boolean(graphicsError);
+  $('join-room').disabled = Boolean(graphicsError);
   $('time-value').textContent = Math.max(0, game.timeLeft).toFixed(1);
   $('time-fill').style.width = `${Math.min(100, game.timeLeft / CONFIG.initialTime * 100)}%`;
   $('time-value').closest('.clock-panel').classList.toggle('low', game.timeLeft < 15);
@@ -223,11 +240,12 @@ function updateHUD() {
     lastEvent = game.recentEvent.id;
     notify(game.recentEvent.text, game.recentEvent.kind);
   }
-  const key = [mode, networkStatus, game.phase, snapshot?.room.phase, snapshot?.room.countdown, snapshot?.room.hostId, snapshot?.room.winnerId, rosterKey].join(':');
+  const key = [graphicsError, mode, networkStatus, game.phase, snapshot?.room.phase, snapshot?.room.countdown, snapshot?.room.hostId, snapshot?.room.winnerId, rosterKey].join(':');
   if (key !== lastOverlay) { updateOverlay(); lastOverlay = key; }
 }
 
 $('start-button').addEventListener('click', () => {
+  if (graphicsError) { window.location.reload(); return; }
   if (mode === 'solo') game.phase === 'paused' ? togglePause() : beginRun();
   else if (!snapshot || networkStatus === 'disconnected') returnToMenu();
   else if (snapshot.room.phase === 'lobby') connection.send({ type:'start' });
@@ -280,13 +298,29 @@ $('close-guide').addEventListener('click', () => $('guide-dialog').close());
 function frame(now) {
   const dt = Math.min((now - lastFrame) / 1000, .1);
   lastFrame = now;
-  if (mode === 'solo' && game.phase === 'running') {
+  if (!graphicsError && mode === 'solo' && game.phase === 'running') {
     accumulator += dt;
     while (accumulator >= STEP) { updateGame(game, STEP); accumulator -= STEP; }
   } else accumulator = 0;
   updateHUD();
   const view = mode === 'online' && snapshot ? raceView.sample(now) : null;
-  renderer.draw(view?.game || game, now / 1000, dt, view?.opponents || []);
+  if (renderer && !graphicsError) {
+    try {
+      renderer.draw(view?.game || game, now / 1000, dt, view?.opponents || []);
+    } catch {
+      // A lost graphics context must not leave a connected player racing blind.
+      graphicsError = graphicsMessage;
+      connectionGeneration++;
+      connection?.close();
+      connection = null;
+      snapshot = null;
+      mode = 'solo';
+      pauseGame(game);
+      try { renderer.dispose?.(); } catch { /* Context may already be gone. */ }
+      renderer = null;
+      updateHUD();
+    }
+  }
   if (now > toastUntil) $('event-toast').classList.remove('visible');
   requestAnimationFrame(frame);
 }

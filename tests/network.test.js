@@ -60,3 +60,50 @@ test('a runner whose race ended disappears instead of freezing on the course', (
     assert.equal(view.sample(1051).opponents.length, 0);
   }
 });
+
+test('the view interpolates the race clock with positions and regenerates seeded debris', () => {
+  const view = createRaceView();
+  const first = snapshot(18), next = snapshot(36);
+  first.room.raceElapsed = 1;
+  first.you.game.elapsed = 1;
+  next.room.raceElapsed = 2;
+  next.you.game.elapsed = 2;
+  next.you.game.avatarId = 'engineer';
+  next.players[1].avatarId = 'courier';
+  next.players[1].color = '#ffc482';
+  view.push(first, 1000);
+  view.push(next, 1050);
+  const result = view.sample(1075);
+  assert.equal(result.game.raceElapsed, 1.5);
+  assert.equal(result.game.elapsed, 1.5);
+  assert.equal(result.game.distance, 27);
+  assert.ok(result.game.debris.length >= 3);
+  assert.equal(result.game.avatarId, 'engineer');
+  assert.equal(result.opponents[0].avatarId, 'courier');
+  assert.equal(result.opponents[0].color, '#ffc482');
+  assert.equal(next.you.game.elapsed, 2);
+  assert.equal(view.sample(5000).game.raceElapsed, 2, 'stale sockets cannot advance hazards');
+});
+
+test('the shared debris clock continues while a finished local runner watches opponents', () => {
+  const view = createRaceView();
+  const first = snapshot(900), next = snapshot(900);
+  for (const current of [first, next]) {
+    current.you.game.phase = 'won';
+    current.you.game.elapsed = 30;
+  }
+  first.room.raceElapsed = 31;
+  next.room.raceElapsed = 32;
+  view.push(first, 1000);
+  view.push(next, 1050);
+  const result = view.sample(1075);
+  assert.equal(result.game.elapsed, 30);
+  assert.equal(result.game.raceElapsed, 31.5);
+  const newRound = snapshot(0, 1, 'rematch');
+  newRound.room.seed = 100;
+  newRound.room.raceElapsed = 0;
+  newRound.you.game.elapsed = 0;
+  view.push(newRound, 1080);
+  assert.equal(view.sample(1080).game.raceElapsed, 0);
+  assert.notDeepEqual(view.sample(1080).game.debris, result.game.debris);
+});

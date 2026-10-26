@@ -104,7 +104,7 @@ test('public transforms cannot disclose another runner’s balance, purchases, o
   assert.equal(snapshot.you.game.timeLeft, 60);
   assert.equal(Object.hasOwn(snapshot.you.game, 'obstacles'), false);
   assert.deepEqual(Object.keys(snapshot.players[1]).sort(), [
-    'color', 'connected', 'distance', 'id', 'jumpDuration', 'jumpRemaining', 'lane', 'name', 'phase',
+    'avatarId', 'color', 'connected', 'distance', 'id', 'jumpDuration', 'jumpRemaining', 'lane', 'name', 'phase',
   ]);
   assert.equal(snapshot.players[1].jumpRemaining, 1.4);
   assert.equal(manager.snapshot('guest').you.game.timeLeft, 58);
@@ -331,7 +331,7 @@ networkTest('two real clients share a countdown but receive private state and co
   assert.equal(other.you.game.timeSpent, 0);
   assert.equal(Object.hasOwn(own.you.game, 'obstacles'), false);
   const ghost = other.players.find((p) => p.id === created.you.id);
-  assert.deepEqual(Object.keys(ghost).sort(), ['color', 'connected', 'distance', 'id', 'jumpDuration', 'jumpRemaining', 'lane', 'name', 'phase']);
+  assert.deepEqual(Object.keys(ghost).sort(), ['avatarId', 'color', 'connected', 'distance', 'id', 'jumpDuration', 'jumpRemaining', 'lane', 'name', 'phase']);
   host.socket.send('{bad json');
   assert.equal((await host.until((m) => m.type === 'error')).code, 'INVALID_JSON');
   host.socket.close();
@@ -403,4 +403,129 @@ networkTest('heartbeat removes a silent connection and shutdown closes active so
   await closed;
   assert.equal(app.server.listening, false);
   assert.equal(app.rooms.rooms.size, 0);
+});
+
+test('the server balances two avatars across four players and ignores client character choices', () => {
+  const { manager, connect, send } = setup({ random: () => 0 });
+  connect('host');
+  send('host', { type: 'create', name: 'Host', avatarId: 'engineer' });
+  const code = manager.snapshot('host').room.code;
+  for (const id of ['second', 'third', 'fourth']) {
+    connect(id);
+    assert.equal(send(id, { type: 'join', code, name: id, avatarId: 'invented' }).ok, true);
+  }
+  const snapshot = manager.snapshot('host');
+  assert.deepEqual(snapshot.players.map(player => player.avatarId), ['courier', 'engineer', 'courier', 'engineer']);
+  assert.equal(new Set(snapshot.players.map(player => player.color)).size, 4);
+  for (const player of snapshot.players) {
+    assert.equal(manager.snapshot(player.id).you.game.avatarId, player.avatarId);
+    assert.equal(manager.snapshot(player.id).you.game.playerColor, player.color);
+  }
+  const reversed = setup({ random: () => .99 });
+  reversed.create();
+  assert.equal(reversed.manager.snapshot('host').you.game.avatarId, 'engineer');
+});
+
+test('rematches preserve all four identities while resetting the course and debris state', () => {
+  const { manager, create, join, send, advance } = setup();
+  const code = create();
+  for (const id of ['second', 'third', 'fourth']) join(code, id);
+  const identities = manager.snapshot('host').players.map(({ id, avatarId, color }) => ({ id, avatarId, color }));
+  assert.ok(identities.every(player => ['courier', 'engineer'].includes(player.avatarId)));
+  send('host', { type: 'start' });
+  advance(3000);
+  const room = manager.rooms.get(code);
+  const oldEvents = structuredClone(room.players.get('host').game.debris);
+  for (const player of room.players.values()) player.game.timeLeft = .001;
+  advance(17);
+  send('host', { type: 'rematch' });
+  const next = manager.snapshot('host');
+  assert.deepEqual(next.players.map(({ id, avatarId, color }) => ({ id, avatarId, color })), identities);
+  assert.equal(next.room.raceElapsed, 0);
+  for (const player of room.players.values()) {
+    assert.equal(player.game.avatarId, identities.find(identity => identity.id === player.id).avatarId);
+    assert.notDeepEqual(player.game.debris, oldEvents);
+    assert.ok(Object.values(player.game.debrisProgress).every(progress => !progress.resolved && !progress.impactChecked));
+  }
+});
+
+test('room race time tracks simulated time and continues after the viewing player finishes', () => {
+  const { manager, race, send, advance } = setup();
+  const code = race();
+  const roundId = manager.snapshot('host').room.roundId;
+  send('guest', { type: 'input', action: 'boost', seq: 1, roundId });
+  advance(1000);
+  const current = manager.snapshot('host');
+  assert.ok(Math.abs(current.room.raceElapsed - 1) < 1e-7);
+  assert.equal(current.room.raceElapsed, current.you.game.elapsed);
+  assert.equal(current.room.raceElapsed, manager.snapshot('guest').you.game.elapsed);
+  const host = manager.rooms.get(code).players.get('host').game;
+  host.distance = 899.99;
+  host.obstacles = [];
+  host.debris = [];
+  host.checkpoints = [];
+  advance(17);
+  const finishedAt = manager.snapshot('host').you.game.elapsed;
+  advance(1000);
+  const after = manager.snapshot('host');
+  assert.equal(after.you.game.phase, 'won');
+  assert.equal(after.you.game.elapsed, finishedAt);
+  assert.ok(after.room.raceElapsed > finishedAt + .99);
+  assert.equal(after.room.raceElapsed, manager.snapshot('guest').you.game.elapsed);
+  assert.equal(Object.hasOwn(after.you.game, 'debris'), false);
+  assert.equal(Object.hasOwn(after.you.game, 'debrisProgress'), false);
+  advance(10000);
+  assert.ok(manager.snapshot('host').room.raceElapsed < 5, 'backlogged wall time is not presented as simulated time');
+});
+
+test('active player clocks stay synchronized through different collisions and purchases', () => {
+  const { manager, race, send, advance } = setup();
+  race();
+  const roundId = manager.snapshot('host').room.roundId;
+  send('host', { type: 'input', action: 'boost', seq: 1, roundId });
+  send('host', { type: 'input', action: 'left', seq: 2, roundId });
+  for (let seconds = 0; seconds < 15; seconds += 1) {
+    advance(1000);
+    const host = manager.snapshot('host'), guest = manager.snapshot('guest');
+    assert.equal(host.you.game.phase, 'running');
+    assert.equal(guest.you.game.phase, 'running');
+    assert.equal(host.you.game.elapsed, host.room.raceElapsed);
+    assert.equal(guest.you.game.elapsed, guest.room.raceElapsed);
+  }
+});
+
+networkTest('four real clients race with two balanced avatars and preserve identities on rematch', async (t) => {
+  const app = createGameServer();
+  t.after(() => app.close());
+  const url = await listen(app);
+  const clients = await Promise.all(Array.from({ length: 4 }, () => client(url)));
+  const [host] = clients;
+  host.send({ type: 'create', name: 'Host', avatarId: 'invented' });
+  const created = await host.until(message => message.type === 'snapshot');
+  for (const [index, guest] of clients.entries()) {
+    if (index === 0) continue;
+    guest.send({ type: 'join', name: `Runner ${index}`, code: created.room.code, avatarId: 'invented' });
+    await guest.until(message => message.type === 'snapshot');
+  }
+  const lobby = await host.until(message => message.type === 'snapshot' && message.players.length === 4);
+  assert.equal(new Set(lobby.players.map(player => player.color)).size, 4);
+  assert.equal(lobby.players.filter(player => player.avatarId === 'courier').length, 2);
+  assert.equal(lobby.players.filter(player => player.avatarId === 'engineer').length, 2);
+  const identities = lobby.players.map(({ id, avatarId, color }) => ({ id, avatarId, color }));
+  host.send({ type: 'start' });
+  const races = await Promise.all(clients.map(connection => connection.until(message => message.type === 'snapshot' && message.room.phase === 'racing')));
+  for (const snapshot of races) {
+    assert.equal(snapshot.you.game.avatarId, identities.find(player => player.id === snapshot.you.id).avatarId);
+    assert.equal(snapshot.you.game.elapsed, snapshot.room.raceElapsed);
+    assert.equal(Object.hasOwn(snapshot.you.game, 'debris'), false);
+  }
+  for (const player of app.rooms.rooms.get(created.room.code).players.values()) player.game.timeLeft = .001;
+  await host.until(message => message.type === 'snapshot' && message.room.phase === 'finished');
+  host.send({ type: 'rematch' });
+  const rematches = await Promise.all(clients.map(connection => connection.until(message => message.type === 'snapshot' && message.room.phase === 'lobby' && message.room.roundId !== created.room.roundId)));
+  for (const snapshot of rematches) {
+    assert.deepEqual(snapshot.players.map(({ id, avatarId, color }) => ({ id, avatarId, color })), identities);
+    assert.equal(snapshot.room.raceElapsed, 0);
+    assert.equal(snapshot.you.game.timeLeft, 60);
+  }
 });

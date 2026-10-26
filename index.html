@@ -4,23 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0c1417">
-  <meta name="description" content="Race out of a collapsing building. Spend your remaining seconds on speed boosts and long jumps.">
-  <title>Borrowed Time — Escape Run</title>
+  <meta name="description" content="Race through a crumbling tunnel toward daylight. Dodge falling stone and spend seconds on speed boosts and long jumps.">
+  <title>Borrowed Time — Into the Light</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
+  <script type="importmap">{"imports":{"three":"/vendor/three.module.js"}}</script>
 </head>
 <body>
   <div class="app">
     <header class="site-header">
       <a class="brand" href="/" aria-label="Borrowed Time home"><img src="/favicon.svg" alt="" width="34" height="34"><span>BORROWED<span class="brand-light">TIME</span></span></a>
-      <div class="header-actions"><span class="version"><i></i> MULTIPLAYER · V1.0</span><button id="guide-button" class="quiet-button">How it works <span aria-hidden="true">↗</span></button></div>
+      <div class="header-actions"><span class="version"><i></i> V2 · PLAYABLE PREVIEW</span><button id="guide-button" class="quiet-button">How it works <span aria-hidden="true">↗</span></button></div>
     </header>
 
     <main>
-      <div class="page-heading"><div><p class="eyebrow">THE ESCAPE RUN</p><h1>Time is all you have.</h1></div><p class="heading-note">Spend it wisely.<br>Make it out alive.</p></div>
+      <div class="page-heading"><div><p class="eyebrow">THE ESCAPE RUN</p><h1>Run toward the light.</h1></div><p class="heading-note">Every second is a choice.<br>Make it out together.</p></div>
       <section class="race-menu" id="race-menu" aria-label="Multiplayer setup">
         <div class="race-invite"><strong>Race your friends</strong><small>2–4 runners. One way out.</small></div>
-        <label>Your name<input id="player-name" maxlength="20" placeholder="Runner" autocomplete="nickname"></label>
+        <label>Name <span class="optional-label">optional</span><input id="player-name" maxlength="20" placeholder="Assigned automatically" autocomplete="nickname"></label>
         <button id="create-room" class="room-button">Create room</button>
         <span class="room-or">or</span>
         <label>Room code<input id="join-code" maxlength="6" placeholder="ABC123" autocapitalize="characters" autocomplete="off" spellcheck="false"></label>
@@ -34,16 +35,16 @@
       <p id="network-error" class="network-error" role="alert" hidden></p>
       <div class="game-layout">
         <section class="arena" aria-label="Escape race">
-          <canvas id="game-canvas" aria-label="Three-lane running course. Dodge concrete barriers, hop rubble, and use long jump to cross gaps.">This game needs a browser with Canvas support.</canvas>
-          <div class="arena-top"><span class="location"><i></i> TOWER 09 <b>/</b> SERVICE CORRIDOR</span><button id="pause-button" class="pause-button" aria-label="Pause game" disabled>Ⅱ</button></div>
+          <canvas id="game-canvas" aria-label="Three-lane tunnel race toward daylight. Dodge falling stone and barriers, hop rubble, and long jump across gaps.">This game needs a browser with WebGL 2 support.</canvas>
+          <div class="arena-top"><span class="location"><i></i> <span id="location-label">CLOCKTOWER LINE</span> <b>/</b> <span id="avatar-label">RUNNER</span></span><button id="pause-button" class="pause-button" aria-label="Pause game" disabled>Ⅱ</button></div>
           <div id="event-toast" class="event-toast" role="status" aria-live="polite"></div>
           <div class="arena-bottom"><span id="sector-label">SECTOR 01 / 03</span><span id="race-mode-label">SOLO PRACTICE</span></div>
 
           <div id="screen-overlay" class="screen-overlay">
             <div class="intro-card">
               <span id="overlay-kicker" class="eyebrow">60 SECONDS. ONE WAY OUT.</span>
-              <h2 id="overlay-title">Buy an edge.<br>Borrow a second.</h2>
-              <p id="overlay-description">The building is coming down. Dodge the debris and spend seconds on abilities to reach the exit.</p>
+              <h2 id="overlay-title">Daylight is ahead.</h2>
+              <p id="overlay-description">The tunnel is coming down. Watch for falling stone and spend your seconds wisely.</p>
               <div id="result-stats" class="result-stats" hidden></div>
               <button id="start-button" class="primary-button">Practice solo →</button>
               <p id="overlay-hint" class="overlay-hint">Move ← → &nbsp; · &nbsp; Jump SPACE &nbsp; · &nbsp; Abilities 1 / 2</p>
@@ -85,14 +86,14 @@
   <dialog id="guide-dialog">
     <div class="dialog-heading"><span class="eyebrow">UNDER THE HOOD</span><button id="close-guide" class="quiet-button" aria-label="Close guide">Close ×</button></div>
     <h2>A game loop you can understand.</h2>
-    <p>This game uses <strong>plain JavaScript, HTML, CSS, and Canvas 2D</strong>. Node.js serves the files and runs multiplayer races. The <code>ws</code> package keeps browsers connected to the server.</p>
+    <p>This game uses <strong>JavaScript, HTML, CSS, and Three.js for 3D graphics</strong>. Node.js serves the files and runs multiplayer races. The <code>ws</code> package keeps browsers connected to the server.</p>
     <ol class="code-tour">
       <li><span>01</span><div><strong>You press a button</strong><p><code>src/main.js</code> listens to the keyboard, touch controls, and ability buttons.</p></div></li>
       <li><span>02</span><div><strong>The server checks your action</strong><p>In multiplayer, <code>src/network.js</code> sends the button press. The server uses <code>src/game.js</code> to charge time, move you, and check obstacles. Solo practice runs these same rules in your browser.</p></div></li>
-      <li><span>03</span><div><strong>The world gets drawn</strong><p><code>src/renderer.js</code> turns the current game state into the corridor, runner, and obstacles using Canvas.</p></div></li>
+      <li><span>03</span><div><strong>The world gets drawn</strong><p><code>src/renderer.js</code> uses Three.js to draw the tunnel, animated runner, and debris. The environment grows lighter as you approach the exit.</p></div></li>
       <li><span>04</span><div><strong>Keep everyone in the same race</strong><p>The server sends updated positions 20 times per second. Your browser smooths the motion and draws other runners as transparent models. It receives your own stats, but no opponent timers or ability status.</p></div></li>
     </ol>
-    <div class="guide-note">Multiplayer races keep running when you switch tabs or open this guide. Rooms last only while the server is running. There are no accounts or saved leaderboards in V1.</div>
+    <div class="guide-note">Your avatar is assigned automatically and stays with you for rematches. Amber ground markers warn of falling stone: switch lanes before impact, then hop the rubble left behind. Multiplayer races keep running when you switch tabs or open this guide. Rooms last only while the server is running; there are no accounts or saved leaderboards.</div>
     <p class="guide-more">For setup, code examples, and the full project walkthrough, open <code>README.md</code> and <code>docs/PROJECT_GUIDE.md</code> in your editor.</p>
   </dialog>
   <script type="module" src="/src/main.js"></script>

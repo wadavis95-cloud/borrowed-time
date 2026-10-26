@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { buyAbility, createGame, jump, moveLane, startGame, updateGame } from '../game.js';
+import { AVATAR_IDS } from '../avatars.js';
 
 const STEP_MS = 1000 / 60;
 const COLORS = ['#65ead3', '#d4b3ff', '#ffc482', '#9ac9ff'];
@@ -16,6 +17,7 @@ export function createRoomManager({
   now = Date.now,
   makeId = randomUUID,
   makeSeed = () => randomBytes(4).readUInt32LE(),
+  random = Math.random,
   maxRooms = 25,
   idleTimeoutMs = 5 * 60 * 1000,
 } = {}) {
@@ -72,9 +74,14 @@ export function createRoomManager({
 
   function addPlayer(room, id, name) {
     const usedColors = new Set([...room.players.values()].map((player) => player.color));
+    const color = COLORS.find(candidate => !usedColors.has(candidate));
+    const counts = AVATAR_IDS.map(avatarId => [...room.players.values()].filter(player => player.avatarId === avatarId).length);
+    const leastUsed = Math.min(...counts);
+    const candidates = AVATAR_IDS.filter((_, index) => counts[index] === leastUsed);
+    const avatarId = candidates[Math.floor(random() * candidates.length)];
     room.players.set(id, {
-      id, name, color: COLORS.find((color) => !usedColors.has(color)),
-      connected: true, lastSeq: 0, game: createGame({ seed: room.seed }),
+      id, name, color, avatarId,
+      connected: true, lastSeq: 0, game: createGame({ seed: room.seed, avatarId, playerColor: color }),
     });
     connections.get(id).roomCode = room.code;
     room.lastActivity = now();
@@ -99,7 +106,7 @@ export function createRoomManager({
         do { code = makeCode(); } while (rooms.has(code));
         const created = {
           code, phase: 'lobby', hostId: id, roundId: makeId(), seed: makeSeed(),
-          winnerId: null, countdownEnd: null, lastStepAt: null,
+          winnerId: null, countdownEnd: null, lastStepAt: null, raceElapsed: 0,
           lastActivity: now(), players: new Map(),
         };
         rooms.set(code, created);
@@ -140,12 +147,13 @@ export function createRoomManager({
       room.winnerId = null;
       room.countdownEnd = null;
       room.lastStepAt = null;
+      room.raceElapsed = 0;
       room.lastActivity = now();
       for (const [playerId, player] of room.players) {
         if (!player.connected) {
           room.players.delete(playerId);
         } else {
-          player.game = createGame({ seed: room.seed });
+          player.game = createGame({ seed: room.seed, avatarId: player.avatarId, playerColor: player.color });
           player.lastSeq = 0;
         }
       }
@@ -200,7 +208,13 @@ export function createRoomManager({
       // Bound each timer callback's work; any backlog is picked up on the next tick.
       const steps = Math.min(120, Math.floor((time - room.lastStepAt + 1e-6) / STEP_MS));
       for (let step = 0; step < steps; step += 1) {
-        for (const player of room.players.values()) updateGame(player.game, 1 / 60);
+        room.raceElapsed += 1 / 60;
+        for (const player of room.players.values()) {
+          updateGame(player.game, 1 / 60);
+          // Different collisions split simulation steps differently. Keep the
+          // surviving racers on one clock despite floating point roundoff.
+          if (player.game.phase === 'running') player.game.elapsed = room.raceElapsed;
+        }
         room.lastStepAt += STEP_MS;
         finishRound(room);
         if (room.phase === 'finished') break;
@@ -213,18 +227,19 @@ export function createRoomManager({
     const room = rooms.get(connections.get(id)?.roomCode);
     if (!room) return null;
     const player = room.players.get(id);
-    const { obstacles, ...ownGame } = player.game;
+    const { obstacles, debris, debrisProgress, ...ownGame } = player.game;
     return {
       type: 'snapshot', serverTime: now(),
       room: {
         code: room.code, phase: room.phase, hostId: room.hostId,
         roundId: room.roundId, seed: room.seed, winnerId: room.winnerId,
+        raceElapsed: room.raceElapsed,
         countdown: room.phase === 'countdown' ? Math.max(0, Math.ceil((room.countdownEnd - now()) / 1000)) : 0,
       },
       you: { id, name: player.name, game: structuredClone(ownGame) },
       // Explicitly list public fields: never spread another player's game state.
       players: [...room.players.values()].map((other) => ({
-        id: other.id, name: other.name, color: other.color, connected: other.connected,
+        id: other.id, name: other.name, color: other.color, avatarId: other.avatarId, connected: other.connected,
         phase: other.game.phase, lane: other.game.lane, distance: other.game.distance,
         jumpRemaining: other.game.jumpRemaining, jumpDuration: other.game.jumpDuration,
       })),

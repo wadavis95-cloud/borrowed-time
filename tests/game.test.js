@@ -15,6 +15,16 @@ function closeTo(actual, expected) {
   assert.ok(Math.abs(actual - expected) < 0.00001, `${actual} should be close to ${expected}`);
 }
 
+test('games use an automatic valid avatar and retain explicit server identity', () => {
+  const game = createGame({ course: [] });
+  assert.ok(['courier', 'engineer'].includes(game.avatarId));
+  const assigned = createGame({ course: [], avatarId: 'engineer', playerColor: '#abcdef' });
+  startGame(assigned);
+  updateGame(assigned, 1);
+  assert.equal(assigned.avatarId, 'engineer');
+  assert.equal(assigned.playerColor, '#abcdef');
+});
+
 test('the clock and movement start together and freeze while paused', () => {
   const game = createGame({ course: [] });
   updateGame(game, 1);
@@ -192,6 +202,16 @@ test('a checkpoint cannot revive a runner whose collision consumed the remaining
   assert.equal(game.timeLeft, 0);
   assert.equal(game.distance, 300);
   assert.equal(game.checkpoints[0].passed, false);
+});
+
+test('reaching a checkpoint exactly as natural time expires still awards its bonus', () => {
+  const game = running();
+  game.distance = 282;
+  game.timeLeft = 1;
+  updateGame(game, 1);
+  assert.equal(game.phase, 'running');
+  assert.equal(game.timeLeft, 5);
+  assert.equal(game.checkpoints[0].passed, true);
 });
 
 test('invalid time deltas cannot corrupt the simulation', () => {

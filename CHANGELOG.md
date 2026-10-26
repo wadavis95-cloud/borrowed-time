@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.0.0-preview.1 — Escape into daylight
+
+The first playable V2 art pass, running locally or on a LAN. See [V2 design](docs/versions/V2_DESIGN.md) and [V2 release status](docs/versions/V2_RELEASE.md) for the agreed scope, verification record, and limitations. V1 remains preserved at tag `v1.0.0`.
+
+### Added
+
+- A genuine 3D Victorian railway tunnel with stone arches, rails, lamps, dust, and a daylight exit with a clock-tower skyline. Lighting changes with course distance.
+- Original articulated Courier and Engineer avatars, with distinct silhouettes, clothing, running and jumping animation, and translucent opponent variants.
+- Automatic avatar assignment and optional guest names. Four-player rooms remain supported, with repeated avatars distinguished by stable player colors; assignments survive rematches.
+- Seeded falling masonry: a warning, visible fall, impact, and leftover rubble, scheduled against the shared elapsed race clock.
+- Authoritative impact and rubble rules: impacts require moving out of the lane, landed rubble can be hopped, and one chunk cannot penalize the same player twice.
+- Separate hazard and avatar metadata modules, procedural graphics modules, and coverage for hazard timing, assignments, snapshot privacy, and allowed browser assets.
+
+### Changed
+
+- Three.js 0.180.0 renders the scene through WebGL 2. Its two required browser modules are served locally through an explicit file allowlist.
+- Plain JavaScript ES modules, Node.js, and `ws` remain the application stack, with no frontend framework or build step.
+- The presentation has a graphics-unavailable state, bounded rendering resolution, and reduced-motion handling.
+- The 60-second countdown, 900-meter course, ability prices, hit penalties, checkpoints, solo pause, and private room flow retain their existing rules.
+
+### Limitations
+
+The procedural models and environment are a playable starting point, not final concept-art fidelity. Physical mobile-device behavior and broad graphics performance have not been validated. There is no public deployment, authentication, reconnect, persistence, or character-selection menu. Actual verification outcomes belong in the V2 release record.
+
 ## 1.0.0 — Multiplayer foundation
 
 Release verification is tracked in [V1 release notes](docs/versions/V1_RELEASE.md). No public deployment is claimed.

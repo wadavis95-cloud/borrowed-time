@@ -67,11 +67,12 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
 // Draw 50ms behind receipt time so two actual snapshots can be blended smoothly.
 // No extrapolation: a broken connection must never invent another player's progress.
 export function createRaceView() {
-  let previous = null, latest = null, course = [];
+  let previous = null, latest = null, course = [], debris = [];
   const blend = (a, b, t) => a + (b - a) * t;
   function motion(before, after, t) {
     if (!before || before.phase !== after.phase) return { ...after };
     const result = { ...after, distance: blend(before.distance, after.distance, t), lane: blend(before.lane, after.lane, t) };
+    if (Number.isFinite(before.elapsed) && Number.isFinite(after.elapsed)) result.elapsed = blend(before.elapsed, after.elapsed, t);
     // A purchase starts a new jump arc; don't blend it with an unrelated old jump.
     if (after.jumpRemaining > 0 && before.jumpRemaining >= after.jumpRemaining && before.jumpDuration === after.jumpDuration) {
       result.jumpRemaining = blend(before.jumpRemaining, after.jumpRemaining, t);
@@ -81,7 +82,11 @@ export function createRaceView() {
   return {
     push(snapshot, receivedAt) {
       const newRound = !latest || latest.snapshot.room.roundId !== snapshot.room.roundId;
-      if (newRound) course = createGame({ seed: snapshot.room.seed }).obstacles;
+      if (newRound) {
+        const generated = createGame({ seed: snapshot.room.seed });
+        course = generated.obstacles;
+        debris = generated.debris;
+      }
       previous = newRound ? null : latest;
       latest = { snapshot, receivedAt };
     },
@@ -93,6 +98,10 @@ export function createRaceView() {
       const t = duration > 0 ? Math.max(0, Math.min(1, (now - 50 - previous.receivedAt) / duration)) : 1;
       const game = motion(before?.you.game, after.you.game, t);
       game.obstacles = course;
+      game.debris = debris;
+      // Room time continues for spectators after their own run has ended.
+      // Like motion, hazards stop at the newest real snapshot during a stall.
+      game.raceElapsed = before ? blend(before.room.raceElapsed, after.room.raceElapsed, t) : after.room.raceElapsed;
       const opponents = after.players.filter(player => player.id !== after.you.id && player.connected && !['won', 'lost'].includes(player.phase))
         .map(player => motion(before?.players.find(old => old.id === player.id), player, t));
       return { game, opponents };
