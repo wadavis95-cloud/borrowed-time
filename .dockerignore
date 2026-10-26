@@ -1,6 +1,7 @@
 node_modules
 .git
 .env*
-docs
+docs/*
+!docs/character-preview.html
 test-results
 coverage

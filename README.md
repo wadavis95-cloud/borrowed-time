@@ -1,8 +1,8 @@
-# Borrowed Time · V3.1 preview
+# Borrowed Time · V4 preview
 
 A browser escape runner for **solo practice or private races with 2–4 players**. Race through a crumbling Victorian railway tunnel, dodge falling masonry, and spend your remaining seconds on abilities. Real opponents appear as translucent 3D runners and cannot collide with you.
 
-Version **3.1.0-preview.1** refines the characters, materials, animation transitions, camera response and tunnel presentation. V3's accelerating course, timer, paid jumps, four-player rules and watch demo remain the gameplay baseline. It runs locally or on your LAN and has not been publicly deployed. See the [V3.1 release record](docs/versions/V3_1_RELEASE.md) for actual verification and remaining limitations. Public deployment and physical-phone testing are planned for V4.
+Version **4.0.0-preview.1** prepares public friend play and improves phone layouts while retaining V3.1's characters, graphics and game rules. See the [V4 release record](docs/versions/V4_RELEASE.md) for the public deployment status, verification and real-phone test steps. The game also runs locally or on your LAN.
 
 ## Run it
 
@@ -68,6 +68,7 @@ npm run test:network  # Real HTTP/WebSocket integration tests
 npm run check         # JavaScript syntax
 npm run dev           # Watch/restart the Node server
 npm run build:avatars # Regenerate the four original GLB character assets
+npm run check:deployment -- https://YOUR-SERVICE.onrender.com # Check your live service
 ```
 
 Socket tests are skipped in the ordinary test command. Save browser files and refresh the page to see edits. `npm run dev` does not reload the browser. Restarting Node discards all rooms.
@@ -78,6 +79,6 @@ The character pipeline uses original procedural Three.js geometry and animation 
 
 This is a more developed procedural art pass, with contoured skinned characters, varied tunnel surfaces and architecture, lighting, dust, impact feedback, and restrained boost/camera effects. The assets were generated in Node with Three.js; they were not sculpted or authored in Blender. Final art polish, physical mobile-device validation, and broad performance testing remain work for later releases.
 
-The included `Dockerfile` packages the Node service and public assets. With Docker installed, use `docker build -t borrowed-time .` and `docker run --rm -p 4173:4173 borrowed-time`. The container listens on port 4173. Consult the release record for verification; this recipe is not a public deployment. Internet hosting requires persistent WebSocket support and HTTPS/WSS.
+The included `Dockerfile` packages the Node service and public assets. With Docker installed, use `docker build -t borrowed-time .` and `docker run --rm -p 4173:4173 borrowed-time`. The container defaults to port 4173 and honors the host's `PORT` environment variable. `render.yaml` configures one free Docker web service with `/health`; use one instance because rooms live in memory. Restarts or deploys end active rooms. An idle free service can take about a minute to wake.
 
-Read the [beginner project guide](docs/PROJECT_GUIDE.md), [V3.1 design](docs/versions/V3_1_DESIGN.md), [V3.1 release record](docs/versions/V3_1_RELEASE.md), and [changelog](CHANGELOG.md). The [V3 release](docs/versions/V3_RELEASE.md) is preserved at `v3.0.0-preview.1`, [V2](docs/versions/V2_RELEASE.md) at `v2.0.0-preview.1`, and [V1](docs/versions/V1_RELEASE.md) at `v1.0.0`.
+Read the [beginner project guide](docs/PROJECT_GUIDE.md), [V4 design](docs/versions/V4_DESIGN.md), [V4 release record](docs/versions/V4_RELEASE.md), and [changelog](CHANGELOG.md). [V3.1](docs/versions/V3_1_RELEASE.md), [V3](docs/versions/V3_RELEASE.md), [V2](docs/versions/V2_RELEASE.md) and [V1](docs/versions/V1_RELEASE.md) remain preserved in their release tags.

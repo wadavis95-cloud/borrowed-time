@@ -10,4 +10,4 @@ ENV HOST=0.0.0.0
 ENV PORT=4173
 EXPOSE 4173
 USER node
-CMD ["npm", "start"]
+CMD ["node", "server.js"]

@@ -1,6 +1,13 @@
 # Changelog
 
-## Unreleased — Independent demo strategies
+## 4.0.0-preview.1 — Public friend playtest preparation
+
+- Added a single-instance Render Free Docker configuration and a reusable public HTTP/WebSocket smoke check.
+- Fixed the Docker context to include the character preview and started Node directly so shutdown signals reach the server.
+- Added phone safe-area padding, larger input text, touch controls independent of narrow screen width, and a compact landscape course/HUD arrangement.
+- Documented physical-phone and friend playtesting. Actual deployment status is recorded in the [V4 release record](docs/versions/V4_RELEASE.md).
+
+### Included demo follow-up — independent strategies
 
 - Replaced the demo's nearly simultaneous boosts with four different purchase plans so runners can pull ahead, fall out of view and catch up through normal gameplay.
 - Preserved the authoritative race, ability prices, visibility limits, opening falling-debris encounter, rematches and cleanup. Only demo input choices change; human-player rules remain the same.

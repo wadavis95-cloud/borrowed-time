@@ -1,0 +1,13 @@
+# Rooms live in this process's memory. Keep one instance until rooms are shared.
+services:
+  - type: web
+    name: borrowed-time
+    runtime: docker
+    plan: free
+    region: virginia
+    numInstances: 1
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: HOST
+        value: 0.0.0.0

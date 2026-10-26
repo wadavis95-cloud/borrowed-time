@@ -1,8 +1,8 @@
-# Borrowed Time: understand the V3.1 preview end to end
+# Borrowed Time: understand the V4 preview end to end
 
-The game asks one question: **does buying an advantage save more time than it costs?** You run forward automatically, choose a lane, and spend countdown seconds on boosts or long jumps. Version **3.1.0-preview.1** refines the visuals and movement presentation. The V3 gameplay remains: solo practice, private multiplayer, an accelerating pace, a simple HUD, four animated characters, timed barrier clearance, and a four-client watch demo.
+The game asks one question: **does buying an advantage save more time than it costs?** You run forward automatically, choose a lane, and spend countdown seconds on boosts or long jumps. Version **4.0.0-preview.1** adds deployment preparation and phone layouts to V3.1's visuals and movement presentation. The gameplay remains: solo practice, private multiplayer, an accelerating pace, a simple HUD, four animated characters, timed barrier clearance, and a four-client watch demo.
 
-The railway tunnel grows brighter as you approach its exit. Falling masonry has gameplay rules, while the surrounding collapse is a visual setting rather than a structural physics simulation. The implementation runs locally or on a LAN; it has not been publicly deployed.
+The railway tunnel grows brighter as you approach its exit. Falling masonry has gameplay rules, while the surrounding collapse is a visual setting rather than a structural physics simulation. The implementation can run locally, on a LAN or as a single hosted service; the [V4 release record](versions/V4_RELEASE.md) records the actual deployment status.
 
 V3.1 develops the original procedural art with more deliberate character contours, garment details, material separation and smoother visual transitions. The assets are original code-generated work, not Blender-authored or artist-sculpted models. Public deployment and physical-device testing belong to V4. Consult the [V3.1 design](versions/V3_1_DESIGN.md) and [V3.1 release record](versions/V3_1_RELEASE.md) for scope and actual verification. [V3](versions/V3_RELEASE.md), [V2](versions/V2_RELEASE.md) and [V1](versions/V1_RELEASE.md) remain preserved in Git.
 
@@ -270,3 +270,25 @@ In `renderer.js`, `createPresentationMotion()` keeps the visual lane, camera fol
 The developer character study now offers quarter-speed playback, a boost toggle and **Freeze pose**, plus front/back/side views. Use it to inspect a sleeve, a foot contact or a transition; then check the same character at the actual running camera distance. The study compresses jump height to fit the models in view, so it is not a collision test. The game remains the place to verify obstacle clearance.
 
 Public hosting and tests on physical phones belong to V4. V3.1's browser checks and limitations are recorded in the release notes; browser resizing alone is not proof of mobile hardware performance.
+
+## V4: put the same game on the internet
+
+The game still has the same frontend and backend. Deployment moves the Node process from your computer to a hosted server, where your phone and friends can reach it through one address. Render provides the HTTPS endpoint; the browser automatically uses secure `wss:` for `/race` on that address.
+
+```mermaid
+flowchart LR
+  Phone[Your phone] -->|HTTPS: game and models| Host[Render HTTPS endpoint]
+  Friend[Friend's browser] -->|HTTPS: game and models| Host
+  Phone <-->|WSS: inputs and snapshots| Host
+  Friend <-->|WSS: inputs and snapshots| Host
+  Host <--> Node[One Node process]
+  Node --> Rooms[In-memory rooms and authoritative races]
+```
+
+`Dockerfile` is the packaging recipe: install the exact locked dependencies, copy the runtime files, then run `node server.js`. `.dockerignore` keeps unnecessary files out of the build context. `render.yaml` describes the host configuration, including one free instance and the `/health` check. The health route tells the host that the process is responding; it does not prove that a complete race works.
+
+That is why `scripts/check-deployment.mjs` goes further. It checks the public game assets, connects two real WebSocket clients, creates and joins a room, starts a race, purchases one player's boost, and checks movement and cleanup. Run it with `npm run check:deployment -- https://YOUR-SERVICE.onrender.com` after deploying your service.
+
+One process matters because each room is stored in that process's memory. Starting a second instance without shared room routing could send two friends to different room lists. Deploying or restarting clears the existing rooms. The free service may sleep while idle and need about a minute to wake; open it before gathering friends.
+
+The phone layout changes use CSS screen size and pointer capabilities. Short landscape screens put abilities beside the course; portrait screens reserve space below it. Safe-area padding avoids notches and home indicators. These changes do not lower graphics quality or change collision rules. Actual phone GPU speed, touch feel and battery behavior still need a physical device test using the [V4 playtest steps](versions/V4_RELEASE.md).

@@ -54,8 +54,9 @@ a {
 }
 
 .app {
+  --page-gutter:32px;
   max-width:1440px;
-  padding:0 32px;
+  padding:env(safe-area-inset-top) max(var(--page-gutter),env(safe-area-inset-right)) env(safe-area-inset-bottom) max(var(--page-gutter),env(safe-area-inset-left));
   margin:auto
 }
 
@@ -571,7 +572,8 @@ h2 {
   border:1px solid #60776a;
   background:linear-gradient(130deg,#2e4036,#25352f);
   border-radius:9px;
-  color:var(--text)
+  color:var(--text);
+  touch-action:manipulation
 }
 
 .ability-button.leap {
@@ -768,7 +770,7 @@ dialog p,.play-guide {
 
 @media(max-width:950px) {
   .app {
-    padding:0 22px
+    --page-gutter:22px
   }
   .race-menu {
     flex-wrap:wrap
@@ -793,7 +795,7 @@ dialog p,.play-guide {
 
 @media(max-width:760px) {
   .app {
-    padding:0 14px
+    --page-gutter:14px
   }
   .site-header {
     height:62px
@@ -831,7 +833,8 @@ dialog p,.play-guide {
     min-width:100px
   }
   .race-menu input,#join-code {
-    width:100%
+    width:100%;
+    font-size:16px
   }
   .room-button {
     min-width:104px
@@ -849,8 +852,9 @@ dialog p,.play-guide {
     font-size:17px
   }
   .arena {
-    height:clamp(340px,56dvh,550px);
-    scroll-margin-top:8px
+    /* Leave room for the clock, abilities and movement row after showCourse(). */
+    height:clamp(200px,min(56dvh,calc(100dvh - 250px - env(safe-area-inset-top) - env(safe-area-inset-bottom))),550px);
+    scroll-margin-top:calc(8px + env(safe-area-inset-top))
   }
   .arena-top {
     top:12px;
@@ -980,6 +984,155 @@ dialog p,.play-guide {
   }
   .cost {
     font-size:19px
+  }
+}
+
+/* Touch hardware is not necessarily narrow: landscape phones and tablets still
+   need movement controls, even when the desktop-width layout is in use. */
+@media(pointer:coarse) {
+  .touch-controls {
+    display:flex
+  }
+  .keyboard-hint,.ability-copy kbd {
+    display:none
+  }
+  .race-menu input {
+    font-size:16px
+  }
+  .pause-button {
+    width:44px;
+    height:44px
+  }
+}
+
+/* On short landscape screens, put abilities beside the course. The height
+   budget includes the movement row, scroll margin and device safe areas. */
+@media(min-width:560px) and (max-width:1100px) and (max-height:540px) {
+  .app {
+    --page-gutter:12px
+  }
+  .game-layout {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 218px;
+    align-items:stretch
+  }
+  .arena {
+    height:max(200px,calc(100dvh - 84px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+    scroll-margin-top:calc(8px + env(safe-area-inset-top))
+  }
+  .arena-top {
+    top:10px;
+    left:10px;
+    right:10px;
+    gap:6px
+  }
+  .location,.mode-label {
+    padding:7px;
+    font-size:7px;
+    letter-spacing:.05em
+  }
+  .event-toast {
+    top:60px;
+    padding:7px 10px;
+    font-size:10px
+  }
+  .dashboard {
+    grid-template-columns:1fr;
+    align-content:start;
+    gap:12px;
+    padding:12px;
+    border-top:0;
+    border-left:1px solid #2e4547
+  }
+  .clock-panel {
+    display:grid;
+    grid-template-columns:1fr auto;
+    align-items:center;
+    max-width:none;
+    padding:0
+  }
+  .panel-label {
+    flex-wrap:wrap;
+    gap:4px;
+    font-size:8px
+  }
+  .clock {
+    gap:5px;
+    margin:0
+  }
+  .clock #time-value {
+    font-size:32px
+  }
+  .time-track {
+    grid-column:1/-1;
+    margin-top:6px
+  }
+  .abilities-panel {
+    grid-template-columns:1fr;
+    gap:8px
+  }
+  .ability-button {
+    min-height:62px;
+    padding:9px;
+    gap:8px
+  }
+  .ability-copy strong {
+    font-size:11px
+  }
+  .ability-copy small {
+    font-size:9px
+  }
+  .ability-icon {
+    font-size:26px
+  }
+  .cost {
+    font-size:20px
+  }
+  .purchase-note {
+    font-size:9px
+  }
+  .touch-controls {
+    display:flex;
+    gap:8px;
+    margin-top:8px
+  }
+  .touch-controls button {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:48px;
+    padding:7px
+  }
+  .touch-controls span {
+    margin:0
+  }
+  .keyboard-hint,.ability-copy kbd {
+    display:none
+  }
+  .game-footer {
+    justify-content:flex-end;
+    padding:2px 0 8px
+  }
+  .screen-overlay {
+    padding:16px
+  }
+  .intro-card h2 {
+    font-size:26px;
+    margin:8px 0 10px
+  }
+  .intro-card>p {
+    font-size:11px;
+    line-height:1.4;
+    margin-bottom:12px
+  }
+  .primary-button {
+    padding:11px 18px;
+    min-width:180px
+  }
+  .intro-card .overlay-hint {
+    margin-top:10px;
+    font-size:9px
   }
 }
 
