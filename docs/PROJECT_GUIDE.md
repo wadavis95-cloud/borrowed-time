@@ -1,10 +1,10 @@
-# Borrowed Time: understand the V3 preview end to end
+# Borrowed Time: understand the V3.1 preview end to end
 
-The game asks one question: **does buying an advantage save more time than it costs?** You run forward automatically, choose a lane, and spend countdown seconds on boosts or long jumps. Version **3.0.0-preview.1** keeps solo practice and private multiplayer, and adds an accelerating pace, a simpler HUD, four animated characters, timed barrier clearance, and a four-client watch demo.
+The game asks one question: **does buying an advantage save more time than it costs?** You run forward automatically, choose a lane, and spend countdown seconds on boosts or long jumps. Version **3.1.0-preview.1** refines the visuals and movement presentation. The V3 gameplay remains: solo practice, private multiplayer, an accelerating pace, a simple HUD, four animated characters, timed barrier clearance, and a four-client watch demo.
 
 The railway tunnel grows brighter as you approach its exit. Falling masonry has gameplay rules, while the surrounding collapse is a visual setting rather than a structural physics simulation. The implementation runs locally or on a LAN; it has not been publicly deployed.
 
-V3 is a further procedural art pass with contoured skinned characters, reusable GLB files, improved animation, and varied tunnel surfaces and lighting. The assets are original code-generated work, not Blender-authored or artist-sculpted models. Physical mobile devices and broad graphics performance still need validation. Consult the [V3 design](versions/V3_DESIGN.md) and [V3 release record](versions/V3_RELEASE.md) for scope and actual verification. [V2](versions/V2_RELEASE.md) is preserved at `v2.0.0-preview.1`, and [V1](versions/V1_RELEASE.md) at `v1.0.0`.
+V3.1 develops the original procedural art with more deliberate character contours, garment details, material separation and smoother visual transitions. The assets are original code-generated work, not Blender-authored or artist-sculpted models. Public deployment and physical-device testing belong to V4. Consult the [V3.1 design](versions/V3_1_DESIGN.md) and [V3.1 release record](versions/V3_1_RELEASE.md) for scope and actual verification. [V3](versions/V3_RELEASE.md), [V2](versions/V2_RELEASE.md) and [V1](versions/V1_RELEASE.md) remain preserved in Git.
 
 ## Start in your editor
 
@@ -245,3 +245,28 @@ Adjust the wording to your own contribution and demonstrated verification. Only 
 `main.js` creates `createGameAudio()` once and passes it the local rendered state each frame. `audio.js` compares that state with the previous frame: a new jump, boost, hit, landing, or finish triggers a short sound. Distance between footfalls controls the running rhythm, so faster running sounds faster too. These are presentation cues; sound never changes game rules or sends multiplayer messages.
 
 The sound button is the only place that creates or resumes an `AudioContext`, because browsers require a user gesture for playback. Sound starts muted. Resetting a run or returning from a hidden tab establishes a silent baseline so old events do not replay. Each sound node stops and disconnects, with a maximum of 24 simultaneous voices.
+
+## V3.1: improve presentation without changing the rules
+
+A character model is the shape; its materials describe how the surfaces respond to light. A skeleton gives that shape joints. An animation clip describes a sequence of joint poses. V3.1 refines these ingredients while keeping V3's game-state calculations intact.
+
+```mermaid
+flowchart LR
+  Author[Original asset authoring script] --> Files[Four GLB files]
+  Files --> Loader[graphics/avatars.js: load and clone]
+  Rules[V3 game state] --> Pose[Animation weights and visual response]
+  Loader --> Pose
+  Pose --> Scene[renderer.js: position, camera and lighting]
+  Tunnel[graphics/tunnel.js: scenery and surfaces] --> Scene
+  Scene --> Screen[Browser canvas]
+```
+
+The direction is one way: presentation reads game state. A lean, coat movement or camera effect does not spend time, move a collision boundary or decide a race result. The renderer still uses `getJumpHeight()` from the shared rules for the character's height above obstacles.
+
+Smoothing has to use time, not the number of frames. A screen drawing 120 frames per second should approach a target pose at the same rate as a screen drawing 30. Short transitions make a boost feel like the runner leans into it; a landing can compress the body briefly before returning to the run pose. Pausing freezes these effects and replay resets them.
+
+In `renderer.js`, `createPresentationMotion()` keeps the visual lane, camera follow, boost response and up to three opponent tracks. Its `update()` reads the latest state and the time since the previous frame; `reset()` clears that visual history. In `graphics/avatars.js`, each avatar samples the exported clips, blends reactions and exposes its own `reset()` to restore the skeleton. The renderer calls both reset paths when starting another run so the previous race's lean or pose cannot carry over.
+
+The developer character study now offers quarter-speed playback, a boost toggle and **Freeze pose**, plus front/back/side views. Use it to inspect a sleeve, a foot contact or a transition; then check the same character at the actual running camera distance. The study compresses jump height to fit the models in view, so it is not a collision test. The game remains the place to verify obstacle clearance.
+
+Public hosting and tests on physical phones belong to V4. V3.1's browser checks and limitations are recorded in the release notes; browser resizing alone is not proof of mobile hardware performance.

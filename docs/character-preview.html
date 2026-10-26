@@ -11,10 +11,12 @@
 </head>
 <body>
   <header>
-    <div><div class="eyebrow">Borrowed Time / V3 development</div><h1>Character study</h1><p>Original GLB assets · neutral lighting · equal gameplay rules</p></div>
+    <div><div class="eyebrow">Borrowed Time / V3.1 development</div><h1>Character & motion study</h1><p>Original GLB assets · neutral lighting · equal gameplay rules</p></div>
     <nav aria-label="Study controls">
       <button data-view="front" aria-pressed="true">Front</button><button data-view="back" aria-pressed="false">Back</button><button data-view="side" aria-pressed="false">Side</button><button data-view="threequarter" aria-pressed="false">¾ view</button>
       <span class="divider"></span><button data-motion="idle" aria-pressed="true">Idle</button><button data-motion="run" aria-pressed="false">Run</button><button data-motion="jump" aria-pressed="false">Jump</button>
+      <button id="boost-preview" aria-pressed="false">Boost</button><button id="freeze-preview" aria-pressed="false">Freeze pose</button>
+      <label>Speed <select id="playback-speed" aria-label="Animation playback speed"><option value="1">1×</option><option value="0.25">¼×</option></select></label>
     </nav>
   </header>
   <div class="viewport"><div class="study">
@@ -24,6 +26,7 @@
   <p class="status" id="status">Loading original character assets…</p>
   <script type="module">
     import * as THREE from 'three';
+    import { CONFIG, ABILITIES } from '/src/game.js';
     import { preloadAvatars, createAvatar } from '/src/graphics/avatars.js';
     const canvas = document.querySelector('canvas'), status = document.querySelector('#status');
     try {
@@ -40,19 +43,23 @@
       const rim = new THREE.DirectionalLight('#fff0cc', 2.5); rim.position.set(0, 4, 4); scene.add(rim);
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.MeshStandardMaterial({ color: '#c7d0c5', roughness: 1 })); floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; floor.position.y = -.012; scene.add(floor);
       const avatars = ['courier', 'engineer', 'guard', 'runner'].map((id, i) => { const avatar = createAvatar(id); avatar.group.position.x = -(i - 1.5) * 1.1; scene.add(avatar.group); return avatar; });
-      let view = 'front', motion = 'idle', previous = performance.now(), elapsed = 0;
+      let view = 'front', motion = 'idle', previous = performance.now(), elapsed = 0, distance = 0, frozen = false, boosted = false;
       document.querySelectorAll('[data-view]').forEach(button => button.onclick = () => { view = button.dataset.view; document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', String(b === button))); });
-      document.querySelectorAll('[data-motion]').forEach(button => button.onclick = () => { motion = button.dataset.motion; elapsed = 0; document.querySelectorAll('[data-motion]').forEach(b => b.setAttribute('aria-pressed', String(b === button))); });
+      document.querySelectorAll('[data-motion]').forEach(button => button.onclick = () => { motion = button.dataset.motion; elapsed = 0; distance = 0; document.querySelectorAll('[data-motion]').forEach(b => b.setAttribute('aria-pressed', String(b === button))); });
+      document.querySelector('#freeze-preview').onclick = (event) => { frozen = !frozen; event.currentTarget.setAttribute('aria-pressed', String(frozen)); };
+      document.querySelector('#boost-preview').onclick = (event) => { boosted = !boosted; event.currentTarget.setAttribute('aria-pressed', String(boosted)); };
       const resize = () => { const width = canvas.clientWidth; renderer.setSize(width, width * 2.52 / 4.4, false); };
       new ResizeObserver(resize).observe(canvas); resize();
-      status.textContent = 'Developer art preview. Original procedural meshes and animation clips; no character selection or gameplay settings. Narrow screens can scroll the study horizontally.';
+      status.textContent = 'Developer art preview. Original procedural assets; no character selection or gameplay settings. Jump height is compressed to keep the models in view. Narrow screens can scroll horizontally.';
       function frame(now) {
-        const dt = Math.min((now - previous) / 1000, .05); previous = now; elapsed += dt;
+        const dt = Math.min((now - previous) / 1000, .05) * Number(document.querySelector('#playback-speed').value); previous = now;
+        if (document.hidden) { requestAnimationFrame(frame); return; }
+        if (!frozen) { elapsed += dt; distance += dt * CONFIG.baseSpeed * (boosted ? ABILITIES.boost.multiplier : 1); }
         const progress = (elapsed % 2) / 1.1, jumping = motion === 'jump' && progress < 1;
         avatars.forEach((avatar, i) => {
           avatar.group.rotation.y = ({front:0,back:Math.PI,side:Math.PI/2,threequarter:-Math.PI/5})[view];
           avatar.group.position.y = jumping ? Math.sin(progress * Math.PI) * .35 : 0;
-          avatar.update({ phase: motion === 'idle' ? 'ready' : 'running', lane: 1, distance: elapsed * 22 + (motion === 'run' ? i * 1.5 : 0), jumpRemaining: jumping ? 1.1 * (1-progress) : 0, jumpDuration: 1.1, jumpKind:'long' }, dt);
+          avatar.update({ phase: frozen ? 'paused' : motion === 'idle' ? 'ready' : 'running', lane: 1, distance: distance + (motion === 'run' ? i * 1.5 : 0), boostRemaining: boosted ? 1 : 0, jumpRemaining: jumping ? 1.1 * (1-progress) : 0, jumpDuration: 1.1, jumpKind:'long' }, frozen ? 0 : dt);
         });
         renderer.render(scene,camera); requestAnimationFrame(frame);
       }

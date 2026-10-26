@@ -1,5 +1,21 @@
 # Changelog
 
+## 3.1.0-preview.1 — Character and motion refinement
+
+V3.1 refines presentation while retaining V3's rules, difficulty, timer, abilities, hazards and multiplayer protocol. See the [V3.1 design](docs/versions/V3_1_DESIGN.md) and [release record](docs/versions/V3_1_RELEASE.md) for measurements, verification and limitations. V3 remains available at `v3.0.0-preview.1`.
+
+### Changed
+
+- Refined all four original character assets: tapered limbs, shaped hands and boots, more distinct faces and hair, layered clothing, and clearer cloth/leather/metal materials. Their 24-bone rigs and four animation clips retain the existing asset interface.
+- Smoothed visual boost transitions, lane and camera movement, landing reactions and finish poses; made pause and replay reset presentation state consistently. Opponent effects still reveal no private ability or timer information.
+- Refined tunnel stonework, rails, pipes, railway details and daylight around the clock-tower exit, while keeping the three lanes and falling-debris warnings clear.
+- Extended the developer character study with boost, quarter-speed playback and a frozen-pose view for reviewing animation.
+- Updated the beginner guide to explain the asset-to-screen pipeline and the separation between game rules and presentation.
+
+### Limitations
+
+These remain original procedural GLBs, not Blender-authored production character art. Browser visual checks and resource counts do not establish performance on phones. Public deployment and physical-phone validation remain V4 work.
+
 ## 3.0.0-preview.1 — A faster, cleaner escape
 
 V3 keeps solo practice and private 2–4-player races while updating the rules, presentation, character assets, and demo. See the [V3 design](docs/versions/V3_DESIGN.md) and [V3 release record](docs/versions/V3_RELEASE.md) for scope, actual verification, and limitations. V2 remains preserved at `v2.0.0-preview.1`.

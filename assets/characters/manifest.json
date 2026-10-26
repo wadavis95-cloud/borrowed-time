@@ -1,12 +1,15 @@
 {
   "generator": "node scripts/build-avatars.mjs",
   "original": true,
-  "version": 3,
+  "version": "3.1.0-preview.1",
+  "provenance": "Original code-authored geometry and animation; no external models, textures or Blender authoring",
+  "rigBones": 24,
   "avatars": {
     "courier": {
-      "bytes": 1327252,
-      "triangles": 44880,
-      "vertices": 26188,
+      "bytes": 954000,
+      "triangles": 30796,
+      "vertices": 18155,
+      "materialDraws": 6,
       "animations": [
         "idle",
         "run",
@@ -16,9 +19,10 @@
       "height": 1.91
     },
     "engineer": {
-      "bytes": 1191440,
-      "triangles": 40140,
-      "vertices": 23196,
+      "bytes": 963784,
+      "triangles": 31056,
+      "vertices": 18363,
+      "materialDraws": 8,
       "animations": [
         "idle",
         "run",
@@ -28,9 +32,10 @@
       "height": 1.99
     },
     "guard": {
-      "bytes": 1415548,
-      "triangles": 48000,
-      "vertices": 28121,
+      "bytes": 1082932,
+      "triangles": 34976,
+      "vertices": 21037,
+      "materialDraws": 6,
       "animations": [
         "idle",
         "run",
@@ -40,9 +45,10 @@
       "height": 2.12
     },
     "runner": {
-      "bytes": 985472,
-      "triangles": 32608,
-      "vertices": 18757,
+      "bytes": 832748,
+      "triangles": 26580,
+      "vertices": 15491,
+      "materialDraws": 6,
       "animations": [
         "idle",
         "run",

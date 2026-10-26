@@ -7,6 +7,55 @@ import { createTunnel, radialTexture, masonrySurface, beveledBoxGeometry, DISTAN
 
 const clamp = THREE.MathUtils.clamp;
 const VISIBLE_METRES = 255;
+const finite = (value, fallback = 0) => Number.isFinite(value) ? value : fallback;
+const opponentKey = (opponent) => opponent.id || `${opponent.avatarId}:${opponent.color}`;
+
+/** Pure presentation state shared by the actual renderer and regression tests.
+ * Actors keep the exact rules-owned height; only the camera follows a soft arc. */
+export function createPresentationMotion({ reducedMotion = false } = {}) {
+  const view = { lane: 1, laneVelocity: 0, cameraLane: 1, cameraJump: 0, jumpHeight: 0, boostFeel: 0, opponents: new Map() };
+  let previousJumpHeight = 0, initialized = false;
+  function update(state, dt = 0, opponents = []) {
+    const paused = state.phase === 'paused';
+    if (paused && initialized) return view;
+    const step = paused ? 0 : clamp(finite(dt), 0, .1);
+    const lane = clamp(finite(state.lane, 1), 0, 2);
+    if (paused) view.lane = view.cameraLane = lane;
+    const laneDecay = Math.exp(-step * 22);
+    view.lane = lane + (view.lane - lane) * laneDecay;
+    view.laneVelocity = (lane - view.lane) * 22;
+    view.cameraLane += (lane - view.cameraLane) * (1 - Math.exp(-step * 9));
+    view.jumpHeight = getJumpHeight(state);
+    if (reducedMotion) view.cameraJump = 0;
+    else if (step > 0) {
+      // Integrate a linearly changing height target over the whole frame instead
+      // of treating its end value as if it had existed since the frame began.
+      const decay = Math.exp(-step * 14);
+      const ramp = (view.jumpHeight - previousJumpHeight) / (step * 14);
+      view.cameraJump = view.jumpHeight + (view.cameraJump - previousJumpHeight) * decay - ramp * (1 - decay);
+    }
+    previousJumpHeight = view.jumpHeight;
+    const boost = !reducedMotion && state.phase === 'running' && state.boostRemaining > 0 ? 1 : 0;
+    view.boostFeel += (boost - view.boostFeel) * (1 - Math.exp(-step * 6));
+    const visibleOpponents = opponents.slice(0, 3);
+    const keys = new Set(visibleOpponents.map(opponentKey));
+    for (const key of view.opponents.keys()) if (!keys.has(key)) view.opponents.delete(key);
+    for (const opponent of visibleOpponents) {
+      const key = opponentKey(opponent), targetLane = clamp(finite(opponent.lane, 1), 0, 2);
+      const track = view.opponents.get(key) || { lane: targetLane, laneVelocity: 0 };
+      track.lane = targetLane + (track.lane - targetLane) * laneDecay;
+      track.laneVelocity = (targetLane - track.lane) * 22;
+      view.opponents.set(key, track);
+    }
+    initialized = true;
+    return view;
+  }
+  function reset() {
+    Object.assign(view, { lane: 1, laneVelocity: 0, cameraLane: 1, cameraJump: 0, jumpHeight: 0, boostFeel: 0 });
+    previousJumpHeight = 0; initialized = false; view.opponents.clear();
+  }
+  return { update, reset };
+}
 
 function signTexture(text, foreground, background, width = 256) {
   const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = 64;
@@ -77,7 +126,8 @@ export function createRenderer(canvas) {
   const object = new THREE.Object3D();
   const localVisualState = {};
   const obstacleCache = new Map(), debrisCache = new Map(), ghosts = new Map();
-  let localAvatar = null, localAvatarKey = '', visualLane = 1, boostFeel = 0, disposed = false, contextLost = false;
+  const motion = createPresentationMotion({ reducedMotion });
+  let localAvatar = null, localAvatarKey = '', disposed = false, contextLost = false, hasDrawn = false;
   const contactShadow = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), shadowMaterial);
   contactShadow.rotation.x = -Math.PI / 2; contactShadow.position.y = .025; scene.add(contactShadow);
 
@@ -183,6 +233,9 @@ export function createRenderer(canvas) {
   function draw(state, animationTime, dt = 1 / 60, opponents = []) {
     if (disposed) return;
     if (contextLost || renderer.getContext().isContextLost()) throw new Error('The browser lost the 3D graphics context. Reload the game to restore the tunnel.');
+    // Preserve the entire last frame on pause, including pending lane movement,
+    // camera hit response, rival animations and boost particles.
+    if (state.phase === 'paused' && hasDrawn) { renderer.render(scene, camera); return; }
     const distance = state.distance || 0;
     // Hazards, dust and actors freeze with solo pause. The online view provides
     // its interpolated authoritative race clock even after a runner finishes.
@@ -206,16 +259,17 @@ export function createRenderer(canvas) {
       localAvatar = createAvatar(state.avatarId || 'courier', { color: state.playerColor, ghost: false });
       localAvatarKey = avatarKey; scene.add(localAvatar.group);
     }
-    visualLane += (state.lane - visualLane) * Math.min(1, dt * 18);
-    Object.assign(localVisualState, state, { reducedMotion, visualLane });
+    const view = motion.update(state, dt, opponents);
+    const visualLane = view.lane, boostFeel = view.boostFeel;
+    Object.assign(localVisualState, state, { reducedMotion, visualLane, visualLaneVelocity: view.laneVelocity });
     localAvatar.update(localVisualState, state.phase === 'paused' ? 0 : dt);
-    localAvatar.group.position.set((visualLane - 1) * LANE_WIDTH, getJumpHeight(state), 0);
+    localAvatar.group.position.set((visualLane - 1) * LANE_WIDTH, view.jumpHeight, 0);
     contactShadow.position.x = localAvatar.group.position.x;
     contactShadow.scale.setScalar(1 + localAvatar.group.position.y * .16);
     shadowMaterial.opacity = Math.max(.16, .63 - localAvatar.group.position.y * .14);
 
     const visibleOpponents = opponents.slice(0, 3);
-    const opponentKeys = new Set(visibleOpponents.map(opponent => opponent.id || `${opponent.avatarId}:${opponent.color}`));
+    const opponentKeys = new Set(visibleOpponents.map(opponentKey));
     for (const [key, record] of ghosts) {
       if (!opponentKeys.has(key)) { scene.remove(record.avatar.group); record.avatar.dispose(); ghosts.delete(key); }
       else record.avatar.group.visible = false;
@@ -223,19 +277,21 @@ export function createRenderer(canvas) {
     for (const opponent of visibleOpponents) {
       const relative = opponent.distance - distance;
       if (opponent.connected === false || opponent.phase === 'disconnected' || !Number.isFinite(relative) || !Number.isFinite(opponent.lane) || relative < -18 || relative > VISIBLE_METRES) continue;
-      const key = opponent.id || `${opponent.avatarId}:${opponent.color}`;
+      const key = opponentKey(opponent);
       let record = ghosts.get(key);
       if (record && (record.id !== opponent.avatarId || record.color !== opponent.color)) {
         scene.remove(record.avatar.group); record.avatar.dispose(); ghosts.delete(key); record = null;
       }
       if (!record) {
-        record = { avatar: createAvatar(opponent.avatarId || 'engineer', { ghost: true, color: opponent.color }), id: opponent.avatarId, color: opponent.color, lane: opponent.lane, visualState: {} };
+        record = { avatar: createAvatar(opponent.avatarId || 'engineer', { ghost: true, color: opponent.color }), id: opponent.avatarId, color: opponent.color, visualState: {} };
         ghosts.set(key, record); scene.add(record.avatar.group);
       }
-      record.lane += (opponent.lane - record.lane) * Math.min(1, dt * 18);
-      Object.assign(record.visualState, opponent, { reducedMotion, visualLane: record.lane });
+      const track = view.opponents.get(key);
+      Object.assign(record.visualState, { phase: opponent.phase, distance: opponent.distance,
+        jumpRemaining: opponent.jumpRemaining, jumpDuration: opponent.jumpDuration,
+        reducedMotion, visualLane: track.lane, visualLaneVelocity: track.laneVelocity });
       record.avatar.group.visible = true; record.avatar.update(record.visualState, dt);
-      record.avatar.group.position.set((record.lane - 1) * LANE_WIDTH, getJumpHeight(opponent), -relative * DISTANCE_SCALE);
+      record.avatar.group.position.set((track.lane - 1) * LANE_WIDTH, getJumpHeight(opponent), -relative * DISTANCE_SCALE);
     }
 
     for (const entry of obstacleCache.values()) entry.visible = false;
@@ -282,9 +338,6 @@ export function createRenderer(canvas) {
       entry.group.position.z = -relative * DISTANCE_SCALE;
     }
     // Small FOV/height responses communicate speed without sacrificing aim.
-    const activeDt = state.phase === 'paused' ? 0 : Math.min(Math.max(dt, 0), .1);
-    const boostTarget = !reducedMotion && running && state.boostRemaining > 0 ? 1 : 0;
-    boostFeel += (boostTarget - boostFeel) * (1 - Math.exp(-activeDt * 6));
     boostTrails.visible = boostFeel > .015 && !reducedMotion;
     if (boostTrails.visible) {
       for (let i = 0; i < 14; i++) {
@@ -298,16 +351,17 @@ export function createRenderer(canvas) {
       boostTrails.instanceMatrix.needsUpdate = true; trailMaterial.opacity = boostFeel * .26;
     }
     const shake = !reducedMotion && running ? (state.hitFlash || 0) * .05 : 0;
-    const stride = !reducedMotion && running ? Math.sin(distance * 1.8) * .018 : 0;
-    camera.position.x = localAvatar.group.position.x * .065 + Math.sin(elapsed * 65) * shake;
-    camera.position.y = 3.45 + stride + Math.cos(elapsed * 49) * shake + getJumpHeight(state) * .11;
+    const stride = !reducedMotion && running ? Math.sin(distance * .058 / .72 * Math.PI * 4) * .012 : 0;
+    camera.position.x = (view.cameraLane - 1) * LANE_WIDTH * .065 + Math.sin(elapsed * 65) * shake;
+    camera.position.y = 3.45 + stride + Math.cos(elapsed * 49) * shake + view.cameraJump * .11;
     camera.position.z = (camera.aspect < .9 ? 9.3 : 7.3) + boostFeel * .18;
     const targetFov = (camera.aspect < .9 ? 66 : 57) + boostFeel * 3.2;
     if (Math.abs(camera.fov - targetFov) > .01) { camera.fov = targetFov; camera.updateProjectionMatrix(); }
-    lookTarget.x = localAvatar.group.position.x * .065;
-    lookTarget.y = 1.95 + getJumpHeight(state) * .06;
+    lookTarget.x = (view.cameraLane - 1) * LANE_WIDTH * .065;
+    lookTarget.y = 1.95 + view.cameraJump * .06;
     camera.lookAt(lookTarget);
     renderer.render(scene, camera);
+    hasDrawn = true;
   }
 
   const retainedGeometries = new Set([stoneGeometry, boxGeometry, ringGeometry]);
@@ -329,7 +383,12 @@ export function createRenderer(canvas) {
     group.clear();
   }
   function reset() {
-    visualLane = 1; boostFeel = 0; boostTrails.visible = false;
+    motion.reset(); hasDrawn = false; boostTrails.visible = false;
+    localAvatar?.reset(); localAvatar?.group.position.set(0, 0, 0);
+    contactShadow.position.x = 0; contactShadow.scale.setScalar(1); shadowMaterial.opacity = .63;
+    camera.position.set(0, 3.45, camera.aspect < .9 ? 9.3 : 7.3);
+    camera.fov = camera.aspect < .9 ? 66 : 57; camera.updateProjectionMatrix();
+    lookTarget.set(0, 1.95, -18); camera.lookAt(lookTarget);
     // Match-specific signs/effects are released between seeds, keeping rematches
     // bounded even when obstacle IDs and lengths differ from the previous race.
     for (const entry of obstacleCache.values()) disposeDynamicGroup(entry);

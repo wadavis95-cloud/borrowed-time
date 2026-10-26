@@ -117,15 +117,123 @@ test('procedural boost and reduced-motion offsets never accumulate on cached mix
       distance += dt * 32;
       avatar.update({ phase: 'running', distance, lane: 1, boostRemaining: 1 }, dt);
       const spineAngle = avatar.group.getObjectByName('spine').rotation.x;
-      assert.ok(spineAngle > -.24 && spineAngle < -.17, `bounded boost lean ${spineAngle} at dt=${dt}`);
+      assert.ok(spineAngle > -.24 && spineAngle < -.085, `bounded boost lean ${spineAngle} at dt=${dt}`);
     }
     avatar.update({ phase: 'running', distance, lane: 1 }, dt);
-    assert.ok(Math.abs(avatar.group.getObjectByName('spine').rotation.x + .09) < .005, 'boost release restores base pose');
+    assert.ok(avatar.group.getObjectByName('spine').rotation.x < -.16, 'boost release eases out instead of snapping upright');
+    for (let i = 0; i < 1 / dt; i++) avatar.update({ phase: 'running', distance, lane: 1 }, dt);
+    assert.ok(Math.abs(avatar.group.getObjectByName('spine').rotation.x + .09) < .005, 'boost release settles back to the base pose');
     const state = { phase: 'running', distance, lane: 1, reducedMotion: true };
     avatar.update(state, dt);
     const initial = avatar.group.getObjectByName('hair').quaternion.toArray();
     for (let i = 0; i < 80; i++) avatar.update(state, dt);
     assert.ok(avatar.group.getObjectByName('hair').quaternion.toArray().every((value, index) => Math.abs(value - initial[index]) < .000001), 'secondary motion does not decay repeatedly at fixed phase');
     avatar.dispose();
+  }
+});
+
+function bonePose(avatar) {
+  const pose = [];
+  avatar.group.traverse((object) => {
+    if (object.isBone) pose.push(...object.position.toArray(), ...object.quaternion.toArray());
+  });
+  return pose;
+}
+
+test('boost enters smoothly and the same elapsed time produces the same lean at 30, 60 and 120 Hz', async () => {
+  const library = createAvatarLibrary({ loadAsset: readAsset });
+  await library.preloadAvatars();
+  const samples = [];
+  for (const hz of [30, 60, 120]) {
+    const avatar = library.createAvatar('courier');
+    const state = { phase: 'running', lane: 1, distance: 20 };
+    for (let i = 0; i < hz; i++) avatar.update(state, 1 / hz);
+    const spine = avatar.group.getObjectByName('spine');
+    const base = spine.rotation.x;
+    avatar.update({ ...state, boostRemaining: 1 }, 1 / hz);
+    assert.ok(Math.abs(spine.rotation.x - base) < .045, `no one-frame boost snap at ${hz} Hz`);
+    for (let i = 1; i < hz / 5; i++) avatar.update({ ...state, boostRemaining: 1 }, 1 / hz);
+    samples.push(spine.rotation.x);
+    assert.ok(spine.rotation.x < base - .07, 'boost still has a visible forward lean');
+    avatar.dispose();
+  }
+  assert.ok(Math.max(...samples) - Math.min(...samples) < .00001, 'boost response depends on seconds, not frame count');
+});
+
+test('pause freezes every bone and reset clears boost, lane banking and landing recovery', async () => {
+  const library = createAvatarLibrary({ loadAsset: readAsset });
+  await library.preloadAvatars();
+  const avatar = library.createAvatar('courier');
+  const fresh = library.createAvatar('courier');
+  avatar.update({ phase: 'running', distance: 20, visualLane: 2, boostRemaining: 1, jumpRemaining: .01, jumpDuration: .8 }, .1);
+  avatar.update({ phase: 'running', distance: 21, visualLane: 1.7, boostRemaining: 1 }, .03);
+  const beforePause = bonePose(avatar);
+  for (let i = 0; i < 60; i++) avatar.update({ phase: 'paused', distance: 50, visualLane: 0, boostRemaining: 0 }, 1 / 60);
+  assert.deepEqual(bonePose(avatar), beforePause, 'paused frames cannot decay a landing or change a sampled pose');
+  assert.equal(typeof avatar.reset, 'function', 'avatars support a clean replay without replacing shared assets');
+  avatar.reset();
+  assert.deepEqual(bonePose(avatar), bonePose(fresh), 'reset exactly matches a fresh ready pose');
+  const next = { phase: 'running', distance: 1, visualLane: .9 };
+  avatar.update(next, 1 / 60); fresh.update(next, 1 / 60);
+  assert.deepEqual(bonePose(avatar), bonePose(fresh), 'no hidden previous-match motion resumes on the next frame');
+  avatar.dispose(); fresh.dispose();
+});
+
+test('ghost animation cannot reveal private boost or stun values', async () => {
+  const library = createAvatarLibrary({ loadAsset: readAsset });
+  await library.preloadAvatars();
+  const publicGhost = library.createAvatar('runner', { ghost: true });
+  const privateGhost = library.createAvatar('runner', { ghost: true });
+  for (let i = 0; i < 80; i++) {
+    const state = { phase: 'running', distance: i * .45, lane: 1 };
+    publicGhost.update(state, 1 / 60);
+    privateGhost.update({ ...state, boostRemaining: 2, stunRemaining: 1 }, 1 / 60);
+  }
+  assert.deepEqual(bonePose(privateGhost), bonePose(publicGhost));
+  publicGhost.dispose(); privateGhost.dispose();
+});
+
+test('landing recovery begins at actual contact time, independent of the final airborne frame', async () => {
+  const library = createAvatarLibrary({ loadAsset: readAsset });
+  await library.preloadAvatars();
+  const poses = [];
+  // Contact occurs at .81 seconds, between frame boundaries at every rate.
+  for (const hz of [30, 60, 120]) {
+    const avatar = library.createAvatar('courier');
+    for (let i = 0; i < hz; i++) avatar.update({ phase: 'running', distance: 0, lane: 1 }, 1 / hz);
+    for (let frame = 1; frame <= hz; frame++) {
+      const seconds = frame / hz;
+      avatar.update({ phase: 'running', distance: seconds * 24, lane: 1, jumpRemaining: Math.max(0, .81 - seconds), jumpDuration: .81 }, 1 / hz);
+    }
+    poses.push(bonePose(avatar));
+    avatar.dispose();
+  }
+  for (const pose of poses.slice(1)) assert.ok(pose.every((value, i) => Math.abs(value - poses[0][i]) < .00001), 'landing compression and recovery use the actual contact age');
+});
+
+test('finish reactions blend from the running pose and remain deterministic across frame rates', async () => {
+  const library = createAvatarLibrary({ loadAsset: readAsset });
+  await library.preloadAvatars();
+  for (const phase of ['won', 'lost']) {
+    const poses = [];
+    for (const hz of [30, 60, 120]) {
+      const avatar = library.createAvatar('courier');
+      for (let frame = 0; frame < hz; frame++) avatar.update({ phase: 'running', distance: 35, lane: 1 }, 1 / hz);
+      const bone = avatar.group.getObjectByName(phase === 'won' ? 'upperArmL' : 'head');
+      const before = bone.quaternion.clone();
+      avatar.update({ phase, distance: 35, lane: 1 }, 1 / hz);
+      assert.ok(before.angleTo(bone.quaternion) < (phase === 'won' ? .7 : .1), `${phase} does not snap on its first frame at ${hz} Hz`);
+      for (let frame = 1; frame < hz; frame++) avatar.update({ phase, distance: 35, lane: 1 }, 1 / hz);
+      assert.ok(phase === 'won' ? bone.rotation.x > 2.2 : bone.rotation.x < -.2, 'reaction reaches the readable finished pose');
+      poses.push(bonePose(avatar));
+      const frozen = bonePose(avatar);
+      avatar.update({ phase: 'paused', distance: 35, lane: 1 }, .1);
+      assert.deepEqual(bonePose(avatar), frozen, 'finish reaction also freezes during pause');
+      avatar.reset();
+      const fresh = library.createAvatar('courier');
+      assert.deepEqual(bonePose(avatar), bonePose(fresh), 'finish reaction is cleared on replay');
+      avatar.dispose(); fresh.dispose();
+    }
+    for (const pose of poses.slice(1)) assert.ok(pose.every((value, i) => Math.abs(value - poses[0][i]) < .00001), 'finish blend uses elapsed seconds');
   }
 });

@@ -1,6 +1,6 @@
 {
   "name": "borrowed-time",
-  "version": "3.0.0-preview.1",
+  "version": "3.1.0-preview.1",
   "private": true,
   "type": "module",
   "description": "A lane-switching escape racer where your countdown is also your currency.",

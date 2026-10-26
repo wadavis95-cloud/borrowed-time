@@ -1,8 +1,8 @@
-# Borrowed Time · V3 preview
+# Borrowed Time · V3.1 preview
 
 A browser escape runner for **solo practice or private races with 2–4 players**. Race through a crumbling Victorian railway tunnel, dodge falling masonry, and spend your remaining seconds on abilities. Real opponents appear as translucent 3D runners and cannot collide with you.
 
-Version **3.0.0-preview.1** adds a simpler HUD, accelerating movement, paid jumps over tall barriers, four distinct characters, and a one-click multiplayer demo. It runs locally or on your LAN and has not been publicly deployed. See the [V3 release record](docs/versions/V3_RELEASE.md) for actual verification and remaining limitations.
+Version **3.1.0-preview.1** refines the characters, materials, animation transitions, camera response and tunnel presentation. V3's accelerating course, timer, paid jumps, four-player rules and watch demo remain the gameplay baseline. It runs locally or on your LAN and has not been publicly deployed. See the [V3.1 release record](docs/versions/V3_1_RELEASE.md) for actual verification and remaining limitations. Public deployment and physical-phone testing are planned for V4.
 
 ## Run it
 
@@ -78,4 +78,4 @@ This is a more developed procedural art pass, with contoured skinned characters,
 
 The included `Dockerfile` packages the Node service and public assets. With Docker installed, use `docker build -t borrowed-time .` and `docker run --rm -p 4173:4173 borrowed-time`. The container listens on port 4173. Consult the release record for verification; this recipe is not a public deployment. Internet hosting requires persistent WebSocket support and HTTPS/WSS.
 
-Read the [beginner project guide](docs/PROJECT_GUIDE.md), [V3 design](docs/versions/V3_DESIGN.md), [V3 release record](docs/versions/V3_RELEASE.md), and [changelog](CHANGELOG.md). The [V2 release](docs/versions/V2_RELEASE.md) remains preserved at `v2.0.0-preview.1`; [V1](docs/versions/V1_RELEASE.md) is tagged `v1.0.0`.
+Read the [beginner project guide](docs/PROJECT_GUIDE.md), [V3.1 design](docs/versions/V3_1_DESIGN.md), [V3.1 release record](docs/versions/V3_1_RELEASE.md), and [changelog](CHANGELOG.md). The [V3 release](docs/versions/V3_RELEASE.md) is preserved at `v3.0.0-preview.1`, [V2](docs/versions/V2_RELEASE.md) at `v2.0.0-preview.1`, and [V1](docs/versions/V1_RELEASE.md) at `v1.0.0`.
