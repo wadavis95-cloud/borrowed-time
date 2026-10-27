@@ -4,7 +4,11 @@ Version: `6.0.0-preview.1`.
 
 Play: https://borrowed-time.onrender.com/
 
-Release prepared October 27, 2026. Public verification is recorded after deployment completes.
+**Status: live and verified.** Render reported the release live on October 27, 2026 at 11:19:43 AM EDT.
+
+Runtime revision: `4d53cc08ce75cf9d29bb3eeec7360865e8234e66`. Release tag: `v6.0.0-preview.1`.
+
+Deployment: https://dashboard.render.com/web/srv-dbfpmdss728c73cgrqu0/deploys/dep-dbgc0p49v7es73eb7cm0
 
 ## Included changes
 
@@ -37,3 +41,11 @@ Previous public revision: `6176c4a54cf4c05b338fdba66491f03ac0e0ec90`, preserved 
 2. Tap Play solo. Try swipes, the left/hop/right buttons and both colored abilities. Check portrait and landscape.
 3. To race friends, create a room and share the same URL plus its six-character code. Two to four players can race; the host starts.
 4. Keep the game open during an online race. Switching apps does not pause the server. A rematch creates a new shared course.
+
+## Public verification
+
+`npm run check:deployment -- https://borrowed-time.onrender.com` exited successfully after the release went live. Health, home page, all 25 public assets including `src/input.js`, and binary build headers passed. Two real HTTPS-origin WSS clients created and joined the same room, received a shared countdown, seed and roof schedule, and exercised movement, the six-second boost and four-second long jump. Standings were present, purchases remained private, and the temporary room was cleaned up.
+
+The public browser loaded the new models and UI and ran the four-player server demo with live standings and independent racers. No browser console errors or warnings were recorded. [Actual public race screenshot](../images/v6-public-multiplayer.png). Physical-phone testing remains the next user test.
+
+This verification record is a documentation-only follow-up using Render’s supported `[skip render]` commit marker to preserve the running instance: https://render.com/docs/deploys#skipping-an-auto-deploy. The runtime revision above remains the deployed build.
