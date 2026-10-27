@@ -1,6 +1,6 @@
 # Local mobile HUD and contextual ability hints
 
-Status: local only, branch `codex/v6-mobile-hud`. The public release remains runtime revision `4d53cc0` / tag `v6.0.0-preview.1`. No push or deployment is part of this update.
+**Status: deployed October 27, 2026.** Runtime revision: `298bd8d6a9d1188fcef062be7818e80dfecd388a`. Render reported it live at 3:47:55 PM EDT. The prior public runtime `4d53cc0` remains preserved at tag `v6.0.0-preview.1`.
 
 ## Reference games
 
@@ -33,3 +33,13 @@ Boost is red; long jump is blue. Both retain readable names, prices, keyboard ba
 Browser checks at 390×844 verified the live list is inside the arena, uses absolute positioning and `pointer-events: none`, and the boost button remains the hit target at its center. A two-player race displayed full DNF results inside the results panel. The opening contextual Boost hint appeared in a real solo run and disappeared immediately after a successful purchase. These are browser viewport checks; physical-phone testing of the revised local build remains pending.
 
 The four-player live HUD also remained inside the arena with pointer events disabled. At 844×390 landscape, neither ability button overlapped the leaderboard and the page had no horizontal overflow. The local deployment smoke passed with 26 assets, two WebSocket clients, both ability purchases, standings and cleanup. Captures: [four-player corner HUD](../images/v6-local-mobile-hud.png), [contextual Boost hint](../images/v6-contextual-ability-hint.png), [normal-flow results](../images/v6-local-hud-results.png).
+
+## Public deployment verification
+
+Live URL: https://borrowed-time.onrender.com/
+
+Render deployment: https://dashboard.render.com/web/srv-dbfpmdss728c73cgrqu0/deploys/dep-dbgfu1ss728c73ffmotg
+
+The public deployment smoke passed with 26 assets, real two-player WSS connections, create/join/countdown, movement, both ability purchases, standings, roof schedule and cleanup. SHA-256 checks confirmed the public HTML, CSS, main controller and ability coach exactly match the approved local files. The public browser loaded the red/blue controls and ran a four-player race with the corner HUD. The user’s physical-phone test is next.
+
+[Actual deployed corner-HUD screenshot](../images/v6-public-mobile-hud.png). The public browser confirmed four standings in live HUD mode with pointer events disabled and no console errors.

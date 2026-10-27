@@ -2,6 +2,8 @@
 
 Version: `6.0.0-preview.1`.
 
+**Latest public update:** mobile HUD and contextual ability coaching, deployed October 27, 2026 at 3:47:55 PM EDT, runtime `298bd8d6a9d1188fcef062be7818e80dfecd388a`. See [verification](V6_MOBILE_HUD.md#public-deployment-verification). The initial V6 deployment record follows below.
+
 Play: https://borrowed-time.onrender.com/
 
 **Status: live and verified.** Render reported the release live on October 27, 2026 at 11:19:43 AM EDT.

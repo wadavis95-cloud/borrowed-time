@@ -1,11 +1,11 @@
 # Changelog
 
-## Unreleased — Mobile HUD and ability hints (local only)
+## Mobile HUD and ability hints — deployed October 27, 2026
 
 - Replaced the sticky page leaderboard with a compact, pointer-transparent corner HUD inside the course; detailed results stay in the end panel.
 - Switched boost to red and long jump to blue, keeping names, prices and key badges.
 - Added contextual hints for unused abilities: a clear immediate sprint or a correctly timed long jump, with time-budget/roof-impact checks, at most one hint at once, no forced purchases, and reduced-motion support.
-- Local work is isolated on `codex/v6-mobile-hud`; nothing in this section has been deployed.
+- Deployed runtime `298bd8d` to the existing public Render service. Previous public release remains preserved in Git.
 
 ## 6.0.0-preview.1 — Public friend playtest
 

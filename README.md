@@ -1,6 +1,6 @@
 # Borrowed Time · V6 gameplay and UI playtest
 
-**Local-only update:** `codex/v6-mobile-hud` moves standings into the course, uses red/blue abilities, and adds contextual button hints. See [mobile HUD notes](docs/versions/V6_MOBILE_HUD.md). These changes have not been deployed.
+**Mobile HUD update (deployed):** standings now sit inside the course, abilities are red/blue, and unused skills receive contextual button hints. See [mobile HUD notes](docs/versions/V6_MOBILE_HUD.md).
 
 A browser escape runner for **solo practice or private races with 2–4 players**. Race through a crumbling Victorian railway tunnel, dodge falling masonry, and spend your remaining seconds on abilities. Real opponents appear as translucent 3D runners and cannot collide with you.
 
