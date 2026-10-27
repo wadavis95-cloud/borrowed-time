@@ -1,5 +1,15 @@
 # Changelog
 
+## 6.0.0-preview.1 — Difficulty playtest (local, in progress)
+
+- Target a substantially harder run based on feedback that V5 felt about 3/10; the desired 7.5/10 needs player assessment.
+- Increased the practice course from 15 rows / 20 obstacles to 25 rows / 56 obstacles, plus six ceiling-fall encounters.
+- Blocked two lanes on ordinary rows, moved the open route between rows, and added repeated full-width encounters with a free-hop route.
+- Tightened later encounter spacing while reserving separate spaces for readable ceiling falls.
+- Updated demo navigation to recognize full-width hop routes and use the same rules as players.
+- Preserved the V5 checkpoint, Unity motion, timer budget, running speed and ability prices. See [V6 playtest notes](docs/versions/V6_PLAYTEST.md).
+
+
 ## 5.0.0-preview.1 — Unity game integration (local)
 
 V5 is complete as a local checkpoint, including the approved final running style in solo play, private multiplayer and the demo. Saved as `v5.0.0-preview.1`; the public deployment remains V4.

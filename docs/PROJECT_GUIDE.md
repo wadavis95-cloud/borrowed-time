@@ -1,6 +1,6 @@
 # Borrowed Time: understand the V4 preview end to end
 
-The game asks one question: **does buying an advantage save more time than it costs?** You run forward automatically, choose a lane, and spend countdown seconds on boosts or long jumps. Version **4.0.0-preview.1** adds public deployment and phone layouts to V3.1's visuals and movement presentation. The gameplay remains: solo practice, private multiplayer, an accelerating pace, a simple HUD, four animated characters, timed barrier clearance, and a four-client watch demo.
+The game asks one question: **does buying an advantage save more time than it costs?** You run forward automatically, choose a lane, and spend countdown seconds on boosts or long jumps. The local **6.0.0-preview.1** playtest adds tighter course patterns to V5's Unity visuals and running style. The gameplay includes solo practice, private multiplayer, an accelerating pace, a simple HUD, timed barrier clearance, and a four-client watch demo. The public deployment remains V4; the [Unity guide](UNITY_GUIDE.md) explains the current graphics pipeline.
 
 The railway tunnel grows brighter as you approach its exit. Falling masonry has gameplay rules, while the surrounding collapse is a visual setting rather than a structural physics simulation. [Play the hosted game](https://borrowed-time.onrender.com), or run it locally or on a LAN; the [V4 release record](versions/V4_RELEASE.md) records deployment evidence and remaining phone tests.
 
@@ -140,7 +140,7 @@ Keep two different clocks in mind. **Elapsed race time** only advances while the
 | Long jump | Costs 2 seconds; lasts 1.4 seconds; 3m peak height; clears rubble, gaps, and correctly timed tall barriers. |
 | Collision | Costs 3 seconds; speed becomes 45% for 0.8 seconds. |
 | Time gates | +5 seconds at internal distances of 450m and 900m; displayed as time pickups. |
-| Ordinary encounters | First at 90m internally, then spaced 72–89m apart; at least one lane remains open. |
+| Ordinary encounters | First at 90m internally; rows tighten from about 43–48m to 31–36m apart. Most block two lanes; every fourth has one free-hop route through a full-width row. Wider intervals reserve room for ceiling falls. |
 | Falling masonry | Warning begins 2.4 seconds before impact; the final 0.45 seconds are the visible descent. |
 
 These distances and heights are developer tuning measurements, not gameplay HUD readouts. Purchases require strictly more time than their price. A long jump can upgrade a normal hop but cannot extend an active long jump. The internal `timeSpent` field records purchases, not countdown or collision losses.
@@ -149,7 +149,7 @@ An ordinary obstacle resolves once when you reach its distance. Its lane and you
 
 A gap checks for a long jump at its front edge; the rules do not simulate continuous flight across its full length. Missing a gap applies the normal penalty. Reach the exit to win your run; running out of time first loses. Reaching the exit exactly as time expires counts as escaping.
 
-Solo restart uses seed 42. A seed makes generated randomness repeatable. Multiplayer gives everyone the same round seed, then chooses a new seed for a rematch. Every encounter leaves at least one lane clear.
+Solo restart uses seed 42. A seed makes generated randomness repeatable. Multiplayer gives everyone the same round seed, then chooses a new seed for a rematch. V6 moves its intended route one adjacent lane per row. That route is either clear or contains low rubble that a free hop clears; purchases provide additional options. A full-width row is deliberately not guaranteed an empty lane.
 
 ## Follow a falling chunk
 

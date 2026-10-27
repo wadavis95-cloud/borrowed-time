@@ -1,8 +1,10 @@
-# Borrowed Time · V5
+# Borrowed Time · V6 difficulty playtest
 
 A browser escape runner for **solo practice or private races with 2–4 players**. Race through a crumbling Victorian railway tunnel, dodge falling masonry, and spend your remaining seconds on abilities. Real opponents appear as translucent 3D runners and cannot collide with you.
 
-Version **5.0.0-preview.1** completes V5's Unity visuals and approved running style across solo practice, private multiplayer races and the four-player demo. The runner has smoother arm swings and strides, a slight forward lean, and level lane changes from the pulled-back camera. JavaScript and the Node server still own the race rules and networking. V5 is a completed local checkpoint; the public deployment remains V4. See the [Unity guide](docs/UNITY_GUIDE.md) and [V5 release record](docs/versions/V5_RELEASE.md).
+Version **6.0.0-preview.1** tests a much harder course following feedback that V5 felt about 3/10. The target is roughly 7.5/10, to be judged through playtesting. Most rows block two lanes, the open route moves, and occasional full-width rows require a hop or a paid long-jump alternative. Encounters tighten as the race progresses. See the [V6 playtest notes](docs/versions/V6_PLAYTEST.md).
+
+V6 keeps V5's Unity visuals and approved running style across solo practice, private multiplayer races and the four-player demo. The completed V5 checkpoint is preserved as `v5.0.0-preview.1`. The public deployment remains V4. See the [Unity guide](docs/UNITY_GUIDE.md) and [V5 release record](docs/versions/V5_RELEASE.md).
 
 **[Play the public V4 game](https://borrowed-time.onrender.com)** on your phone or computer. Create a room, send friends the same link and six-character room code, and start when 2–4 players have joined. No installation or account is needed. The free host can take about a minute to wake after inactivity. Physical-phone performance and touch feel still need actual-device testing.
 
@@ -75,7 +77,7 @@ npm run check:deployment -- https://borrowed-time.onrender.com # Check the live 
 
 Socket tests are skipped in the ordinary test command. Save browser files and refresh the page to see edits. `npm run dev` does not reload the browser. Restarting Node discards all rooms.
 
-Internal V3 tuning is a **1,350m course**, with base speed increasing from **22 to 32m/s over 50 elapsed running seconds**. An unobstructed, unboosted run reaches the exit at 50 seconds. Ordinary encounters are spaced 72–89m apart; +5s time gates sit at 450m and 900m internally. These distances are developer tuning values, not player HUD readouts. The [project guide](docs/PROJECT_GUIDE.md) explains exact movement integration, shared jump height, and collision timing.
+Internal tuning is a **1,350m course**, with base speed increasing from **22 to 32m/s over 50 elapsed running seconds**. An unobstructed, unboosted run reaches the exit at 50 seconds. V6 ordinary rows begin roughly 43–48m apart and tighten to about 31–36m; reserved 76–81m intervals contain their own ceiling-fall encounter. +5s time gates sit at 450m and 900m internally. These distances are developer tuning values, not player HUD readouts. The [project guide](docs/PROJECT_GUIDE.md) explains exact movement integration, shared jump height, and collision timing.
 
 The current visual pipeline lives in the included `unity/` project. Its C# receiver accepts course and movement JSON from `src/unity-protocol.js`. The model is adapted from Blender Studio's Snow, with original wardrobe and procedural pose work. Read [art credits](assets/unity/CREDITS.md) and the [beginner Unity guide](docs/UNITY_GUIDE.md).
 

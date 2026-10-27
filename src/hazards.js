@@ -1,7 +1,7 @@
 // A chunk lands in one lane, leaving the other two lanes open.
 // Its clock is race time, never the runner's spendable time balance.
 export function createFallingDebris(seed, obstacles, {
-  baseSpeed = 22, topSpeed = 32, accelerationDuration = 50,
+  baseSpeed = 22, topSpeed = 32, accelerationDuration = 50, debrisEvery = 3,
 } = {}) {
   let value = (seed ^ 0x9e3779b9) >>> 0;
   const random = () => {
@@ -10,9 +10,11 @@ export function createFallingDebris(seed, obstacles, {
   };
   const distances = [...new Set(obstacles.map(obstacle => obstacle.z))].sort((a, b) => a - b);
   const events = [];
-  // Only every third gap gets a chunk. Stay clear of each ordinary encounter,
-  // including the far edge of a gap, so encounters cannot block every lane.
-  for (let index = 1; index < distances.length - 1; index += 3) {
+  // Use only gaps wide enough to keep a ceiling fall separate from the ground
+  // row (including a gap's far edge). The harder course reserves these spaces
+  // deliberately. The two-argument API retains its original sparse schedule.
+  const interval = Number.isInteger(debrisEvery) && debrisEvery > 0 ? debrisEvery : 3;
+  for (let index = 1; index < distances.length - 1; index += interval) {
     const previousEnd = Math.max(...obstacles.filter(obstacle => obstacle.z === distances[index])
       .map(obstacle => obstacle.z + (obstacle.length ?? 2)));
     const next = distances[index + 1];

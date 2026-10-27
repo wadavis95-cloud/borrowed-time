@@ -146,6 +146,22 @@ function applyAction(game, action) {
   return true;
 }
 
+test('demo recognizes a full-width row and takes its free-hop route when conserving time', () => {
+  const game = createGame({ course: [
+    { z: 18, lane: 0, type: 'barrier' }, { z: 18, lane: 1, type: 'gap' },
+    { z: 18, lane: 2, type: 'rubble' },
+  ] });
+  startGame(game);
+  game.timeSpent = 16;
+  assert.equal(chooseDemoAction(game, 1), 'right');
+  moveLane(game, 1);
+  updateGame(game, 0.55);
+  assert.equal(chooseDemoAction(game, 1), 'jump');
+  jump(game);
+  updateGame(game, 0.5);
+  assert.equal(game.hits, 0);
+});
+
 test('four demo strategies complete a seeded course using normal inputs and build meaningful leads', () => {
   const games = Array.from({ length: 4 }, () => createGame({ seed: 42 }));
   games.forEach(startGame);

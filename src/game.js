@@ -21,8 +21,11 @@ export const CONFIG = Object.freeze({
   checkpointBonus: 5,
   checkpointDistances: Object.freeze([450, 900]),
   firstObstacle: 90,
-  encounterSpacing: 72,
-  encounterVariation: 18,
+  encounterSpacing: 44,
+  minimumEncounterSpacing: 30,
+  encounterVariation: 6,
+  debrisEncounterSpacing: 76,
+  debrisEvery: 1,
   debrisImpactRadius: 2,
 });
 
@@ -47,25 +50,38 @@ function makeCourse(seed) {
     return value / 4294967296;
   };
   const obstacles = [];
-  const types = ['rubble', 'barrier', 'gap'];
   let encounter = 0;
+  let routeLane = 1;
   for (let z = CONFIG.firstObstacle; z < CONFIG.courseLength - 70;) {
-    const firstLane = Math.floor(random() * CONFIG.laneCount);
-    const laneOrder = [firstLane, (firstLane + 1) % 3, (firstLane + 2) % 3];
-    // At most two lanes are occupied; every encounter has an escape route.
-    const obstacleCount = encounter > 1 && encounter % 3 === 2 ? 2 : 1;
-    for (let index = 0; index < obstacleCount; index += 1) {
-      const type = encounter === 0 ? 'rubble' : types[Math.floor(random() * types.length)];
+    // Move the intended free-move route to an adjacent lane on every row.
+    // This removes the old long stretches of staying in one empty lane.
+    const adjacent = [routeLane - 1, routeLane + 1].filter(lane => lane >= 0 && lane < CONFIG.laneCount);
+    routeLane = adjacent[Math.floor(random() * adjacent.length)];
+    const jumpRow = encounter % 4 === 3;
+    for (let lane = 0; lane < CONFIG.laneCount; lane += 1) {
+      if (lane === routeLane && !jumpRow) continue;
+      // A full-width encounter always has one free-hop route. Paid long jump
+      // offers alternatives, but completing the course never requires a purchase.
+      let type = 'rubble';
+      if (lane !== routeLane && encounter >= 2) {
+        const lowObstacle = random() < (jumpRow ? 0 : 0.18);
+        if (!lowObstacle) type = random() < 0.55 ? 'barrier' : 'gap';
+      }
       obstacles.push({
-        id: `obstacle-${encounter}-${index}`,
+        id: `obstacle-${encounter}-${lane}`,
         z,
-        lane: laneOrder[index],
+        lane,
         type,
         length: type === 'gap' ? 8 : 2,
       });
     }
+    // A wider interval reserves room for an independent ceiling fall. The
+    // other intervals tighten with course progress, keeping later decisions fast.
+    const spacing = encounter % 4 === 1 ? CONFIG.debrisEncounterSpacing
+      : CONFIG.encounterSpacing - (CONFIG.encounterSpacing - CONFIG.minimumEncounterSpacing)
+        * z / CONFIG.courseLength;
+    z += Math.round(spacing) + Math.floor(random() * CONFIG.encounterVariation);
     encounter += 1;
-    z += CONFIG.encounterSpacing + Math.floor(random() * CONFIG.encounterVariation);
   }
   return obstacles;
 }

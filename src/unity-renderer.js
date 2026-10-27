@@ -25,7 +25,7 @@ export async function createUnityRenderer(canvas, { onProgress = () => {} } = {}
   try { instance = await createUnityInstance(canvas, {
     dataUrl: `${BUILD}.data.gz`, frameworkUrl: `${BUILD}.framework.js.gz`, codeUrl: `${BUILD}.wasm.gz`,
     streamingAssetsUrl: '/assets/unity/v5/StreamingAssets',
-    companyName: 'Borrowed Time', productName: 'Borrowed Time', productVersion: '5.0.0-preview.1',
+    companyName: 'Borrowed Time', productName: 'Borrowed Time', productVersion: '6.0.0-preview.1',
     devicePixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
     matchWebGLToCanvasSize: true,
     showBanner(message, type) {

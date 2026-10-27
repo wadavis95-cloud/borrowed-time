@@ -221,7 +221,7 @@ test('invalid time deltas cannot corrupt the simulation', () => {
   assert.deepEqual(game, before);
 });
 
-test('seeded courses are repeatable and leave at least one open lane per encounter', () => {
+test('seeded courses are repeatable and leave an open lane or free-hop route per encounter', () => {
   for (let seed = 1; seed <= 20; seed += 1) {
     const game = createGame({ seed });
     assert.deepEqual(game.obstacles, createGame({ seed }).obstacles);
@@ -234,7 +234,8 @@ test('seeded courses are repeatable and leave at least one open lane per encount
       lanes.add(obstacle.lane);
       lanesByDistance.set(obstacle.z, lanes);
     }
-    assert.ok([...lanesByDistance.values()].every((lanes) => lanes.size < 3));
+    assert.ok([...lanesByDistance].every(([z, lanes]) => lanes.size < 3
+      || game.obstacles.some(obstacle => obstacle.z === z && obstacle.type === 'rubble')));
   }
   assert.notDeepEqual(createGame({ seed: 1 }).obstacles, createGame({ seed: 2 }).obstacles);
 });

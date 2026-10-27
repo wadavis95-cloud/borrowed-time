@@ -1,4 +1,4 @@
-import { ABILITIES, CONFIG, createGame } from './game.js';
+import { ABILITIES, CONFIG, createGame, getJumpHeight } from './game.js';
 import { connectRace } from './network.js';
 
 const NAMES = ['Demo · Ash', 'Demo · Briar', 'Demo · Cleo', 'Demo · Drew'];
@@ -55,14 +55,54 @@ export function chooseDemoAction(game, index) {
     .sort((a, b) => a.z - b.z);
   const dodge = () => {
     const lanes = [0, 1, 2].filter(lane => lane !== game.lane && !overhead(lane)
-      && !obstacles.some(obstacle => obstacle.lane === lane && obstacle.z - game.distance < travelDistance(game, .85)));
+      && !obstacles.some(obstacle => obstacle.lane === lane && obstacle.type !== 'rubble'
+        && obstacle.z - game.distance < travelDistance(game, .25)));
     lanes.sort((a, b) => Math.abs(a - game.lane) - Math.abs(b - game.lane)
       || (index % 2 ? b - a : a - b));
     return lanes.length ? (lanes[0] < game.lane ? 'left' : 'right') : null;
   };
   if (overhead(game.lane)) return dodge();
+  // Read one encounter at a time. Dense courses can occupy all three lanes;
+  // the low rubble in those rows is a free-hop route, not a dead end.
+  const first = obstacles[0];
+  const row = first ? obstacles.filter(obstacle => Math.abs(obstacle.z - first.z) < .01) : [];
+  const denseRow = row.length >= 2 && first.z - game.distance <= travelDistance(game, 1.05);
+  if (denseRow) {
+    const distance = first.z - game.distance;
+    const current = row.find(obstacle => obstacle.lane === game.lane);
+    // Check the future arc at crossing, including boost/stun boundaries.
+    let low = 0, high = 1.1;
+    for (let i = 0; i < 16; i += 1) {
+      const middle = (low + high) / 2;
+      if (travelDistance(game, middle) < distance) low = middle; else high = middle;
+    }
+    const remaining = game.jumpRemaining - high;
+    const clearsCurrent = !current || (remaining > .03 && (current.type === 'rubble'
+      || game.jumpKind === 'long' && (current.type === 'gap'
+        || getJumpHeight({ jumpDuration: game.jumpDuration, jumpRemaining: remaining }) >= CONFIG.barrierClearanceHeight)));
+    if (!clearsCurrent) {
+      // Ash and Cleo sometimes buy an alternative through a full-width row;
+      // conserving runners deliberately move to its free-hop route instead.
+      if (row.length === 3 && current.type !== 'rubble' && index % 2 === 0
+        && !game.jumpRemaining && game.timeSpent < 4 && game.timeLeft > ABILITIES.longJump.cost + 5) {
+        if (distance > travelDistance(game, .8)) return null;
+        if (distance >= travelDistance(game, .42)) return 'longJump';
+      }
+      const candidates = [0, 1, 2].filter(lane => !overhead(lane)
+        && (!row.some(obstacle => obstacle.lane === lane)
+          || row.some(obstacle => obstacle.lane === lane && obstacle.type === 'rubble')));
+      candidates.sort((a, b) => {
+        const cost = lane => (row.some(o => o.lane === lane) ? 1 : 0) + Math.abs(lane - game.lane) * .25;
+        return cost(a) - cost(b) || (index % 2 ? b - a : a - b);
+      });
+      const lane = candidates[0];
+      if (lane !== undefined && lane !== game.lane) return lane < game.lane ? 'left' : 'right';
+      if (current.type === 'rubble' && !game.jumpRemaining && distance <= travelDistance(game, .32)) return 'jump';
+      return null;
+    }
+  }
   const obstacle = obstacles.find(candidate => candidate.lane === game.lane);
-  if (obstacle) {
+  if (obstacle && !denseRow) {
     const distance = obstacle.z - game.distance;
     if (obstacle.type === 'barrier' || obstacle.type === 'gap') {
       if (distance <= travelDistance(game, .82)) {
