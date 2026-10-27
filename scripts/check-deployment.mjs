@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { WebSocket } from 'ws';
+import { ABILITIES } from '../src/game.js';
 
 // Run after deployment. This creates one temporary two-player room, exercises
 // the real transport, then removes the room. No browser or extra dependencies.
@@ -7,7 +8,7 @@ const USAGE = 'Usage: node scripts/check-deployment.mjs https://your-game.onrend
 const ASSETS = [
   '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js',
   '/src/renderer.js', '/src/unity-renderer.js', '/src/unity-protocol.js', '/src/network.js', '/src/avatars.js', '/src/hazards.js',
-  '/src/graphics/avatars.js', '/src/graphics/tunnel.js', '/src/demo.js', '/src/audio.js',
+  '/src/graphics/avatars.js', '/src/graphics/tunnel.js', '/src/demo.js', '/src/audio.js', '/src/input.js',
   '/vendor/three.module.js', '/vendor/three.core.js', '/vendor/loaders/GLTFLoader.js',
   '/vendor/utils/BufferGeometryUtils.js', '/vendor/utils/SkeletonUtils.js',
   '/docs/character-preview.html', '/assets/characters/courier.glb',
@@ -128,11 +129,14 @@ async function checkMultiplayer(target) {
     await Promise.all([host, guest].map(client => client.until(inPhase('countdown'), 'receiving the countdown')));
     const [hostStart, guestStart] = await Promise.all([host, guest].map(client => client.until(inPhase('racing'), 'starting the race')));
     assert.equal(hostStart.room.roundId, guestStart.room.roundId, 'Clients started different rounds.');
+    assert.equal(hostStart.room.seed, guestStart.room.seed, 'Clients received different course seeds.');
+    assert.equal(hostStart.standings.length, 2, 'Leaderboard is missing players.');
+    assert.deepEqual(hostStart.debris, guestStart.debris, 'Clients received different roof-collapse schedules.');
     console.log('✓ Both players receive the countdown and start the same race');
 
     host.send({ type: 'input', action: 'boost', seq: 1, roundId: hostStart.room.roundId });
     const boosted = await host.until(message => isSnapshot(message) && message.you.game.timeSpent > 0, 'buying the host boost');
-    assert.equal(boosted.you.game.timeSpent, 3, 'Boost should cost exactly three seconds.');
+    assert.equal(boosted.you.game.timeSpent, ABILITIES.boost.cost, 'Boost price does not match this release.');
     assert.ok(boosted.you.game.boostRemaining > 0, 'Host boost did not become active.');
     const guestAfter = await guest.until(message => isSnapshot(message) && message.room.raceElapsed >= boosted.room.raceElapsed + 0.25, 'observing forward movement');
     const ghost = guestAfter.players.find(player => player.id === created.you.id);
@@ -142,6 +146,12 @@ async function checkMultiplayer(target) {
     assert.equal(guestAfter.you.game.timeSpent, 0, 'The guest incorrectly paid for another player’s boost.');
     assert.equal(guestAfter.you.game.boostRemaining, 0, 'The guest incorrectly received another player’s boost.');
     console.log('✓ Movement advances, the host pulls ahead, and only the host spends time and boosts');
+
+    guest.send({ type: 'input', action: 'longJump', seq: 1, roundId: guestStart.room.roundId });
+    const leaping = await guest.until(message => isSnapshot(message) && message.you.game.timeSpent > 0, 'buying the guest long jump');
+    assert.equal(leaping.you.game.timeSpent, ABILITIES.longJump.cost, 'Long-jump price does not match this release.');
+    assert.equal(leaping.you.game.jumpKind, 'long');
+    console.log('✓ Long-jump purchase, shared course, roof schedules and live standings verified');
 
     await host.close();
     await guest.until(message => isSnapshot(message) && message.room.hostId === joined.you.id && message.players.some(player => player.id === created.you.id && !player.connected), 'observing host disconnect cleanup');

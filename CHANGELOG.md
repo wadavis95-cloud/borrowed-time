@@ -1,6 +1,6 @@
 # Changelog
 
-## 6.0.0-preview.1 — Difficulty playtest (local, in progress)
+## 6.0.0-preview.1 — Public friend playtest
 
 - Randomized each fresh solo run; simplified on-screen copy and added vivid lime/purple abilities.
 - Added adaptive touch/keyboard layouts with A/D movement, W/up hop and Q/E abilities; Space hopping removed at the user’s request. See [input/UI notes](docs/versions/V6_INPUT_AND_UI.md).
