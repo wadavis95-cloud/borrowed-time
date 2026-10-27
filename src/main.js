@@ -18,6 +18,7 @@ let connection = null, snapshot = null, raceView = createRaceView();
 let networkStatus = '', connectionGeneration = 0, rosterKey = '';
 let lastOverlay = '', lastEvent = 0, toastUntil = 0;
 let purchaseUntil = 0, purchaseFeedback = '';
+let standingsKey = '';
 let lastFrame = performance.now(), accumulator = 0;
 const STEP = 1 / 60;
 const guestName = `Runner ${100 + Math.floor(Math.random() * 900)}`;
@@ -53,7 +54,7 @@ async function prepareGraphics() {
 }
 
 function showCourse() {
-  canvas.closest('.arena').scrollIntoView({ block: 'start', behavior: 'auto' });
+  ($('leaderboard').hidden ? canvas.closest('.arena') : $('leaderboard')).scrollIntoView({ block: 'start', behavior: 'auto' });
 }
 
 function notify(text, kind = 'info') {
@@ -183,6 +184,41 @@ function updateRoom() {
   }
   $('room-players').hidden = snapshot?.room.phase === 'racing';
 }
+
+function updateLeaderboard() {
+  const visible = mode !== 'solo' && Boolean(snapshot?.standings);
+  $('leaderboard').hidden = !visible;
+  if (!visible) { standingsKey = ''; return; }
+  const finished = snapshot.room.phase === 'finished';
+  const stale = networkStatus !== 'open';
+  $('leaderboard-title').textContent = finished ? 'Race results' : 'Live standings';
+  $('leaderboard-note').textContent = stale ? 'Connection lost · last known positions'
+    : finished ? 'DNF = did not escape' : snapshot.room.phase === 'racing' ? 'First to escape wins' : 'Waiting for the start';
+  const rows = snapshot.standings.map(entry => ({ ...entry, ...snapshot.players.find(p => p.id === entry.id) }));
+  // Only touch the DOM when order, identity or result changes, not every frame.
+  const displayKey = JSON.stringify([snapshot.room.roundId, snapshot.you.id, mode,
+    rows.map(p => [p.id, p.position, p.status, p.name, p.color])]);
+  if (displayKey === standingsKey) return;
+  standingsKey = displayKey;
+  $('leaderboard-rows').replaceChildren(...rows.map(player => {
+    const row = document.createElement('li');
+    row.className = `standing ${player.status}`;
+    row.classList.toggle('is-you', player.id === snapshot.you.id && mode !== 'demo');
+    const place = document.createElement('strong');
+    place.className = 'standing-place';
+    place.textContent = player.position === null ? '—' : `${player.position}`;
+    const name = document.createElement('span');
+    name.className = 'standing-name';
+    name.textContent = `${player.name}${player.id === snapshot.you.id && mode !== 'demo' ? ' (you)' : ''}`;
+    name.title = name.textContent;
+    const dot = document.createElement('i');
+    dot.style.backgroundColor = player.color;
+    const status = document.createElement('small');
+    status.textContent = ({ ready: 'Ready', racing: 'Racing', escaped: '✓ Escaped', dnf: 'DNF · time out', disconnected: 'DNF · left' })[player.status];
+    row.append(place, dot, name, status);
+    return row;
+  }));
+}
 function togglePause() {
   if (mode !== 'solo') return;
   if (game.phase === 'running') pauseGame(game);
@@ -264,6 +300,7 @@ function updateOverlay() {
   else if (ended) overlay(game.phase === 'won' ? 'ESCAPE COMPLETE' : 'THE CLOCK RAN OUT', game.phase === 'won' ? 'You escaped.' : 'Time ran out.', game.phase === 'won' ? 'A little daylight. A second chance. Ready to go again?' : 'Dodge, leap, and save enough seconds for the exit.', 'Run it again →');
 }
 function updateHUD() {
+  updateLeaderboard();
   const online = mode !== 'solo';
   const running = Boolean(renderer) && !graphicsError && mode !== 'demo' && game.phase === 'running' && (!online || networkStatus === 'open');
   $('race-menu').hidden = online;

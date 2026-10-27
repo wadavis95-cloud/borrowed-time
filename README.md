@@ -6,7 +6,7 @@ Version **6.0.0-preview.1** tests a much harder course following feedback that V
 
 The UI now introduces the main tradeoff before play: your countdown is also your ability currency. The start screen and multiplayer lobby show both ability prices and benefits, the HUD labels the shared time budget, and purchases visibly debit that same clock. Starting still takes one click. See the [UI update notes](docs/versions/V6_UI_UPDATE.md).
 
-At the user's request, V6 now uses the brighter, stylized **V4 visuals from immediately before Unity** by default, including the original four separate characters. The harder V6 course and clearer ability UI remain. Unity is preserved as an optional comparison at `?graphics=unity`; the completed V5 checkpoint is preserved as `v5.0.0-preview.1`. The public deployment remains V4.
+At the user's request, V6 now uses the brighter, stylized **V4 visuals from immediately before Unity** by default, including the original four separate characters. The harder V6 course and clearer ability UI remain. Multiplayer now includes a live leaderboard with escape/DNF results; see [leaderboard notes](docs/versions/V6_LEADERBOARD.md). Unity is preserved as an optional comparison at `?graphics=unity`; the completed V5 checkpoint is preserved as `v5.0.0-preview.1`. The public deployment remains V4.
 
 **[Play the public V4 game](https://borrowed-time.onrender.com)** on your phone or computer. Create a room, send friends the same link and six-character room code, and start when 2–4 players have joined. No installation or account is needed. The free host can take about a minute to wake after inactivity. Physical-phone performance and touch feel still need actual-device testing.
 

@@ -32,6 +32,10 @@
         <button id="leave-room" class="quiet-button">Leave room</button>
       </section>
       <p id="network-error" class="network-error" role="alert" hidden></p>
+      <section id="leaderboard" class="leaderboard" aria-label="Race leaderboard" hidden>
+        <div class="leaderboard-heading"><strong id="leaderboard-title">Live standings</strong><span id="leaderboard-note">First to escape wins</span></div>
+        <ol id="leaderboard-rows" aria-label="Player positions and escape results"></ol>
+      </section>
       <div class="game-layout">
         <section class="arena" aria-label="Escape race">
           <canvas id="game-canvas" aria-label="Three-lane tunnel race toward daylight. Dodge falling stone. Hop rubble or use a long jump to clear barriers and gaps.">This game needs a browser with WebGL 2 support.</canvas>
@@ -82,8 +86,8 @@
     <ul class="play-guide">
       <li><strong>Switch lanes.</strong> Use ← / →, A / D, the buttons, or swipe sideways.</li>
       <li><strong>Hop small rubble.</strong> Press SPACE, tap the course, or swipe up.</li>
-      <li><strong>Spend 3 seconds to boost.</strong> Press 1 or tap Speed boost to break away.</li>
-      <li><strong>Spend 2 seconds to leap.</strong> Press 2 or tap Long jump. Time the peak of your jump over tall barriers; clear gaps and rubble too.</li>
+      <li><strong>Spend 6 seconds to boost.</strong> Press 1 or tap Speed boost to break away.</li>
+      <li><strong>Spend 4 seconds to leap.</strong> Press 2 or tap Long jump. Time the peak of your jump over tall barriers; clear gaps and rubble too.</li>
       <li><strong>Watch the amber markers.</strong> Move out of the lane before falling stone lands. You can hop the rubble afterward.</li>
       <li><strong>Find your way into daylight.</strong> Time gates restore seconds along the route.</li>
     </ul>

@@ -227,6 +227,15 @@ export function createRoomManager({
     if (!room) return null;
     const player = room.players.get(id);
     const { obstacles, debris, debrisProgress, ...ownGame } = player.game;
+    // Finish order is authoritative. Distance alone cannot distinguish runners
+    // once they all reach the exit. Unfinished runners follow in course order.
+    const ordered = [...room.players.values()].sort((a, b) => {
+      const group = p => p.game.phase === 'won' ? 0 : p.game.phase === 'lost' ? 2 : 1;
+      return group(a) - group(b)
+        || (a.game.phase === 'won' ? a.game.finishTime - b.game.finishTime
+          : b.game.distance - a.game.distance);
+    });
+    const racing = ['racing', 'finished'].includes(room.phase);
     return {
       type: 'snapshot', serverTime: now(),
       room: {
@@ -236,6 +245,13 @@ export function createRoomManager({
         countdown: room.phase === 'countdown' ? Math.max(0, Math.ceil((room.countdownEnd - now()) / 1000)) : 0,
       },
       you: { id, name: player.name, game: structuredClone(ownGame) },
+      standings: ordered.map((other, index) => ({
+        id: other.id,
+        position: racing && other.game.phase !== 'lost' ? index + 1 : null,
+        status: other.game.phase === 'won' ? 'escaped'
+          : !other.connected ? 'disconnected' : other.game.phase === 'lost' ? 'dnf'
+            : racing ? 'racing' : 'ready',
+      })),
       // Explicitly list public fields: never spread another player's game state.
       players: [...room.players.values()].map((other) => ({
         id: other.id, name: other.name, color: other.color, avatarId: other.avatarId, connected: other.connected,

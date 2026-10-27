@@ -53,6 +53,43 @@ test('rooms allow four connected guests, normalize codes, and reject duplicate m
   assert.equal(manager.snapshot('fifth'), null);
 });
 
+test('standings follow progress, then escape order, preserve DNF results and reset on rematch', () => {
+  const { manager, create, join, send, advance } = setup();
+  const code = create();
+  for (const id of ['second', 'third', 'fourth']) join(code, id);
+  assert.ok(manager.snapshot('host').standings.every(p => p.position === null && p.status === 'ready'));
+  send('host', { type: 'start' });
+  advance(3000);
+  const players = manager.rooms.get(code).players;
+  players.get('host').game.distance = 500;
+  players.get('second').game.distance = 600;
+  assert.equal(manager.snapshot('host').standings[0].id, 'second');
+  players.get('third').game.phase = 'won';
+  players.get('third').game.distance = 1350;
+  players.get('third').game.finishTime = 45;
+  manager.disconnect('fourth');
+  let board = manager.snapshot('host').standings;
+  assert.deepEqual(board.map(p => [p.id, p.position, p.status]), [
+    ['third', 1, 'escaped'], ['second', 2, 'racing'], ['host', 3, 'racing'], ['fourth', null, 'disconnected'],
+  ]);
+  // Both finish at the same distance, but actual finish time decides order.
+  players.get('second').game.phase = 'won';
+  players.get('second').game.distance = 1350;
+  players.get('second').game.finishTime = 44.99;
+  players.get('host').game.phase = 'lost';
+  advance(17);
+  board = manager.snapshot('host').standings;
+  assert.deepEqual(board.map(p => [p.id, p.position, p.status]), [
+    ['second', 1, 'escaped'], ['third', 2, 'escaped'], ['host', null, 'dnf'], ['fourth', null, 'disconnected'],
+  ]);
+  assert.equal(manager.snapshot('host').room.winnerId, board[0].id);
+  assert.deepEqual(Object.keys(board[0]).sort(), ['id', 'position', 'status']);
+  manager.disconnect('second');
+  assert.equal(manager.snapshot('host').standings[0].status, 'escaped');
+  send('host', { type: 'rematch' });
+  assert.ok(manager.snapshot('host').standings.every(p => p.position === null && p.status === 'ready'));
+});
+
 test('only the host can start, with two players, and countdown starts both clocks together', () => {
   const { manager, create, join, send, advance } = setup();
   const code = create();

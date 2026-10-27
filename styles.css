@@ -1239,3 +1239,28 @@ dialog p,.play-guide {
   }
 }
 
+
+/* Compact race standings stay above the course, including final results. */
+.leaderboard {
+  position:sticky; top:8px; z-index:5; margin:0 0 12px;
+  padding:10px 12px; border:1px solid #506b67; border-radius:14px;
+  background:rgba(22,42,45,.97); box-shadow:0 5px 18px #0003;
+}
+.leaderboard-heading { display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:8px }
+.leaderboard-heading strong { color:#d8eee4; font-size:12px }
+.leaderboard-heading>span { color:#aac2be; font-size:10px }
+.leaderboard ol { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; list-style:none; padding:0; margin:0 }
+.standing { display:grid; grid-template-columns:22px 6px minmax(0,1fr); align-items:center; gap:3px 6px; padding:8px; border:1px solid #42595b; border-radius:8px; background:#213438 }
+.standing-place { grid-row:1/3; color:#f2ce8f; font-size:22px; font-variant-numeric:tabular-nums }
+.standing i { width:6px; height:6px; border-radius:50% }
+.standing-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; color:#eef7f1 }
+.standing small { grid-column:2/4; color:#a8c0bd; font-size:10px }
+.standing.is-you { border-color:#b5e3ce; background:#2d4948 }
+.standing.escaped small { color:#a1ebbd }
+.standing.dnf small,.standing.disconnected small { color:#f5bb9d }
+@media(max-width:600px) {
+  .leaderboard { padding:8px; top:4px; margin-bottom:8px }
+  .leaderboard ol { grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px }
+  .standing { padding:5px 7px }
+  .standing-place { font-size:19px }
+}

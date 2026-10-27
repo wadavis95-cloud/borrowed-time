@@ -2,6 +2,7 @@
 
 ## 6.0.0-preview.1 — Difficulty playtest (local, in progress)
 
+- Added a live multiplayer leaderboard with server-ranked positions, escaped/DNF results, rematch resets and final standings.
 - Raised boost price from 3s to 6s and long jump from 2s to 4s for a stricter ability-budget playtest; effects stay the same.
 - Restored the brighter pre-Unity V4 graphics as the default at the user's request. Retained V6 difficulty and ability UI; Unity remains available at `?graphics=unity`. Restore point: `pre-v4-visual-return-20261027`.
 
