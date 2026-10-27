@@ -1,12 +1,10 @@
-# Borrowed Time · V7 three-map preview
+# Borrowed Time · V8 six-map release
 
-**Local only — not deployed.** V7 adds **Tunnel Escape**, **The Last Voyage**, and **Volcanic Jungle**, illustrated map cards, lobby map voting, and twelve original characters. Players receive their character’s role name automatically. [V7 notes and backup](docs/versions/V7_THREE_MAPS.md).
+Six escape maps for solo practice and private races with 2–4 players: **Tunnel Escape, The Last Voyage, Volcanic Jungle, Frozen Summit, Orbital Escape, and Sandstorm Canyon**. Pick a thumbnail or vote with friends in the lobby. Your character and role name are assigned automatically from the winning map's four-person cast.
 
-A browser escape runner for **solo practice or private races with 2–4 players**. Your countdown is also your ability budget. Spend five seconds on Boost or four on Long jump, dodge hazards, and escape before zero. Opponents appear as translucent runners at their actual relative positions.
+Your countdown is also your ability budget. Spend five seconds on Boost or four on Long jump, dodge danger, and escape before zero. All maps retain the same behind-runner camera, controls, pace and prices. Real opponents appear as translucent runners at their actual relative positions.
 
-The existing brighter graphics, behind-runner camera, faster 24m/s starting pace, wider obstacle spacing, red/blue controls, contextual ability hints and race standings remain. The tunnel baseline is preserved in a verified full-history backup.
-
-**[Public game](https://borrowed-time.onrender.com):** still the previous **V6** playtest. The new maps and votes are available at **http://localhost:4173** only. No installation or account is needed to play. A sleeping free public host can take about a minute to wake.
+**[Play Borrowed Time](https://borrowed-time.onrender.com)** on a phone or computer. No account or installation. A sleeping free host may take about a minute to wake. First play preloads the 24 characters (about 9.9 MB compressed); actual phone loading time and frame rate need playtesting. [V8 release and verification](docs/versions/V8_SIX_MAPS.md). Earlier versions are preserved in Git and verified backup bundles.
 
 ## Run it
 
@@ -18,7 +16,7 @@ npm install
 npm start
 ```
 
-Open [http://localhost:4173](http://localhost:4173). Keep the terminal running; **Ctrl+C** stops the server. The game uses `ws` for server-side WebSockets and Three.js with twelve original GLB characters for graphics. WebGL 2 and graphics acceleration are required. The old Unity tunnel study remains archived under `assets/unity/v5`; its comparison renderer does not implement V7 maps.
+Open [http://localhost:4173](http://localhost:4173). Keep the terminal running; **Ctrl+C** stops the server. The game uses `ws` for server-side WebSockets and Three.js with twenty-four original GLB characters for graphics. WebGL 2 and graphics acceleration are required. The old Unity tunnel study remains archived under `assets/unity/v5`; its comparison renderer does not implement the six-map release.
 
 The app preloads the characters before enabling play. A failed asset load or unavailable graphics produces a recovery message and a **Reload game** button.
 
@@ -73,8 +71,8 @@ npm test              # Rules, hazards, rooms, interpolation, demo and asset tes
 npm run test:network  # Real HTTP/WebSocket integration tests
 npm run check         # JavaScript syntax
 npm run dev           # Watch/restart the Node server
-npm run build:avatars # Regenerate all twelve original GLB character assets
-npm run check:deployment -- http://localhost:4173 # Verify this local V7 build
+npm run build:avatars # Regenerate all twenty-four original GLB character assets
+npm run check:deployment -- http://localhost:4173 # Verify the local release
 ```
 
 Socket tests are skipped in the ordinary test command. Save browser files and refresh the page to see edits. `npm run dev` does not reload the browser. Restarting Node discards all rooms.

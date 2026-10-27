@@ -249,7 +249,7 @@ function resolveDebris(game) {
       // A jump helps with rubble afterward, but cannot dodge this impact.
       if (Math.abs(game.distance - event.z) <= CONFIG.debrisImpactRadius + EPSILON && game.lane === event.lane) {
         progress.resolved = true;
-        takeHit(game, game.mapId === 'pirate' ? 'Cannon strike' : game.mapId === 'jungle' ? 'Volcanic rock' : 'Falling masonry');
+        takeHit(game, game.mapId === 'tunnel' ? 'Falling masonry' : getMap(game.mapId).hazard);
         if (game.timeLeft <= EPSILON) return true;
       }
       // Anyone already past the landing point has no rubble left to cross.

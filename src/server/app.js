@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { resolve, extname } from 'node:path';
 import { WebSocket, WebSocketServer } from 'ws';
+import { MAP_IDS } from '../maps.js';
 import { ALL_AVATAR_IDS } from '../avatars.js';
 import { createRoomManager } from './rooms.js';
 
@@ -18,7 +19,8 @@ const types = {
 const publicFiles = new Set([
   '/index.html', '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js',
   '/src/renderer.js', '/src/network.js', '/src/maps.js', '/src/graphics/worlds.js', '/src/graphics/map-obstacles.js',
-  '/assets/maps/tunnel.svg', '/assets/maps/pirate.svg', '/assets/maps/jungle.svg',
+  ...MAP_IDS.map(id => `/assets/maps/${id}.svg`),
+  '/src/graphics/expansion-worlds.js', '/src/graphics/world-utils.js',
   ...ALL_AVATAR_IDS.map(id => `/assets/characters/${id}.glb`),
   '/src/unity-renderer.js', '/src/unity-protocol.js',
   '/src/avatars.js', '/src/hazards.js', '/src/graphics/avatars.js', '/src/graphics/tunnel.js',
@@ -69,7 +71,20 @@ export function createStaticFileHandler({ publicRoot = root } = {}) {
     }
     let handle;
     try {
-      handle = await open(resolve(publicRoot, vendorFiles.get(file) || '.' + file), 'r');
+      const path = resolve(publicRoot, vendorFiles.get(file) || '.' + file);
+      let encoded = false;
+      const acceptsGzip = String(request.headers['accept-encoding'] || '').split(',').some(token => {
+        const [name, ...params] = token.trim().toLowerCase().split(';');
+        if (name.trim() !== 'gzip') return false;
+        const quality = params.find(param => param.trim().startsWith('q='));
+        const weight = quality === undefined ? 1 : Number(quality.trim().slice(2));
+        return Number.isFinite(weight) && weight > 0 && weight <= 1;
+      });
+      if (file.endsWith('.glb') && acceptsGzip) {
+        try { handle = await open(path + '.gz', 'r'); encoded = true; }
+        catch (error) { if (error.code !== 'ENOENT') throw error; }
+      }
+      handle ??= await open(path, 'r');
       const stats = await handle.stat();
       if (!stats.isFile()) {
         response.writeHead(404, { 'Content-Type': 'text/plain' });
@@ -81,7 +96,8 @@ export function createStaticFileHandler({ publicRoot = root } = {}) {
       response.writeHead(200, {
         'Content-Type': types[extension] || 'application/octet-stream',
         'Content-Length': stats.size,
-        ...(compressed ? { 'Content-Encoding': 'gzip' } : {}),
+        ...((compressed || encoded) ? { 'Content-Encoding': 'gzip' } : {}),
+        ...(file.endsWith('.glb') ? { Vary: 'Accept-Encoding' } : {}),
         'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
       });
       if (request.method === 'HEAD') response.end();

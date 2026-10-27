@@ -11,9 +11,9 @@ import { createGameServer, createStaticFileHandler } from '../src/server/app.js'
 const networkTest = process.env.RUN_NETWORK_TESTS === '1' ? test : test.skip;
 
 // Read the wire bytes: fetch transparently decompresses gzip responses.
-function readResponse(url, method = 'GET') {
+function readResponse(url, method = 'GET', headers = {}) {
   return new Promise((resolve, reject) => {
-    const req = request(url, { method }, (response) => {
+    const req = request(url, { method, headers }, (response) => {
       const chunks = [];
       response.on('data', (chunk) => chunks.push(chunk));
       response.on('error', reject);
@@ -154,4 +154,25 @@ networkTest('3D browser modules load locally while the rest of node_modules stay
   }
   assert.equal((await fetch(origin + '/assets/characters/manifest.json')).status, 404);
   assert.equal((await fetch(origin + '/assets/characters/missing.glb')).status, 404);
+});
+
+networkTest('character GLBs negotiate gzip while preserving raw fallback and binary bytes', async t => {
+  const binary=Buffer.from('glTF test geometry '.repeat(512));
+  const compressed=gzipSync(binary);
+  const origin=await serveFixture(t, {'assets/characters/courier.glb':binary,'assets/characters/courier.glb.gz':compressed});
+  const encoded=await new Promise((resolve,reject)=>{
+    const req=request(origin+'/assets/characters/courier.glb',{headers:{'Accept-Encoding':'gzip'}},response=>{
+      const chunks=[];response.on('data',chunk=>chunks.push(chunk));response.on('end',()=>resolve({headers:response.headers,body:Buffer.concat(chunks)}));
+    });req.on('error',reject);req.end();
+  });
+  assert.equal(encoded.headers['content-encoding'],'gzip');
+  assert.equal(encoded.headers['content-type'],'model/gltf-binary');
+  assert.equal(encoded.headers.vary,'Accept-Encoding');
+  assert.deepEqual(gunzipSync(encoded.body),binary);
+  const raw=await readResponse(origin+'/assets/characters/courier.glb');
+  assert.equal(raw.headers['content-encoding'],undefined);assert.deepEqual(raw.body,binary);
+  const refused=await readResponse(origin+'/assets/characters/courier.glb','GET',{'Accept-Encoding':'gzip;q=0, br'});
+  assert.equal(refused.headers['content-encoding'],undefined);assert.deepEqual(refused.body,binary);
+  const head=await readResponse(origin+'/assets/characters/courier.glb','HEAD',{'Accept-Encoding':'gzip'});
+  assert.equal(head.headers['content-encoding'],'gzip');assert.equal(head.body.length,0);assert.equal(Number(head.headers['content-length']),compressed.length);
 });

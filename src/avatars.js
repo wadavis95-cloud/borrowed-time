@@ -5,6 +5,18 @@ export const AVATAR_IDS = MAPS.tunnel.avatars;
 export const ALL_AVATAR_IDS = Object.freeze(Object.values(MAPS).flatMap(map => map.avatars));
 
 export const AVATARS = Object.freeze({
+  mountaineer: Object.freeze({ id: 'mountaineer', name: 'Mountaineer', description: 'Red insulated jacket, knitted cap and expedition pack.' }),
+  medic: Object.freeze({ id: 'medic', name: 'Rescue Medic', description: 'White and coral rescue coat, medical pack and winter headband.' }),
+  guide: Object.freeze({ id: 'guide', name: 'Expedition Guide', description: 'Blue expedition parka, goggles and rope harness.' }),
+  snowranger: Object.freeze({ id: 'snowranger', name: 'Snow Ranger', description: 'Ochre winter coat, fur collar and green field pack.' }),
+  pilot: Object.freeze({ id: 'pilot', name: 'Pilot', description: 'Blue flight suit, white flight helmet and compact oxygen pack.' }),
+  flightengineer: Object.freeze({ id: 'flightengineer', name: 'Flight Engineer', description: 'Orange utility suit, tool harness and protective headgear.' }),
+  scientist: Object.freeze({ id: 'scientist', name: 'Scientist', description: 'White station coat, cyan collar and sensor pack.' }),
+  officer: Object.freeze({ id: 'officer', name: 'Station Officer', description: 'Navy uniform, gold shoulder trim and communications headset.' }),
+  explorer: Object.freeze({ id: 'explorer', name: 'Explorer', description: 'Coral desert shirt, sun hat and canvas expedition pack.' }),
+  archaeologist: Object.freeze({ id: 'archaeologist', name: 'Archaeologist', description: 'Cream field jacket, broad hat and leather equipment case.' }),
+  caravanscout: Object.freeze({ id: 'caravanscout', name: 'Caravan Scout', description: 'Turquoise scarf, sand-colored tunic and travel pack.' }),
+  mechanic: Object.freeze({ id: 'mechanic', name: 'Desert Mechanic', description: 'Rust workwear, dust goggles and utility belt.' }),
   captain: Object.freeze({ id: 'captain', name: 'Captain', description: 'Tall captain with a tricorn hat, long navy coat and gold shoulder trim.' }),
   navigator: Object.freeze({ id: 'navigator', name: 'Navigator', description: 'Silver-haired navigator with a teal coat, compass pouch and head scarf.' }),
   shipwright: Object.freeze({ id: 'shipwright', name: 'Shipwright', description: 'Broad shipwright with leather apron, tool belt and red bandanna.' }),

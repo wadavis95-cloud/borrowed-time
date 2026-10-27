@@ -1,4 +1,6 @@
 import test from 'node:test';
+import { createHash } from 'node:crypto';
+import { gunzipSync } from 'node:zlib';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -8,6 +10,8 @@ import { createAvatarLibrary } from '../src/graphics/avatars.js';
 const ids = ['courier', 'engineer', 'guard', 'runner'];
 async function readAsset(id) {
   const bytes = await readFile(new URL(`../assets/characters/${id}.glb`, import.meta.url));
+  const compressed = await readFile(new URL(`../assets/characters/${id}.glb.gz`, import.meta.url));
+  assert.deepEqual(gunzipSync(compressed), bytes, `${id} compressed bytes match the source`);
   assert.equal(bytes.readUInt32LE(0), 0x46546c67);
   assert.equal(bytes.readUInt32LE(4), 2);
   assert.equal(bytes.readUInt32LE(8), bytes.length);
@@ -240,19 +244,19 @@ test('finish reactions blend from the running pose and remain deterministic acro
 });
 
 
-test('eight themed avatars have distinct geometry and finite animated skeletons', async () => {
+test('twenty themed avatars have distinct geometry and finite animated skeletons', async () => {
   const sizes = new Set();
   for (const id of ALL_AVATAR_IDS.filter(id => !ids.includes(id))) {
     const asset = await readAsset(id);
     assert.deepEqual(asset.animations.map(clip => clip.name).sort(), ['idle','jump','run','stumble']);
-    let vertices = 0;
+    const geometryHash = createHash('sha256');
     asset.scene.traverse(mesh => {
       if (!mesh.isMesh) return;
       assert.ok(mesh.isSkinnedMesh);
       for (const name of ['position', 'normal', 'skinIndex', 'skinWeight']) assert.ok([...mesh.geometry.attributes[name].array].every(Number.isFinite), `${id} ${name}`);
-      vertices += mesh.geometry.attributes.position.count;
+      geometryHash.update(Buffer.from(mesh.geometry.attributes.position.array.buffer));
     });
-    sizes.add(vertices);
+    sizes.add(geometryHash.digest('hex'));
   }
-  assert.equal(sizes.size, 8, 'eight distinct modeled silhouettes, not only recolors');
+  assert.equal(sizes.size, ALL_AVATAR_IDS.length - ids.length, 'distinct modeled silhouettes, not only recolors');
 });

@@ -1,0 +1,158 @@
+{
+  "mountaineer": {
+    "bytes": 1079852,
+    "triangles": 34704,
+    "vertices": 20986,
+    "materialDraws": 7,
+    "animations": [
+      "idle",
+      "run",
+      "jump",
+      "stumble"
+    ],
+    "height": 2
+  },
+  "medic": {
+    "bytes": 926900,
+    "triangles": 29564,
+    "vertices": 17597,
+    "materialDraws": 7,
+    "animations": [
+      "idle",
+      "run",
+      "jump",
+      "stumble"
+    ],
+    "height": 1.86
+  },
+  "guide": {
+    "bytes": 968696,
+    "triangles": 31264,
+    "vertices": 18465,
+    "materialDraws": 8,
+    "animations": [
+      "idle",
+      "run",
+      "jump",
+      "stumble"
+    ],
+    "height": 1.97
+  },
+  "snowranger": {
+    "bytes": 865484,
+    "triangles": 27636,
+    "vertices": 16214,
+    "materialDraws": 7,
+    "animations": [
+      "idle",
+      "run",
+      "jump",
+      "stumble"
+    ],
+    "height": 1.8
+  },
+  "pilot": {
+    "bytes": 880232,
+    "triangles": 28020,
+    "vertices": 16549,
+    "materialDraws": 8,
+    "animations": [
+      "idle",
+      "run",
+      "jump",
+      "stumble"
+    ],
+    "height": 1.79
+  },
+  "flightengineer": {
+    "bytes": 983896,
+    "triangles": 31648,
+    "vertices": 18812,
+    "materialDraws": 9,
+    "animations": [
+      "idle",
+      "run",
+      "jump",
+      "stumble"
+    ],
+    "height": 2
+  },
+  "scientist": {
+    "bytes": 918280,
+    "triangles": 29276,
+    "vertices": 17395,
+    "materialDraws": 8,
+    "animations": [
+      "idle",
+      "run",
+      "jump",
+      "stumble"
+    ],
+    "height": 1.9
+  },
+  "officer": {
+    "bytes": 1082424,
+    "triangles": 34704,
+    "vertices": 21047,
+    "materialDraws": 8,
+    "animations": [
+      "idle",
+      "run",
+      "jump",
+      "stumble"
+    ],
+    "height": 2.08
+  },
+  "explorer": {
+    "bytes": 847572,
+    "triangles": 27108,
+    "vertices": 15804,
+    "materialDraws": 7,
+    "animations": [
+      "idle",
+      "run",
+      "jump",
+      "stumble"
+    ],
+    "height": 1.76
+  },
+  "archaeologist": {
+    "bytes": 904336,
+    "triangles": 28940,
+    "vertices": 17074,
+    "materialDraws": 7,
+    "animations": [
+      "idle",
+      "run",
+      "jump",
+      "stumble"
+    ],
+    "height": 1.89
+  },
+  "caravanscout": {
+    "bytes": 1048904,
+    "triangles": 33708,
+    "vertices": 20295,
+    "materialDraws": 7,
+    "animations": [
+      "idle",
+      "run",
+      "jump",
+      "stumble"
+    ],
+    "height": 2.02
+  },
+  "mechanic": {
+    "bytes": 944472,
+    "triangles": 30448,
+    "vertices": 17928,
+    "materialDraws": 8,
+    "animations": [
+      "idle",
+      "run",
+      "jump",
+      "stumble"
+    ],
+    "height": 1.98
+  }
+}

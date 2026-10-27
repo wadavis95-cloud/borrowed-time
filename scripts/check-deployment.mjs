@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { WebSocket } from 'ws';
+import { MAP_IDS } from '../src/maps.js';
 import { ALL_AVATAR_IDS } from '../src/avatars.js';
 import { ABILITIES } from '../src/game.js';
 
@@ -9,7 +10,8 @@ const USAGE = 'Usage: node scripts/check-deployment.mjs https://your-game.onrend
 const ASSETS = [
   '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js', '/src/maps.js',
   '/src/graphics/worlds.js', '/src/graphics/map-obstacles.js',
-  '/assets/maps/tunnel.svg', '/assets/maps/pirate.svg', '/assets/maps/jungle.svg',
+  ...MAP_IDS.map(id => `/assets/maps/${id}.svg`),
+  '/src/graphics/expansion-worlds.js', '/src/graphics/world-utils.js',
   '/src/renderer.js', '/src/unity-renderer.js', '/src/unity-protocol.js', '/src/network.js', '/src/avatars.js', '/src/hazards.js',
   '/src/graphics/avatars.js', '/src/graphics/tunnel.js', '/src/demo.js', '/src/audio.js', '/src/input.js', '/src/ability-coach.js',
   '/vendor/three.module.js', '/vendor/three.core.js', '/vendor/loaders/GLTFLoader.js',

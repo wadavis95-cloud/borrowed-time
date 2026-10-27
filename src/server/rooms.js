@@ -100,7 +100,7 @@ export function createRoomManager({
       if (room) return error('ALREADY_IN_ROOM', 'Leave this room before joining another.');
       if (message.type === 'create') {
         if (rooms.size >= maxRooms) return error('SERVER_FULL', 'All rooms are busy. Try again shortly.');
-        if (message.mapId !== undefined && !isMapId(message.mapId)) return error('INVALID_MAP', 'Choose one of the three maps.');
+        if (message.mapId !== undefined && !isMapId(message.mapId)) return error('INVALID_MAP', 'Choose an available map.');
         let code;
         do { code = makeCode(); } while (rooms.has(code));
         const created = {
@@ -131,7 +131,7 @@ export function createRoomManager({
     if (!room) return error('NOT_IN_ROOM', 'Create or join a room first.');
     if (message.type === 'vote') {
       if (room.phase !== 'lobby') return error('VOTING_CLOSED', 'Voting closes when the countdown begins.');
-      if (!isMapId(message.mapId)) return error('INVALID_MAP', 'Choose one of the three maps.');
+      if (!isMapId(message.mapId)) return error('INVALID_MAP', 'Choose an available map.');
       room.votes[id] = message.mapId;
       room.lastActivity = now();
       return { ok: true };

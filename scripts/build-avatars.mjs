@@ -1,6 +1,7 @@
 // Original Borrowed Time character source. Authoring uses Three.js, not Blender.
 // Run: node scripts/build-avatars.mjs. No downloads, image services, or randomness.
 import * as THREE from 'three';
+import { gzipSync } from 'node:zlib';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -30,6 +31,18 @@ const themedProfiles = {
   botanist: { style: 'runner', height: 1.78, shoulder: .235, coat: '#8eaa6b', coatLight: '#b3ca86', trousers: '#58605b', hair: '#68432d', accent: '#f3c666' },
   ranger: { style: 'guard', height: 2.05, hip: .18, coat: '#d7b45b', coatLight: '#f1d089', trousers: '#476858', hair: '#31302a', accent: '#dd754c' },
   volcanologist: { style: 'engineer', height: 1.96, hip: .21, shoulder: .30, coat: '#e76e35', coatLight: '#ff9b55', trousers: '#414e62', hair: '#4d3432', accent: '#7ad2d3' },
+  mountaineer: { style:'guard', height:2.0,coat:'#c74c4c',coatLight:'#e57362',trim:'#d6e3db',trousers:'#314d65',hair:'#52392e' },
+  medic: { style:'courier', height:1.86,coat:'#e4e7df',coatLight:'#faf7eb',trim:'#dc6556',trousers:'#5d7685',hair:'#633e2d' },
+  guide: { style:'engineer', height:1.97,coat:'#397eae',coatLight:'#6fa9c3',trim:'#e5cb68',trousers:'#293d54',hair:'#d3c5ad' },
+  snowranger: { style:'runner', height:1.8,coat:'#c5a354',coatLight:'#e4c079',trim:'#e9e3cd',trousers:'#315c58',hair:'#3d2c28' },
+  pilot: { style:'runner', height:1.79,coat:'#3972ae',coatLight:'#70a6db',trim:'#dce9ed',trousers:'#263e58',hair:'#3f2d2c' },
+  flightengineer: { style:'engineer', height:2.0,coat:'#dd7848',coatLight:'#f6a05e',trim:'#c6d6cf',trousers:'#37485b',hair:'#53362e' },
+  scientist: { style:'courier', height:1.9,coat:'#e5e9e0',coatLight:'#f5fcf0',trim:'#71cbd5',trousers:'#465a72',hair:'#3e2d36' },
+  officer: { style:'guard', height:2.08,coat:'#293d65',coatLight:'#49658d',trim:'#dcb86b',trousers:'#243248',hair:'#bfc4c4' },
+  explorer: { style:'runner', height:1.76,coat:'#c8785f',coatLight:'#e7a27b',trim:'#e7ce9a',trousers:'#6d5842',hair:'#3d2f24' },
+  archaeologist: { style:'courier', height:1.89,coat:'#d8c69a',coatLight:'#f0dfb7',trim:'#9c6b46',trousers:'#766b54',hair:'#593c29' },
+  caravanscout: { style:'guard', height:2.02,coat:'#c5a16a',coatLight:'#e2bd7f',trim:'#3cabb1',trousers:'#635944',hair:'#302c2a' },
+  mechanic: { style:'engineer', height:1.98,coat:'#a66340',coatLight:'#d08a53',trim:'#d5bf8b',trousers:'#4f5c57',hair:'#5a3d2f' },
 };
 for (const [id, changes] of Object.entries(themedProfiles)) profiles[id] = { ...profiles[changes.style], ...changes };
 
@@ -553,7 +566,52 @@ function clipsFor(rig, id) {
   return clips;
 }
 
+const expansionIds = new Set(['mountaineer','medic','guide','snowranger','pilot','flightengineer','scientist','officer','explorer','archaeologist','caravanscout','mechanic']);
+function expansionEquipment(id,p,r,b) {
+  const y=r.points.head.y, cy=r.chestY, h=r.hipY;
+  const snow=['mountaineer','medic','guide','snowranger'].includes(id), space=['pilot','flightengineer','scientist','officer'].includes(id);
+  if(snow) {
+    b.loft(p.trim,0,'chest',[[cy+.02,.10,.09],[cy+.14,.09,.08]],{steps:5});
+    b.ellipsoid(id==='medic'?p.trim:p.coat,0,'head',[0,y+.18,.01],[.16,.15,.16]);
+    if(id==='mountaineer'||id==='snowranger')b.ellipsoid(p.trim,0,'head',[0,y+.33,.02],[.065,.06,.06]);
+    if(id==='guide')b.bevelBox('#345563',6,'head',[0,y+.08,-.15],[.25,.085,.025]);
+    for(const sign of [-1,1])b.bevelBox(p.trim,0,'chest',[sign*.13,cy-.12,.15],[.04,.025,.02]);
+  } else if(space) {
+    if(id==='pilot'||id==='flightengineer') {
+      b.ellipsoid('#e2e8e5',5,'head',[0,y+.15,0],[.18,.20,.185]);
+      b.bevelBox('#345c7b',6,'head',[0,y+.09,-.17],[.26,.14,.05]);
+      for(const sign of [-1,1])b.ellipsoid(p.accent,7,'head',[sign*.18,y+.10,0],[.025,.07,.07]);
+    } else {
+      for(const sign of [-1,1])b.ellipsoid('#536980',4,'head',[sign*.145,y+.08,.0],[.035,.06,.05]);
+      b.tube('#536980',4,'head',[[.15,y+.08,0],[.18,y-.01,-.09],[.08,y-.02,-.15]],.009,8);
+    }
+    for(const sign of [-1,1])b.bevelBox(p.trim,0,'chest',[sign*.21,cy+.01,.01],[.13,.04,.15]);
+  } else {
+    if(id==='caravanscout'||id==='mechanic') {
+      b.loft(id==='caravanscout'?'#38a7aa':p.trim,0,'head',[[y+.1,.155,.15],[y+.24,.145,.14]],{steps:4});
+      if(id==='mechanic')b.bevelBox('#495e56',6,'head',[0,y+.09,-.15],[.25,.065,.03]);
+      if(id==='caravanscout')b.panel('#38a7aa',0,'chest',[[-.11,cy+.13,.12],[.1,cy+.13,.12],[.16,cy-.32,.21],[-.03,cy-.21,.20]],.009);
+    } else {
+      b.ellipsoid('#b69a68',0,'head',[0,y+.16,0],[.28,.03,.25]);
+      b.loft('#d5bc85',0,'head',[[y+.16,.145,.145],[y+.31,.12,.125]],{steps:5});
+      b.loft('#70553a',3,'head',[[y+.17,.15,.15],[y+.2,.145,.145]],{steps:2});
+    }
+  }
+  const packColor=space?'#627e96':snow?'#547982':'#96744b';
+  b.bevelBox(packColor,8,'chest',[0,cy-.20,.21],[space?.32:.29,.35,.18],.03);
+  for(const sign of [-1,1])b.ribbon(p.trim,0,'chest',[[sign*.14,cy+.01,.10],[sign*.17,cy-.17,.15],[sign*.13,cy-.37,.15]],.035,.01);
+  if(id==='medic') {
+    b.bevelBox('#edebe0',0,'chest',[0,cy-.20,.31],[.23,.24,.025]);
+    b.bevelBox('#dc6556',0,'chest',[0,cy-.20,.33],[.04,.15,.01]);b.bevelBox('#dc6556',0,'chest',[0,cy-.20,.33],[.15,.04,.01]);
+  } else if(space) {
+    b.bevelBox('#7fd5de',6,'chest',[0,cy-.20,.315],[.19,.08,.02]);
+    if(id==='flightengineer')b.bevelBox('#d1be77',4,'bag',[.26,h-.04,.10],[.12,.25,.12]);
+  } else if(id==='guide')b.tube('#d5bb67',0,'chest',[[.12,cy-.08,.3],[.15,cy-.3,.34],[-.12,cy-.34,.34],[-.13,cy-.12,.3],[.12,cy-.08,.3]],.018,24);
+  else if(id==='archaeologist'||id==='mechanic')b.bevelBox('#6d5138',3,'bag',[.25,h-.05,.08],[.17,.24,.12]);
+}
+
 function themedEquipment(id, p, r, b) {
+  if (expansionIds.has(id)) { expansionEquipment(id,p,r,b); return; }
   const y = r.points.head.y, cy = r.chestY, h = r.hipY;
   if (id === 'captain') {
     b.ellipsoid('#202e42', 0, 'head', [0, y + .18, .005], [.27, .075, .22]);
@@ -607,12 +665,18 @@ export function authorAvatar(id) {
 async function main() {
   const directory = new URL('../assets/characters/', import.meta.url); await mkdir(directory, { recursive: true }); const manifest = {};
   for (const id of Object.keys(profiles)) {
+    if (process.argv.includes('--expansion-only') && !expansionIds.has(id)) continue;
     if (process.argv.includes('--new-only') && !themedProfiles[id]) continue;
     const asset = authorAvatar(id);
     const result = await new GLTFExporter().parseAsync(asset.scene, { binary: true, animations: asset.animations, onlyVisible: true });
     await writeFile(new URL(`${id}.glb`, directory), Buffer.from(result));
+    await writeFile(new URL(`${id}.glb.gz`, directory), gzipSync(Buffer.from(result), { level: 9 }));
     manifest[id] = { bytes: result.byteLength, triangles: asset.triangles, vertices: asset.vertices, materialDraws: asset.materialDraws, animations: asset.animations.map((a) => a.name), height: profiles[id].height };
     console.log(`${id}: ${result.byteLength.toLocaleString()} bytes; ${asset.triangles.toLocaleString()} triangles`);
+  }
+  if (process.argv.includes('--expansion-only')) {
+    await writeFile(new URL('expansion-manifest.json', directory), JSON.stringify(manifest, null, 2) + '\n');
+    return;
   }
   if (process.argv.includes('--new-only')) {
     await writeFile(new URL('maps-manifest.json', directory), JSON.stringify(manifest, null, 2) + '\n');

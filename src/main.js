@@ -69,7 +69,7 @@ function updateMapPicker() {
   if (mapPickerKey === key) return;
   mapPickerKey = key;
   $('map-picker-title').textContent = lobby ? 'Vote for your escape' : 'Choose your escape';
-  $('map-vote-note').textContent = lobby ? 'Most votes wins · Ties are random' : '3 maps · Same ticking clock';
+  $('map-vote-note').textContent = lobby ? 'Most votes wins · Ties are random' : `${MAP_IDS.length} maps · Same ticking clock`;
   for (const button of $('map-cards').children) {
     const id = button.dataset.map;
     button.setAttribute('aria-pressed', String(ownVote === id));

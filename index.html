@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0c171b">
-  <meta name="description" content="A four-player escape race through tunnels, a sinking pirate ship and an erupting jungle. Spend seconds for abilities.">
-  <title>Borrowed Time — Three Escapes</title>
+  <meta name="description" content="Race friends across six escape maps. Spend seconds on abilities, dodge danger and escape before zero.">
+  <title>Borrowed Time — Six Escapes</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
   <script type="importmap">{"imports":{"three":"/vendor/three.module.js","three/addons/":"/vendor/"}}</script>
@@ -14,12 +14,12 @@
   <div class="app">
     <header class="site-header">
       <a class="brand" href="/" aria-label="Borrowed Time home"><img src="/favicon.svg" alt="" width="30" height="30"><span>BORROWED <span class="brand-light">TIME</span></span></a>
-      <div class="header-actions"><span class="version">V7 · LOCAL</span><button id="sound-button" class="quiet-button" aria-pressed="false">Sound off</button><button id="guide-button" class="quiet-button">How to play ↗</button></div>
+      <div class="header-actions"><span class="version">V8</span><button id="sound-button" class="quiet-button" aria-pressed="false">Sound off</button><button id="guide-button" class="quiet-button">How to play ↗</button></div>
     </header>
     <main>
       <div class="page-heading" id="page-heading"><div><h1>Race the clock.</h1></div><button id="demo-button" class="demo-button" disabled><span aria-hidden="true">▷</span> Watch demo</button></div>
       <section id="map-picker" class="map-picker" aria-labelledby="map-picker-title">
-        <div class="map-picker-heading"><h2 id="map-picker-title">Choose your escape</h2><span id="map-vote-note">3 maps · Same ticking clock</span></div>
+        <div class="map-picker-heading"><h2 id="map-picker-title">Choose your escape</h2><span id="map-vote-note">6 maps · Same ticking clock</span></div>
         <div id="map-cards" class="map-cards"></div>
       </section>
       <section class="race-menu" id="race-menu" aria-label="Multiplayer setup">

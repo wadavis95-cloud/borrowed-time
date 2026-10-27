@@ -78,3 +78,9 @@ established skeleton and fluent animation system but have distinct proportions,
 headwear, equipment and palettes. `node scripts/build-avatars.mjs --new-only`
 rebuilds only these eight GLBs plus `maps-manifest.json`, preserving the four
 baseline files. No external models, textures or downloads are used for these casts.
+
+## V8 expansion casts
+
+Frozen Summit: Mountaineer, Rescue Medic, Expedition Guide, Snow Ranger. Orbital Escape: Pilot, Flight Engineer, Scientist, Station Officer. Sandstorm Canyon: Explorer, Archaeologist, Caravan Scout, Desert Mechanic.
+
+`node scripts/build-avatars.mjs --expansion-only` generates these twelve GLBs, their gzip siblings and `expansion-manifest.json`. All 24 models now have matching gzip files for HTTP negotiation; the original raw GLBs remain available.

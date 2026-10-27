@@ -198,8 +198,8 @@ export function createRenderer(canvas) {
     const geometry = currentMapId === 'tunnel' ? roofSlabGeometry(event.lane)
       : currentMapId === 'pirate' ? new THREE.SphereGeometry(.48, 12, 8) : new THREE.DodecahedronGeometry(.68, 1);
     const material = currentMapId === 'tunnel' ? roofSlabMaterial : new THREE.MeshStandardMaterial({
-      color: currentMapId === 'pirate' ? '#283b42' : '#563a32', roughness: .7, metalness: currentMapId === 'pirate' ? .7 : 0,
-      emissive: currentMapId === 'pirate' ? '#000000' : '#ff4c08', emissiveIntensity: .7 });
+      color: getMap(currentMapId).impactColor || (currentMapId === 'pirate' ? '#283b42' : '#563a32'), roughness: .7, metalness: currentMapId === 'pirate' ? .7 : 0,
+      emissive: getMap(currentMapId).impactGlow || (currentMapId === 'pirate' ? '#000000' : '#ff4c08'), emissiveIntensity: .7 });
     const main = makeMesh(chunk, geometry, material, 0, 0, 0); main.castShadow = true;
     for (let i = 0; i < (currentMapId === 'pirate' ? 0 : 4); i++) makeMesh(chunk, stoneGeometry, brokenStone, Math.sin(i * 2.4) * .87, .4 + Math.cos(i) * .4, Math.cos(i * 2.4) * .6, .15, .23, .2);
     const rubble = new THREE.Group();
@@ -209,7 +209,8 @@ export function createRenderer(canvas) {
         const plank = makeMesh(rubble, boxGeometry, splinter, Math.sin(i * 2.4) * .6, .15 + (i % 3) * .08, Math.cos(i * 2.4) * .35, .13, .16, .65);
         plank.rotation.set(i * .2, i * .85, i * .12);
       }
-    } else stones(rubble, 9, 1.2);
+    } else if (['frozen','orbital','desert'].includes(currentMapId)) rubble.add(createMapObstacle(currentMapId, { type:'rubble', length:2 }));
+    else stones(rubble, 9, 1.2);
     group.add(rubble);
     const marker = makeMesh(group, new THREE.PlaneGeometry(.72, .72), new THREE.MeshBasicMaterial({ map: signTexture('!', '#ffe8b6', '#73492f', 64), side: THREE.DoubleSide, toneMapped: false }), 0, 2.65, .1);
     const dustMaterial = new THREE.MeshBasicMaterial({ map: glowMap, color: '#c9b791', transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
@@ -279,11 +280,11 @@ export function createRenderer(canvas) {
     renderer.toneMappingExposure = 1.04 - daylight * .09;
     if (currentMapId !== 'tunnel') {
       const ship = currentMapId === 'pirate';
-      scene.background.set(ship ? '#83becd' : '#a1d5bc');
-      scene.fog.color.set(ship ? '#9dbfca' : '#9fc4a5');
+      scene.background.set(getMap(currentMapId).sky || (ship ? '#83becd' : '#a1d5bc'));
+      scene.fog.color.set(getMap(currentMapId).fog || (ship ? '#9dbfca' : '#9fc4a5'));
       scene.fog.near = 75; scene.fog.far = ship ? 260 : 330;
       ambient.intensity = ship ? 1.9 : 1.85;
-      sun.color.set('#ffe1ae'); sun.intensity = 2.7;
+      sun.color.set(getMap(currentMapId).sun || '#ffe1ae'); sun.intensity = currentMapId === 'orbital' ? 1.9 : 2.7;
       lampLeft.intensity = lampRight.intensity = 0; renderer.toneMappingExposure = 1.02;
     } else scene.fog.near = 36;
     world.update(distance, elapsed, reducedMotion, state.debris || []);

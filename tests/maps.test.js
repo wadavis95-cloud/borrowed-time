@@ -6,9 +6,9 @@ import { chooseDemoAction } from '../src/demo.js';
 import { createRaceView } from '../src/network.js';
 import { createRoomManager } from '../src/server/rooms.js';
 
-test('three maps provide unique four-person rosters and reproducible courses', () => {
-  assert.equal(MAP_IDS.length, 3);
-  assert.equal(new Set(MAP_IDS.flatMap(id => MAPS[id].avatars)).size, 12);
+test('six maps provide unique four-person rosters and reproducible courses', () => {
+  assert.equal(MAP_IDS.length, 6);
+  assert.equal(new Set(MAP_IDS.flatMap(id => MAPS[id].avatars)).size, 24);
   for (const mapId of MAP_IDS) {
     const a = createGame({ mapId, seed: 42 });
     const b = createGame({ mapId, seed: 42 });
@@ -70,7 +70,7 @@ test('departed votes disappear and rematches reopen voting', () => {
 });
 
 
-test('all three maps have free routes across 32 seeds at ordinary input intervals', () => {
+test('all six maps have free routes across 32 seeds at ordinary input intervals', () => {
   for (const mapId of MAP_IDS) for (let seed = 1; seed <= 32; seed++) {
     const game = createGame({ mapId, seed }); startGame(game);
     for (let tick = 0; tick < 60 * 80 && game.phase === 'running'; tick++) {
@@ -118,7 +118,7 @@ test('map obstacle art stays below the paid clearance height and keeps gap lengt
   const THREE = await import('three');
   const { createMapObstacle } = await import('../src/graphics/map-obstacles.js');
   const { DISTANCE_SCALE } = await import('../src/graphics/tunnel.js');
-  for (const mapId of ['pirate','jungle']) for (const type of ['rubble','barrier','gap']) {
+  for (const mapId of MAP_IDS.filter(id => id !== 'tunnel')) for (const type of ['rubble','barrier','gap']) {
     const group = createMapObstacle(mapId, { type, length: 8 });group.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(group);
     assert.ok(Number.isFinite(bounds.max.y));
