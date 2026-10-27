@@ -25,3 +25,11 @@ The timer, 1,350m track, ability effects and prices are unchanged: Boost costs f
 - A free-route controller clears all 128 test courses without purchases or hits.
 - Physics test fixtures now target the same intended collision/jump/impact moments using the new independent distance equation. Exact clock-expiry, pause, boost/stun integration and large-frame equivalence checks remain in place.
 - Local browser demo checks the visual spacing and the faster motion. Public verification is recorded after deployment.
+
+## Public verification
+
+Deployed October 27, 2026, runtime `63f820e268b2a9675ef366ccbe1378a5706a5162`, at https://borrowed-time.onrender.com/. Render deployment: https://dashboard.render.com/web/srv-dbfpmdss728c73cgrqu0/deploys/dep-dbgga3942hec739b3620.
+
+The public smoke passed: 26 assets, two WSS clients, room creation/join/countdown, both abilities, movement, standings, shared roof schedules and cleanup. A SHA-256 comparison verified that public `src/game.js` exactly matches the tested rules. The public browser also ran the updated four-player demo without console errors. [Actual public preview](../images/v6-pacing-public.png).
+
+Players with existing tabs open should refresh before creating or joining a new race, so the browser generator and server use the same updated rules. Previous builds remain preserved in Git history.

@@ -1,6 +1,6 @@
 # Changelog
 
-## Spacing and starting-speed playtest
+## Spacing and starting-speed playtest — deployed October 27, 2026
 
 - Raised starting speed from 22 to 24m/s, retaining the 32m/s cap and 50-second acceleration ramp.
 - Widened ordinary set-spacing settings from 44→30m to 60→46m; reserved gaps from 76 to 88m. Within-set lane patterns are unchanged.

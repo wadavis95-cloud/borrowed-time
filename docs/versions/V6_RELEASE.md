@@ -2,7 +2,7 @@
 
 Version: `6.0.0-preview.1`.
 
-**Latest tuning:** Boost costs five seconds, deployed runtime `3c410c6`; its effect still lasts four seconds.
+**Latest pacing update:** 24m/s starting speed and wider obstacle-set spacing, deployed runtime `63f820e`. [Verification](V6_PACING_UPDATE.md#public-verification). Boost still costs five seconds and lasts four seconds.
 
 **Public HUD update:** mobile HUD and contextual ability coaching, deployed October 27, 2026 at 3:47:55 PM EDT, runtime `298bd8d6a9d1188fcef062be7818e80dfecd388a`. See [verification](V6_MOBILE_HUD.md#public-deployment-verification). The initial V6 deployment record follows below.
 

@@ -1,5 +1,7 @@
 # Borrowed Time · V6 gameplay and UI playtest
 
+**Latest pacing update:** a faster 24m/s start with wider spacing between obstacle sets. The top speed and ability prices stay the same. [Pacing notes](docs/versions/V6_PACING_UPDATE.md).
+
 **Mobile HUD update (deployed):** standings now sit inside the course, abilities are red/blue, and unused skills receive contextual button hints. See [mobile HUD notes](docs/versions/V6_MOBILE_HUD.md).
 
 A browser escape runner for **solo practice or private races with 2–4 players**. Race through a crumbling Victorian railway tunnel, dodge falling masonry, and spend your remaining seconds on abilities. Real opponents appear as translucent 3D runners and cannot collide with you.
