@@ -2,7 +2,9 @@
 
 Version: `6.0.0-preview.1`.
 
-**Latest public update:** mobile HUD and contextual ability coaching, deployed October 27, 2026 at 3:47:55 PM EDT, runtime `298bd8d6a9d1188fcef062be7818e80dfecd388a`. See [verification](V6_MOBILE_HUD.md#public-deployment-verification). The initial V6 deployment record follows below.
+**Latest tuning:** Boost costs five seconds, deployed runtime `3c410c6`; its effect still lasts four seconds.
+
+**Public HUD update:** mobile HUD and contextual ability coaching, deployed October 27, 2026 at 3:47:55 PM EDT, runtime `298bd8d6a9d1188fcef062be7818e80dfecd388a`. See [verification](V6_MOBILE_HUD.md#public-deployment-verification). The initial V6 deployment record follows below.
 
 Play: https://borrowed-time.onrender.com/
 
@@ -51,3 +53,11 @@ Previous public revision: `6176c4a54cf4c05b338fdba66491f03ac0e0ec90`, preserved 
 The public browser loaded the new models and UI and ran the four-player server demo with live standings and independent racers. No browser console errors or warnings were recorded. [Actual public race screenshot](../images/v6-public-multiplayer.png). Physical-phone testing remains the next user test.
 
 This verification record is a documentation-only follow-up using Render’s supported `[skip render]` commit marker to preserve the running instance: https://render.com/docs/deploys#skipping-an-auto-deploy. The runtime revision above remains the deployed build.
+
+## Five-second Boost adjustment
+
+Deployed October 27, 2026, runtime `3c410c640503350dd79c011a64f78454f0c3d6bb`. Following physical-phone feedback, Boost now costs five seconds instead of six. It still provides 1.85× speed for four seconds with the same seven-second cooldown; long jump remains four seconds.
+
+112 standard tests and all 29 network tests passed. Public deployment smoke verified the new five-second purchaser-only boost charge and unchanged long-jump purchase. Render deployment: https://dashboard.render.com/web/srv-dbfpmdss728c73cgrqu0/deploys/dep-dbgg3kvb9u1s73ai6jp0. Previous revisions remain in Git history.
+
+A public-browser purchase deducted exactly five seconds and displayed the updated cost. [Actual capture](../images/v6-five-second-boost-public.png).

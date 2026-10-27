@@ -1,8 +1,8 @@
 # Changelog
 
-## Local boost-price playtest
+## Boost-price playtest — deployed October 27, 2026
 
-- Reduced boost from six seconds to five after phone-playtest feedback. Duration, speed multiplier and cooldown are unchanged. Long jump still costs four seconds. This adjustment has not been deployed.
+- Reduced boost from six seconds to five after phone-playtest feedback. Duration, speed multiplier and cooldown are unchanged. Long jump still costs four seconds. Deployed as runtime `3c410c6` for phone playtesting.
 
 ## Mobile HUD and ability hints — deployed October 27, 2026
 
