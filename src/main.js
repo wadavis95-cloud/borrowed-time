@@ -3,6 +3,7 @@ import { CONFIG, ABILITIES, createGame, freshCourseSeed, startGame, pauseGame, r
 import { createUnityRenderer } from './unity-renderer.js';
 import { connectRace, createRaceView } from './network.js';
 import { AVATARS } from './avatars.js';
+import { MAPS, MAP_IDS, getMap } from './maps.js';
 import { createDemoRace } from './demo.js';
 import { createGameAudio } from './audio.js';
 import { createInputMode } from './input.js';
@@ -15,7 +16,9 @@ const abilityCoach = createAbilityCoach();
 let renderer = null, graphicsError = '', graphicsLoading = true;
 let graphicsProgress = 0;
 const graphicsMessage = '3D graphics are unavailable. Try an up-to-date browser with graphics acceleration enabled, then reload.';
-let game = createGame();
+let selectedMapId = 'tunnel';
+let game = createGame({ mapId: selectedMapId });
+let mapPickerKey = '';
 let soloSeed = 42;
 let mode = 'solo';
 let connection = null, snapshot = null, raceView = createRaceView();
@@ -37,8 +40,44 @@ const inputMode = createInputMode({ onChange(mode) {
 const controlHint = () => inputMode.mode === 'touch'
   ? 'Swipe to move · Swipe up to hop · Tap abilities'
   : 'A / D move · W hop · Q boost · E long jump';
-const guestName = `Runner ${100 + Math.floor(Math.random() * 900)}`;
-$('player-name').placeholder = guestName;
+for (const id of MAP_IDS) {
+  const map = MAPS[id];
+  const button = document.createElement('button');
+  button.type = 'button'; button.className = 'map-card'; button.dataset.map = id;
+  button.setAttribute('aria-pressed', String(id === selectedMapId));
+  const image = document.createElement('img'); image.src = map.thumbnail; image.alt = ''; image.width = 600; image.height = 320;
+  const copy = document.createElement('span'); copy.className = 'map-card-copy';
+  const title = document.createElement('strong'); title.textContent = map.name;
+  const tagline = document.createElement('small'); tagline.textContent = map.tagline;
+  const votes = document.createElement('span'); votes.className = 'map-votes';
+  copy.append(title, tagline); button.append(image, copy, votes);
+  button.addEventListener('click', () => {
+    if (mode !== 'solo') {
+      if (snapshot?.room.phase === 'lobby' && mode !== 'demo') connection?.send({ type: 'vote', mapId: id });
+      return;
+    }
+    selectedMapId = id; game = createGame({ mapId: id }); resetVisuals(); updateHUD();
+  });
+  $('map-cards').append(button);
+}
+function updateMapPicker() {
+  const lobby = mode !== 'solo' && snapshot?.room.phase === 'lobby';
+  $('map-picker').hidden = mode === 'solo' ? ['running', 'paused'].includes(game.phase) : !lobby || mode === 'demo';
+  const votes = snapshot?.room.votes || {};
+  const ownVote = mode === 'solo' ? selectedMapId : votes[snapshot?.you.id];
+  const key = JSON.stringify([mode, lobby, ownVote, votes, graphicsLoading, graphicsError, networkStatus]);
+  if (mapPickerKey === key) return;
+  mapPickerKey = key;
+  $('map-picker-title').textContent = lobby ? 'Vote for your escape' : 'Choose your escape';
+  $('map-vote-note').textContent = lobby ? 'Most votes wins · Ties are random' : '3 maps · Same ticking clock';
+  for (const button of $('map-cards').children) {
+    const id = button.dataset.map;
+    button.setAttribute('aria-pressed', String(ownVote === id));
+    button.disabled = graphicsLoading || Boolean(graphicsError) || (mode !== 'solo' && (!lobby || networkStatus !== 'open'));
+    const count = Object.values(votes).filter(vote => vote === id).length;
+    button.querySelector('.map-votes').textContent = lobby ? `${count} vote${count === 1 ? '' : 's'}${ownVote === id ? ' · Yours' : ''}` : ownVote === id ? 'Selected' : '';
+  }
+}
 
 $('boost-button').querySelector('.cost').firstChild.textContent = `−${ABILITIES.boost.cost}`;
 $('long-jump-button').querySelector('.cost').firstChild.textContent = `−${ABILITIES.longJump.cost}`;
@@ -109,7 +148,7 @@ function returnToMenu() {
   snapshot = null;
   mode = 'solo';
   networkStatus = '';
-  game = createGame();
+  game = createGame({ mapId: selectedMapId });
   resetVisuals();
   showNetworkError();
   updateHUD();
@@ -117,7 +156,7 @@ function returnToMenu() {
 function beginRun() {
   if (mode !== 'solo' || !renderer || graphicsError) return;
   soloSeed = freshCourseSeed(soloSeed);
-  game = createGame({ seed: soloSeed, avatarId: game.avatarId });
+  game = createGame({ seed: soloSeed, mapId: selectedMapId });
   startGame(game);
   resetVisuals();
   showNetworkError();
@@ -139,10 +178,9 @@ function joinRace(type) {
   snapshot = null;
   rosterKey = '';
   raceView = createRaceView();
-  game = createGame();
+  game = createGame({ mapId: selectedMapId });
   resetVisuals();
   showNetworkError();
-  const name = $('player-name').value.trim() || guestName;
   const callbacks = {
     onStatus(status) {
       if (generation !== connectionGeneration) return;
@@ -158,7 +196,7 @@ function joinRace(type) {
     onSnapshot(next) {
       if (generation !== connectionGeneration) return;
       const starting = next.room.phase === 'countdown' && snapshot?.room.phase !== 'countdown';
-      if (next.room.roundId !== snapshot?.room.roundId) resetVisuals();
+      if (next.room.roundId !== snapshot?.room.roundId || next.room.mapId !== snapshot?.room.mapId) resetVisuals();
       snapshot = next;
       raceView.push(next, performance.now());
       // HUD uses the newest authoritative values; drawing blends positions separately.
@@ -168,8 +206,8 @@ function joinRace(type) {
       if (starting) showCourse();
     },
   };
-  connection = type === 'demo' ? createDemoRace(callbacks)
-    : connectRace({ ...callbacks, initialMessage: { type, code, name } });
+  connection = type === 'demo' ? createDemoRace({ ...callbacks, mapId: selectedMapId })
+    : connectRace({ ...callbacks, initialMessage: { type, code, ...(type === 'create' ? { mapId: selectedMapId } : {}) } });
   updateRoom();
   updateHUD();
 }
@@ -197,7 +235,7 @@ function updateRoom() {
       const li = document.createElement('li');
       const dot = document.createElement('i');
       dot.style.backgroundColor = player.color;
-      li.append(dot, document.createTextNode(`${player.name}${player.id === snapshot.you.id && !demo ? ' (you)' : ''} · ${AVATARS[player.avatarId]?.name || 'Runner'}${player.id === snapshot.room.hostId && !demo ? ' · host' : ''}${player.connected ? '' : ' · left'}`));
+      li.append(dot, document.createTextNode(`${player.name}${player.id === snapshot.you.id && !demo ? ' (you)' : ''}${player.id === snapshot.room.hostId && !demo ? ' · host' : ''}${player.connected ? '' : ' · left'}`));
       $('room-players').append(li);
     }
   }
@@ -235,7 +273,7 @@ function updateLeaderboard() {
     place.textContent = player.position === null ? '—' : `${player.position}`;
     const name = document.createElement('span');
     name.className = 'standing-name';
-    name.textContent = `${mode === 'demo' ? player.name.replace(/^Demo · /, '') : player.name}${player.id === snapshot.you.id && mode !== 'demo' ? ' (you)' : ''}`;
+    name.textContent = `${player.name}${player.id === snapshot.you.id && mode !== 'demo' ? ' (you)' : ''}`;
     name.title = name.textContent;
     const dot = document.createElement('i');
     dot.style.backgroundColor = player.color;
@@ -288,7 +326,7 @@ function updateOverlay() {
   canvas.closest('.arena').classList.toggle('briefing', brief);
   if (graphicsLoading) {
     $('screen-overlay').hidden = false;
-    overlay('INTO THE LIGHT', 'Preparing your escape.', `Loading the runner and tunnel… ${graphicsProgress}%`, 'Loading…', true);
+    overlay('INTO THE LIGHT', 'Preparing your escape.', `Loading the maps and runners… ${graphicsProgress}%`, 'Loading…', true);
     return;
   }
   if (graphicsError) {
@@ -311,15 +349,15 @@ function updateOverlay() {
         overlay('FOUR-PLAYER DEMO', 'Meet the runners.', '', 'Getting ready…', true, '');
         return;
       }
-      overlay('60 SECONDS', 'First to escape wins.', 'Abilities cost seconds from your clock.', host ? 'Start race →' : 'Waiting for host…', !host || count < 2, count < 2 ? 'Invite a friend with the room code.' : controlHint());
+      overlay('MAP VOTE OPEN', 'First to escape wins.', 'Abilities cost seconds from your clock.', host ? 'Start race →' : 'Waiting for host…', !host || count < 2, count < 2 ? 'Invite a friend with the room code.' : controlHint());
     } else if (room.phase === 'countdown') {
-      overlay('', `${room.countdown}`, '', 'Starting…', true, controlHint());
+      overlay(getMap(room.mapId).name.toUpperCase(), `${room.countdown}`, '', 'Starting…', true, controlHint());
     } else if (ended) {
       const winner = snapshot.players.find(player => player.id === room.winnerId);
       const title = mode === 'demo'
-        ? room.phase !== 'finished' ? 'The others are still racing.' : winner ? `${winner.name} wins.` : 'The tunnel won this round.'
+        ? room.phase !== 'finished' ? 'The others are still racing.' : winner ? `${winner.name} wins.` : 'Nobody escaped this round.'
         : room.phase !== 'finished' ? (game.phase === 'won' ? 'You escaped.' : 'Time ran out.')
-        : winner ? (winner.id === snapshot.you.id ? 'You won the race.' : `${winner.name} won the race.`) : 'The tunnel won this round.';
+        : winner ? (winner.id === snapshot.you.id ? 'You won the race.' : `${winner.name} won the race.`) : 'Nobody escaped this round.';
       overlay(room.phase === 'finished' ? 'RACE COMPLETE' : 'WAITING FOR RUNNERS', title,
         room.phase === 'finished' ? '' : 'Waiting for the remaining racers.',
         room.phase !== 'finished' ? 'Race still in progress…' : mode === 'demo' ? 'Watch again →' : host ? 'Set up rematch →' : 'Waiting for host…', room.phase !== 'finished' || !host);
@@ -327,11 +365,14 @@ function updateOverlay() {
     return;
   }
   $('screen-overlay').hidden = game.phase === 'running';
-  if (game.phase === 'ready') overlay(`${CONFIG.initialTime} SECONDS`, 'Escape before zero.', 'Abilities cost seconds from your clock.', 'Play solo →', false, controlHint());
+  if (game.phase === 'ready') overlay(getMap(selectedMapId).name.toUpperCase(), 'Escape before zero.', 'Abilities cost seconds from your clock.', 'Play solo →', false, controlHint());
   else if (game.phase === 'paused') overlay('TAKE A BREATH', 'Time stands still.', '', 'Resume run →', false, 'Press P or ESC to resume');
   else if (ended) overlay(game.phase === 'won' ? 'ESCAPE COMPLETE' : 'THE CLOCK RAN OUT', game.phase === 'won' ? 'You escaped.' : 'Time ran out.', '', 'New run →');
 }
 function updateHUD() {
+  updateMapPicker();
+  $('guide-hazard').textContent = getMap(game.mapId).warning;
+  canvas.setAttribute('aria-label', `${getMap(game.mapId).name}. Three lanes. Dodge hazards, hop small obstacles, spend seconds on Boost and Long jump.`);
   updateLeaderboard();
   const online = mode !== 'solo';
   const running = Boolean(renderer) && !graphicsError && mode !== 'demo' && game.phase === 'running' && (!online || networkStatus === 'open');

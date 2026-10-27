@@ -1303,3 +1303,38 @@ html[data-input="keyboard"] .game-footer { justify-content:space-between }
 .room-panel.live-room .room-presence,.room-panel.live-room .eyebrow { display:none }
 .room-panel.live-room #room-code { font-size:16px }
 .room-panel.live-room #room-code::before { content:'ROOM '; font-size:9px; letter-spacing:.08em; color:#b1c4c8 }
+
+/* V7: one picker, direct choice in solo and live voting in the room lobby. */
+.map-picker { margin:0 0 22px; }
+.map-picker-heading { display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px; }
+.map-picker-heading h2 { font-size:16px;margin:0;letter-spacing:-.02em; }
+.map-picker-heading>span { font-size:11px;color:var(--muted); }
+.map-cards { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px; }
+.map-card { position:relative;padding:0;text-align:left;border:2px solid #354d50;border-radius:12px;overflow:hidden;background:#15282b;color:var(--text);transition:border-color .15s,transform .15s; }
+.map-card:hover:not(:disabled) { border-color:#b8d0bd;transform:translateY(-2px); }
+.map-card[aria-pressed="true"] { border-color:#f5c67a;box-shadow:0 0 0 1px #f5c67a; }
+.map-card:disabled { opacity:.65; }
+.map-card img { display:block;width:100%;height:auto;aspect-ratio:600/320;object-fit:cover; }
+.map-card-copy { display:flex;flex-direction:column;padding:12px 14px;gap:4px; }
+.map-card-copy strong { font-size:15px; }
+.map-card-copy small { font-size:11px;color:#bccbc1; }
+.map-votes { position:absolute;top:10px;right:10px;border-radius:20px;background:#102329e8;padding:5px 9px;color:#ffe0aa;font-size:11px;font-weight:700; }
+.map-votes:empty { display:none; }
+@media(max-width:600px) {
+  .map-cards { gap:7px; }
+  .map-card { border-radius:8px; }
+  .map-card-copy { padding:9px 7px;min-height:52px; }
+  .map-card-copy strong { font-size:11px;line-height:1.25; }
+  .map-card-copy small { display:none; }
+  .map-votes { top:4px;right:4px;font-size:9px;padding:3px 5px; }
+  .map-picker-heading { flex-wrap:wrap;gap:5px; }
+  .map-picker-heading h2 { font-size:14px; }
+  .map-picker-heading>span { font-size:10px; }
+}
+@media(max-width:600px) {
+  .race-menu { display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:10px; }
+  #create-room { grid-column:1 / -1; }
+  .race-menu .room-or { display:none; }
+  .race-menu label { min-width:0; }
+  #join-room { align-self:end; }
+}

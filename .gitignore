@@ -10,3 +10,6 @@ unity/Logs/
 unity/obj/
 unity/UserSettings/
 unity/Builds/
+
+# Local safety snapshots
+backups/

@@ -1,10 +1,11 @@
 import * as THREE from 'three';
+import { ALL_AVATAR_IDS } from '../avatars.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 
 // GLBs are original, reproducible project assets. The generator and asset notes
 // live in scripts/build-avatars.mjs and assets/characters/README.md.
-const IDS = Object.freeze(['courier', 'engineer', 'guard', 'runner']);
+const IDS = ALL_AVATAR_IDS;
 const clamp = THREE.MathUtils.clamp;
 const finite = (value, fallback = 0) => Number.isFinite(value) ? value : fallback;
 

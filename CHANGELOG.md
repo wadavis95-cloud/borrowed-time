@@ -1,5 +1,15 @@
 # Changelog
 
+## 7.0.0-preview.1 — Three maps and lobby voting (local only)
+
+- Preserved the V6 baseline in a verified full-history Git bundle before edits; no push or deployment.
+- Added The Last Voyage: broad wooden warship deck, cannons, rigging, billowing sails, opposing vessels, rising sea, barrels, cargo barriers, broken decks and side-entering cannonballs.
+- Added Volcanic Jungle: palms, broadleaf trees, ferns, jungle trail, fallen trunks, lava gaps, falling hot rock, and a fixed volcano ahead with animated eruption and lava flows.
+- Added eight original rigged GLB characters and map-scoped four-person casts. Names now come from character roles; removed name entry and numbered guest/demo names.
+- Added illustrated responsive thumbnail selection for solo and server-owned voting in multiplayer lobbies. Votes can change before start; plurality wins and ties are randomly resolved once at countdown.
+- Shared map IDs and map-specific seeded courses across the server, clients, and four-player demo; preserve current controls, camera, pacing, prices, hints, standings and tunnel.
+- Added map, vote, automatic-name, asset and real four-client integration coverage. See [V7 notes](docs/versions/V7_THREE_MAPS.md).
+
 ## Spacing and starting-speed playtest — deployed October 27, 2026
 
 - Raised starting speed from 22 to 24m/s, retaining the 32m/s cap and 50-second acceleration ramp.

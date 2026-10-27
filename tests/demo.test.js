@@ -1,3 +1,4 @@
+import { AVATARS } from '../src/avatars.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createDemoRace, chooseDemoAction } from '../src/demo.js';
@@ -63,7 +64,7 @@ test('demo creates a full real room, starts once, and only exposes the host view
   const room = [...transport.manager.rooms.values()][0];
   assert.equal(room.players.size, 4);
   assert.equal(room.phase, 'countdown');
-  assert.deepEqual([...room.players.values()].map(player => player.name), ['Demo · Ash', 'Demo · Briar', 'Demo · Cleo', 'Demo · Drew']);
+  assert.ok([...room.players.values()].every(player => player.name === AVATARS[player.avatarId].name));
   assert.equal(new Set([...room.players.values()].map(player => player.avatarId)).size, 4);
   assert.ok(snapshots.length > 0);
   assert.ok(snapshots.every(snapshot => snapshot.you.id === 'demo-0'));

@@ -1,18 +1,12 @@
-# Borrowed Time · V6 gameplay and UI playtest
+# Borrowed Time · V7 three-map preview
 
-**Latest pacing update:** a faster 24m/s start with wider spacing between obstacle sets. The top speed and ability prices stay the same. [Pacing notes](docs/versions/V6_PACING_UPDATE.md).
+**Local only — not deployed.** V7 adds **Tunnel Escape**, **The Last Voyage**, and **Volcanic Jungle**, illustrated map cards, lobby map voting, and twelve original characters. Players receive their character’s role name automatically. [V7 notes and backup](docs/versions/V7_THREE_MAPS.md).
 
-**Mobile HUD update (deployed):** standings now sit inside the course, abilities are red/blue, and unused skills receive contextual button hints. See [mobile HUD notes](docs/versions/V6_MOBILE_HUD.md).
+A browser escape runner for **solo practice or private races with 2–4 players**. Your countdown is also your ability budget. Spend five seconds on Boost or four on Long jump, dodge hazards, and escape before zero. Opponents appear as translucent runners at their actual relative positions.
 
-A browser escape runner for **solo practice or private races with 2–4 players**. Race through a crumbling Victorian railway tunnel, dodge falling masonry, and spend your remaining seconds on abilities. Real opponents appear as translucent 3D runners and cannot collide with you.
+The existing brighter graphics, behind-runner camera, faster 24m/s starting pace, wider obstacle spacing, red/blue controls, contextual ability hints and race standings remain. The tunnel baseline is preserved in a verified full-history backup.
 
-Version **6.0.0-preview.1** tests a much harder course following feedback that V5 felt about 3/10. The target is roughly 7.5/10, to be judged through playtesting. Most rows block two lanes, the open route moves, and occasional full-width rows require a hop or a paid long-jump alternative. Encounters tighten as the race progresses. See the [V6 playtest notes](docs/versions/V6_PLAYTEST.md).
-
-The UI now introduces the main tradeoff before play: your countdown is also your ability currency. The start screen and multiplayer lobby show both ability prices and benefits, the HUD labels the shared time budget, and purchases visibly debit that same clock. Starting still takes one click. See the [UI update notes](docs/versions/V6_UI_UPDATE.md).
-
-At the user's request, V6 now uses the brighter, stylized **V4 visuals from immediately before Unity** by default, including the original four separate characters. The harder V6 course and clearer ability UI remain. Multiplayer now includes a live leaderboard with escape/DNF results; see [leaderboard notes](docs/versions/V6_LEADERBOARD.md). Unity is preserved as an optional comparison at `?graphics=unity`; the completed V5 checkpoint is preserved as `v5.0.0-preview.1`. The V6 public playtest uses the same Render address; see the [V6 release record](docs/versions/V6_RELEASE.md).
-
-**[Play the public game](https://borrowed-time.onrender.com)** on your phone or computer. Create a room, send friends the same link and six-character room code, and start when 2–4 players have joined. No installation or account is needed. The free host can take about a minute to wake after inactivity. Physical-phone performance and touch feel still need actual-device testing.
+**[Public game](https://borrowed-time.onrender.com):** still the previous **V6** playtest. The new maps and votes are available at **http://localhost:4173** only. No installation or account is needed to play. A sleeping free public host can take about a minute to wake.
 
 ## Run it
 
@@ -24,21 +18,21 @@ npm install
 npm start
 ```
 
-Open [http://localhost:4173](http://localhost:4173). Keep the terminal running; **Ctrl+C** stops the server. The game uses `ws` for server-side WebSockets and Three.js with the four original GLB characters for graphics. WebGL 2 and graphics acceleration are required. The optional Unity comparison also requires WebAssembly; its compressed build remains included under `assets/unity/v5`.
+Open [http://localhost:4173](http://localhost:4173). Keep the terminal running; **Ctrl+C** stops the server. The game uses `ws` for server-side WebSockets and Three.js with twelve original GLB characters for graphics. WebGL 2 and graphics acceleration are required. The old Unity tunnel study remains archived under `assets/unity/v5`; its comparison renderer does not implement V7 maps.
 
 The app preloads the characters before enabling play. A failed asset load or unavailable graphics produces a recovery message and a **Reload game** button.
 
 ## Race or watch
 
 1. Open the game in two browser windows or browsers.
-2. Create a private room. A guest name is assigned automatically; entering your own is optional.
+2. Choose a map and create a private room. Your role name is assigned automatically.
 3. In the other browser, join using the six-character room code.
-4. The host starts after at least two players join. A shared three-second countdown starts everyone on the same course.
+4. Vote using the thumbnail cards. Most votes wins, ties are random, and the host starts after at least two players join. Voting locks at the shared three-second countdown.
 5. Once every run ends, the host can prepare a rematch.
 
-The server randomly assigns **Courier**, **Engineer**, **Station Guard**, and **Rooftop Runner** without duplicates in a room. Each player also receives a distinct color. Identities and colors stay with their players through rematches; all four use the same rules. The default visuals use their four distinct original models. The optional Unity comparison uses one body with four jacket palettes. There is no character-selection screen.
+Each map has four distinct characters. The server assigns them without duplicates and uses their roles as player names: Captain, Courier, Botanist, and so on. All characters use identical rules. Switching maps through a vote updates both character and name; rematches on the same map preserve them. There is no name or character-selection screen.
 
-Choose **Watch four-player demo** to watch four explicitly labeled simulated runners. The demo opens four real WebSocket clients, joins a normal private room, and sends ordinary movement and purchase inputs. The displayed opponents come from server snapshots. It starts automatically, supports rematches, and closes every demo connection when you exit or a connection fails. Human private-room play remains available separately.
+Choose **Watch four-player demo** to watch four simulated runners with role names. The demo opens four real WebSocket clients, joins a normal private room, and sends ordinary movement and purchase inputs. The displayed opponents come from server snapshots. It starts automatically, supports rematches, and closes every demo connection when you exit or a connection fails. Human private-room play remains available separately.
 
 The runners use different boost plans: an early burst, a delayed chase, repeated sprints and a late push. Watch the field separate as someone spends time, then close again when another runner boosts. Rivals can fall behind the camera and return when they catch up; the demo never moves them artificially to keep them on screen.
 
@@ -60,7 +54,7 @@ Open `http://YOUR-COMPUTER-LAN-IP:4173` on each device and use the same room cod
 | Long jump | E (or 2) | Long jump button |
 | Pause / resume solo | P or Escape | Pause button |
 
-Start with **60 seconds** and reach daylight before the clock runs out. Boost costs **5 seconds**, long jump costs **4**, hits cost **3**, and time pickups restore **5**. Hop small rubble, use a paid long jump for gaps or a well-timed barrier clearance, or change lanes. Jumping too early or too late can still hit a tall barrier.
+Start with **60 seconds** and reach the escape point before the clock runs out. Boost costs **5 seconds**, long jump costs **4**, hits cost **3**, and time pickups restore **5**. Hop small rubble, use a paid long jump for gaps or a well-timed barrier clearance, or change lanes. Jumping too early or too late can still hit a tall barrier.
 
 Fresh solo runs and restarts randomize obstacle and roof-debris placements. Multiplayer races share one fresh server-generated course.
 
@@ -68,9 +62,9 @@ Controls adapt to keyboard/mouse or touch input, including hybrid devices. Keybo
 
 Sound starts muted. Use **Sound off / Sound on** in the header to toggle subtle procedural footsteps, jumps, landings, boosts, collisions, and an escape chime. Audio starts only after that click and stays silent in hidden tabs; no audio assets or service are downloaded.
 
-Amber markers warn where masonry will land. Change lanes before impact: even a paid jump cannot protect you underneath a falling chunk. After landing, its rubble can be hopped. A chunk can penalize each runner only once; a hit also briefly slows you down.
+Amber markers warn of roof collapses, cannon strikes or volcanic rocks, depending on the map. Change lanes before impact: even a paid jump cannot protect you underneath a falling chunk. After landing, its rubble can be hopped. A chunk can penalize each runner only once; a hit also briefly slows you down.
 
-Falling events follow elapsed race time. Buying an ability reduces your spendable countdown without changing the hazard schedule. Solo practice pauses when you leave the tab and repeats seed 42. Multiplayer keeps running when you switch tabs. Disconnecting ends your participation; this preview cannot reconnect you to an active race. Other players' timers and ability details remain private.
+Falling events follow elapsed race time. Buying an ability reduces your spendable countdown without changing the hazard schedule. Solo practice pauses when you leave the tab and generates a fresh seed for each new run. Multiplayer keeps running when you switch tabs. Disconnecting ends your participation; this preview cannot reconnect you to an active race. Other players' timers and ability details remain private.
 
 ## Develop and learn
 
@@ -79,8 +73,8 @@ npm test              # Rules, hazards, rooms, interpolation, demo and asset tes
 npm run test:network  # Real HTTP/WebSocket integration tests
 npm run check         # JavaScript syntax
 npm run dev           # Watch/restart the Node server
-npm run build:avatars # Regenerate the four original GLB character assets
-npm run check:deployment -- https://borrowed-time.onrender.com # Check the live service
+npm run build:avatars # Regenerate all twelve original GLB character assets
+npm run check:deployment -- http://localhost:4173 # Verify this local V7 build
 ```
 
 Socket tests are skipped in the ordinary test command. Save browser files and refresh the page to see edits. `npm run dev` does not reload the browser. Restarting Node discards all rooms.

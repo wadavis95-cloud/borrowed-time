@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { ABILITIES, CONFIG, buyAbility, createGame, jump, moveLane, startGame, updateGame } from '../game.js';
-import { AVATAR_IDS } from '../avatars.js';
+import { AVATARS } from '../avatars.js';
+import { getMap, isMapId, resolveMapVote } from '../maps.js';
 import { scheduleApproachingDebris } from '../hazards.js';
 
 const STEP_MS = 1000 / 60;
@@ -50,6 +51,7 @@ export function createRoomManager({
     const player = room.players.get(id);
     if (room.phase === 'lobby') {
       room.players.delete(id);
+      delete room.votes[id];
     } else {
       player.connected = false;
       // A completed result stays valid; an unfinished departing runner is out.
@@ -73,15 +75,15 @@ export function createRoomManager({
     connections.delete(id);
   }
 
-  function addPlayer(room, id, name) {
+  function addPlayer(room, id) {
     const usedColors = new Set([...room.players.values()].map((player) => player.color));
     const color = COLORS.find(candidate => !usedColors.has(candidate));
     const usedAvatars = new Set([...room.players.values()].map(player => player.avatarId));
-    const candidates = AVATAR_IDS.filter(avatarId => !usedAvatars.has(avatarId));
+    const candidates = getMap(room.mapId).avatars.filter(avatarId => !usedAvatars.has(avatarId));
     const avatarId = candidates[Math.floor(random() * candidates.length)];
     room.players.set(id, {
-      id, name, color, avatarId,
-      connected: true, lastSeq: 0, game: createGame({ seed: room.seed, avatarId, playerColor: color }),
+      id, name: AVATARS[avatarId].name, color, avatarId,
+      connected: true, lastSeq: 0, game: createGame({ seed: room.seed, mapId: room.mapId, avatarId, playerColor: color }),
     });
     connections.get(id).roomCode = room.code;
     room.lastActivity = now();
@@ -96,21 +98,20 @@ export function createRoomManager({
     const room = rooms.get(connection.roomCode);
     if (message.type === 'create' || message.type === 'join') {
       if (room) return error('ALREADY_IN_ROOM', 'Leave this room before joining another.');
-      if (typeof message.name !== 'string' || message.name.length > 80) {
-        return error('INVALID_NAME', 'Use a guest name of up to 20 characters.');
-      }
-      const name = message.name.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 20) || 'Runner';
       if (message.type === 'create') {
         if (rooms.size >= maxRooms) return error('SERVER_FULL', 'All rooms are busy. Try again shortly.');
+        if (message.mapId !== undefined && !isMapId(message.mapId)) return error('INVALID_MAP', 'Choose one of the three maps.');
         let code;
         do { code = makeCode(); } while (rooms.has(code));
         const created = {
           code, phase: 'lobby', hostId: id, roundId: makeId(), seed: makeSeed(),
+          mapId: getMap(message.mapId).id, votes: {},
           winnerId: null, countdownEnd: null, lastStepAt: null, raceElapsed: 0,
           lastActivity: now(), players: new Map(),
         };
         rooms.set(code, created);
-        addPlayer(created, id, name);
+        addPlayer(created, id);
+        if (message.mapId !== undefined) created.votes[id] = created.mapId;
       } else {
         if (typeof message.code !== 'string' || message.code.length > 20) {
           return error('INVALID_CODE', 'Enter the six-character room code.');
@@ -119,7 +120,7 @@ export function createRoomManager({
         if (!target) return error('ROOM_NOT_FOUND', 'That room was not found. Check its code.');
         if (target.phase !== 'lobby') return error('ROUND_ACTIVE', 'This room has already started. Wait for a rematch.');
         if (target.players.size >= 4) return error('ROOM_FULL', 'This room already has four players.');
-        addPlayer(target, id, name);
+        addPlayer(target, id);
       }
       return { ok: true };
     }
@@ -128,10 +129,27 @@ export function createRoomManager({
       return { ok: true };
     }
     if (!room) return error('NOT_IN_ROOM', 'Create or join a room first.');
+    if (message.type === 'vote') {
+      if (room.phase !== 'lobby') return error('VOTING_CLOSED', 'Voting closes when the countdown begins.');
+      if (!isMapId(message.mapId)) return error('INVALID_MAP', 'Choose one of the three maps.');
+      room.votes[id] = message.mapId;
+      room.lastActivity = now();
+      return { ok: true };
+    }
     if (message.type === 'start') {
       if (room.hostId !== id) return error('HOST_ONLY', 'Only the host can start the race.');
       if (room.phase !== 'lobby') return error('ROUND_ACTIVE', 'This round has already started.');
       if (room.players.size < 2) return error('NEED_PLAYERS', 'Invite at least one other runner to start.');
+      const selected = resolveMapVote(Object.values(room.votes), room.mapId, random);
+      if (selected !== room.mapId) {
+        room.mapId = selected;
+        const candidates = [...getMap(selected).avatars];
+        for (const player of room.players.values()) {
+          player.avatarId = candidates.splice(Math.floor(random() * candidates.length), 1)[0];
+          player.name = AVATARS[player.avatarId].name;
+          player.game = createGame({ seed: room.seed, mapId: selected, avatarId: player.avatarId, playerColor: player.color });
+        }
+      }
       room.phase = 'countdown';
       room.countdownEnd = now() + 3000;
       room.lastActivity = now();
@@ -144,6 +162,7 @@ export function createRoomManager({
       room.roundId = makeId();
       const seed = makeSeed();
       room.seed = seed === room.seed ? (seed + 1) >>> 0 : seed;
+      room.votes = {};
       room.winnerId = null;
       room.countdownEnd = null;
       room.lastStepAt = null;
@@ -153,7 +172,7 @@ export function createRoomManager({
         if (!player.connected) {
           room.players.delete(playerId);
         } else {
-          player.game = createGame({ seed: room.seed, avatarId: player.avatarId, playerColor: player.color });
+          player.game = createGame({ seed: room.seed, mapId: room.mapId, avatarId: player.avatarId, playerColor: player.color });
           player.lastSeq = 0;
         }
       }
@@ -243,7 +262,7 @@ export function createRoomManager({
       type: 'snapshot', serverTime: now(),
       room: {
         code: room.code, phase: room.phase, hostId: room.hostId,
-        roundId: room.roundId, seed: room.seed, winnerId: room.winnerId,
+        roundId: room.roundId, seed: room.seed, mapId: room.mapId, votes: { ...room.votes }, winnerId: room.winnerId,
         raceElapsed: room.raceElapsed,
         countdown: room.phase === 'countdown' ? Math.max(0, Math.ceil((room.countdownEnd - now()) / 1000)) : 0,
       },

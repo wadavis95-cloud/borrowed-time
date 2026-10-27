@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { ALL_AVATAR_IDS } from '../src/avatars.js';
 import { createAvatarLibrary } from '../src/graphics/avatars.js';
 
 const ids = ['courier', 'engineer', 'guard', 'runner'];
@@ -236,4 +237,22 @@ test('finish reactions blend from the running pose and remain deterministic acro
     }
     for (const pose of poses.slice(1)) assert.ok(pose.every((value, i) => Math.abs(value - poses[0][i]) < .00001), 'finish blend uses elapsed seconds');
   }
+});
+
+
+test('eight themed avatars have distinct geometry and finite animated skeletons', async () => {
+  const sizes = new Set();
+  for (const id of ALL_AVATAR_IDS.filter(id => !ids.includes(id))) {
+    const asset = await readAsset(id);
+    assert.deepEqual(asset.animations.map(clip => clip.name).sort(), ['idle','jump','run','stumble']);
+    let vertices = 0;
+    asset.scene.traverse(mesh => {
+      if (!mesh.isMesh) return;
+      assert.ok(mesh.isSkinnedMesh);
+      for (const name of ['position', 'normal', 'skinIndex', 'skinWeight']) assert.ok([...mesh.geometry.attributes[name].array].every(Number.isFinite), `${id} ${name}`);
+      vertices += mesh.geometry.attributes.position.count;
+    });
+    sizes.add(vertices);
+  }
+  assert.equal(sizes.size, 8, 'eight distinct modeled silhouettes, not only recolors');
 });

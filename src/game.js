@@ -1,5 +1,5 @@
 import { createFallingDebris, scheduleApproachingDebris } from './hazards.js';
-import { AVATAR_IDS } from './avatars.js';
+import { getMap } from './maps.js';
 
 // All distances are metres; all durations and prices are seconds.
 // Change these values to tune the game without touching the drawing code.
@@ -94,14 +94,19 @@ function makeCourse(seed) {
 }
 
 export function createGame({
-  seed = 42, course, debris,
-  avatarId = AVATAR_IDS[Math.floor(Math.random() * AVATAR_IDS.length)],
+  seed = 42, course, debris, mapId = 'tunnel',
+  avatarId,
   playerColor = '#65ead3',
 } = {}) {
-  const obstacles = course === undefined ? makeCourse(seed) : course;
-  const events = debris ?? (course === undefined ? createFallingDebris(seed, obstacles, CONFIG) : []);
+  const map = getMap(mapId);
+  mapId = map.id;
+  avatarId ??= map.avatars[Math.floor(Math.random() * map.avatars.length)];
+  const courseSeed = (seed ^ map.seedSalt) >>> 0;
+  const obstacles = course === undefined ? makeCourse(courseSeed) : course;
+  const events = debris ?? (course === undefined ? createFallingDebris(courseSeed, obstacles, CONFIG) : []);
   return {
     phase: 'ready',
+    mapId,
     avatarId,
     playerColor,
     elapsed: 0,
@@ -244,7 +249,7 @@ function resolveDebris(game) {
       // A jump helps with rubble afterward, but cannot dodge this impact.
       if (Math.abs(game.distance - event.z) <= CONFIG.debrisImpactRadius + EPSILON && game.lane === event.lane) {
         progress.resolved = true;
-        takeHit(game, 'Falling masonry');
+        takeHit(game, game.mapId === 'pirate' ? 'Cannon strike' : game.mapId === 'jungle' ? 'Volcanic rock' : 'Falling masonry');
         if (game.timeLeft <= EPSILON) return true;
       }
       // Anyone already past the landing point has no rubble left to cross.

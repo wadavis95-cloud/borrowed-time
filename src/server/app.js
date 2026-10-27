@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { resolve, extname } from 'node:path';
 import { WebSocket, WebSocketServer } from 'ws';
+import { ALL_AVATAR_IDS } from '../avatars.js';
 import { createRoomManager } from './rooms.js';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
@@ -16,7 +17,9 @@ const types = {
 // This allowlist keeps server code, repository files, and secrets off HTTP.
 const publicFiles = new Set([
   '/index.html', '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js',
-  '/src/renderer.js', '/src/network.js',
+  '/src/renderer.js', '/src/network.js', '/src/maps.js', '/src/graphics/worlds.js', '/src/graphics/map-obstacles.js',
+  '/assets/maps/tunnel.svg', '/assets/maps/pirate.svg', '/assets/maps/jungle.svg',
+  ...ALL_AVATAR_IDS.map(id => `/assets/characters/${id}.glb`),
   '/src/unity-renderer.js', '/src/unity-protocol.js',
   '/src/avatars.js', '/src/hazards.js', '/src/graphics/avatars.js', '/src/graphics/tunnel.js',
   '/src/demo.js', '/src/audio.js', '/src/input.js', '/src/ability-coach.js',

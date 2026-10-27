@@ -68,3 +68,13 @@ motion-captured production character set. Cloth and hair use secondary bones rat
 than physical simulation. Facial animation, finger bones and detailed
 normal/roughness texture maps are not included. Physical phone/GPU performance must
 be measured separately from desktop preview testing.
+
+## V7 map casts
+
+Eight additional original avatars are authored in `scripts/build-avatars.mjs`:
+Captain, Navigator, Shipwright and Deckhand for The Last Voyage; Trail Scout,
+Botanist, Jungle Ranger and Volcanologist for Volcanic Jungle. They share the
+established skeleton and fluent animation system but have distinct proportions,
+headwear, equipment and palettes. `node scripts/build-avatars.mjs --new-only`
+rebuilds only these eight GLBs plus `maps-manifest.json`, preserving the four
+baseline files. No external models, textures or downloads are used for these casts.

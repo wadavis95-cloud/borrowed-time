@@ -1,5 +1,8 @@
 // Visual state only: course rules and the shared hazard clock live in game.js.
 import * as THREE from 'three';
+import { getMap } from './maps.js';
+import { createWorld } from './graphics/worlds.js';
+import { createMapObstacle } from './graphics/map-obstacles.js';
 import { CONFIG, getJumpHeight } from './game.js';
 import { getDebrisPhase } from './hazards.js';
 import { createAvatar } from './graphics/avatars.js';
@@ -109,7 +112,8 @@ export function createRenderer(canvas) {
   const bounce = new THREE.DirectionalLight('#b1d8e8', .88); bounce.position.set(3, 5, 7); scene.add(bounce);
   const lampLeft = new THREE.PointLight('#ffba76', 12, 12, 2), lampRight = new THREE.PointLight('#ffba76', 12, 12, 2);
   lampLeft.position.set(-4.05, 2.55, -3); lampRight.position.set(4.05, 2.55, -11); scene.add(lampLeft, lampRight);
-  const tunnel = createTunnel(scene, CONFIG.courseLength);
+  let currentMapId = 'tunnel';
+  let world = createWorld(scene, currentMapId, CONFIG.courseLength);
 
   const hazardSurface = masonrySurface();
   const stone = new THREE.MeshStandardMaterial({ color: '#b6b8a6', ...hazardSurface, bumpScale: .045, roughness: .9 });
@@ -145,6 +149,9 @@ export function createRenderer(canvas) {
     items.castShadow = true; items.receiveShadow = true; group.add(items); return items;
   }
   function makeObstacle(obstacle) {
+    if (currentMapId !== 'tunnel') {
+      const themed = createMapObstacle(currentMapId, obstacle); scene.add(themed); return themed;
+    }
     const group = new THREE.Group(); scene.add(group);
     if (obstacle.type === 'gap') {
       const length = (obstacle.length || 8) * DISTANCE_SCALE;
@@ -188,9 +195,22 @@ export function createRenderer(canvas) {
     const fillMaterial = new THREE.MeshBasicMaterial({ color: '#ff9a55', transparent: true, opacity: .14, side: THREE.DoubleSide, depthWrite: false });
     const fill = makeMesh(group, new THREE.CircleGeometry(.88, 32), fillMaterial, 0, .035, 0); fill.rotation.x = -Math.PI / 2;
     const chunk = new THREE.Group(); group.add(chunk);
-    const main = makeMesh(chunk, roofSlabGeometry(event.lane), roofSlabMaterial, 0, 0, 0); main.castShadow = true;
-    for (let i = 0; i < 4; i++) makeMesh(chunk, stoneGeometry, brokenStone, Math.sin(i * 2.4) * .87, .4 + Math.cos(i) * .4, Math.cos(i * 2.4) * .6, .15, .23, .2);
-    const rubble = new THREE.Group(); stones(rubble, 9, 1.2); group.add(rubble);
+    const geometry = currentMapId === 'tunnel' ? roofSlabGeometry(event.lane)
+      : currentMapId === 'pirate' ? new THREE.SphereGeometry(.48, 12, 8) : new THREE.DodecahedronGeometry(.68, 1);
+    const material = currentMapId === 'tunnel' ? roofSlabMaterial : new THREE.MeshStandardMaterial({
+      color: currentMapId === 'pirate' ? '#283b42' : '#563a32', roughness: .7, metalness: currentMapId === 'pirate' ? .7 : 0,
+      emissive: currentMapId === 'pirate' ? '#000000' : '#ff4c08', emissiveIntensity: .7 });
+    const main = makeMesh(chunk, geometry, material, 0, 0, 0); main.castShadow = true;
+    for (let i = 0; i < (currentMapId === 'pirate' ? 0 : 4); i++) makeMesh(chunk, stoneGeometry, brokenStone, Math.sin(i * 2.4) * .87, .4 + Math.cos(i) * .4, Math.cos(i * 2.4) * .6, .15, .23, .2);
+    const rubble = new THREE.Group();
+    if (currentMapId === 'pirate') {
+      const splinter = new THREE.MeshStandardMaterial({ color: '#a0784c', roughness: .9 });
+      for (let i = 0; i < 7; i++) {
+        const plank = makeMesh(rubble, boxGeometry, splinter, Math.sin(i * 2.4) * .6, .15 + (i % 3) * .08, Math.cos(i * 2.4) * .35, .13, .16, .65);
+        plank.rotation.set(i * .2, i * .85, i * .12);
+      }
+    } else stones(rubble, 9, 1.2);
+    group.add(rubble);
     const marker = makeMesh(group, new THREE.PlaneGeometry(.72, .72), new THREE.MeshBasicMaterial({ map: signTexture('!', '#ffe8b6', '#73492f', 64), side: THREE.DoubleSide, toneMapped: false }), 0, 2.65, .1);
     const dustMaterial = new THREE.MeshBasicMaterial({ map: glowMap, color: '#c9b791', transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
     const dust = new THREE.Group(); group.add(dust);
@@ -237,6 +257,11 @@ export function createRenderer(canvas) {
     // Preserve the entire last frame on pause, including pending lane movement,
     // camera hit response, rival animations and boost particles.
     if (state.phase === 'paused' && hasDrawn) { renderer.render(scene, camera); return; }
+    const mapId = getMap(state.mapId).id;
+    if (mapId !== currentMapId) {
+      reset(); world.dispose(); currentMapId = mapId;
+      world = createWorld(scene, currentMapId, CONFIG.courseLength);
+    }
     const distance = state.distance || 0;
     // Hazards, dust and actors freeze with solo pause. The online view provides
     // its interpolated authoritative race clock even after a runner finishes.
@@ -252,7 +277,16 @@ export function createRenderer(canvas) {
     sun.intensity = 1.92 + daylight * .9;
     lampLeft.intensity = lampRight.intensity = 12 * (1 - daylight * .7);
     renderer.toneMappingExposure = 1.04 - daylight * .09;
-    tunnel.update(distance, elapsed, reducedMotion, state.debris || []);
+    if (currentMapId !== 'tunnel') {
+      const ship = currentMapId === 'pirate';
+      scene.background.set(ship ? '#83becd' : '#a1d5bc');
+      scene.fog.color.set(ship ? '#9dbfca' : '#9fc4a5');
+      scene.fog.near = 75; scene.fog.far = ship ? 260 : 330;
+      ambient.intensity = ship ? 1.9 : 1.85;
+      sun.color.set('#ffe1ae'); sun.intensity = 2.7;
+      lampLeft.intensity = lampRight.intensity = 0; renderer.toneMappingExposure = 1.02;
+    } else scene.fog.near = 36;
+    world.update(distance, elapsed, reducedMotion, state.debris || []);
 
     const avatarKey = `${state.avatarId || 'courier'}:${state.playerColor || ''}`;
     if (localAvatarKey !== avatarKey) {
@@ -302,6 +336,7 @@ export function createRenderer(canvas) {
       const key = `${obstacle.id}:${obstacle.type}:${obstacle.length || 0}`;
       let group = obstacleCache.get(key);
       if (!group) { group = makeObstacle(obstacle); obstacleCache.set(key, group); }
+      if (group.userData.barrel && !reducedMotion) group.userData.barrel.rotation.x = elapsed * .9;
       group.visible = true; group.position.set((obstacle.lane - 1) * LANE_WIDTH, 0, -relative * DISTANCE_SCALE);
     }
     for (const entry of debrisCache.values()) entry.group.visible = false;
@@ -322,7 +357,14 @@ export function createRenderer(canvas) {
       entry.ringMaterial.opacity = .65 + .35 * pulse;
       entry.fillMaterial.opacity = .1 + .12 * pulse;
       const fall = falling ? clamp((elapsed - event.fallAt) / (event.impactAt - event.fallAt), 0, 1) : 0;
-      entry.chunk.position.y = roofHeight(event.lane) - fall * fall * (roofHeight(event.lane) - .6);
+      if (currentMapId === 'pirate') {
+        // Side-entry projectile aims only at its marked lane at the shared impact.
+        const side = Number(event.id.replace(/\D/g, '')) % 2 ? 1 : -1;
+        entry.chunk.position.set(side * (1 - fall) * 10, .6 + Math.sin(fall * Math.PI) * .7, 0);
+      } else {
+        const height = currentMapId === 'tunnel' ? roofHeight(event.lane) : 12;
+        entry.chunk.position.set(0, height - fall * fall * (height - .6), 0);
+      }
       entry.chunk.rotation.set(fall * 1.6, fall * 2.1, fall * .8);
       const impactAge = elapsed - event.impactAt;
       entry.dust.visible = !reducedMotion && landed && impactAge >= 0 && impactAge < .85;
@@ -400,7 +442,7 @@ export function createRenderer(canvas) {
   }
   function dispose() {
     if (disposed) return;
-    disposed = true; resizeObserver.disconnect(); canvas.removeEventListener('webglcontextlost', onContextLost);
+    disposed = true; world.dispose(); resizeObserver.disconnect(); canvas.removeEventListener('webglcontextlost', onContextLost);
     // GLB geometry belongs to the reusable preload cache. Detach avatar clones
     // before disposing scene-owned graphics; each clone disposes its own materials.
     if (localAvatar) { scene.remove(localAvatar.group); localAvatar.dispose(); localAvatar = null; }

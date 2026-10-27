@@ -19,6 +19,20 @@ const profiles = {
   runner: { height: 1.72, hip: .168, shoulder: .24, waist: .155, leg: .875, head: 1.01, skin: '#bc8064', shadow: '#794a3d', hair: '#272e32', highlight: '#566463', coat: '#3a886e', coatLight: '#64b58d', trim: '#e0e2bb', trousers: '#263a42', shoes: '#e0d8ba', metal: '#a5b3ad', accent: '#e9bb63' },
 };
 
+// New casts reuse the proven skeleton and fluent run clips, with their own
+// proportions, palettes, headwear, packs and garment silhouettes.
+const themedProfiles = {
+  captain: { style: 'guard', height: 2.08, hip: .185, shoulder: .28, coat: '#243d67', coatLight: '#456393', trim: '#e9bf64', hair: '#30292b', accent: '#e34040' },
+  navigator: { style: 'courier', height: 1.88, shoulder: .235, coat: '#278b8e', coatLight: '#4cbab0', trim: '#efe0bb', hair: '#dad3c2', accent: '#f4bc55' },
+  shipwright: { style: 'engineer', height: 2.01, shoulder: .33, coat: '#f1d1a0', coatLight: '#fff0ce', trousers: '#65503a', hair: '#48312a', accent: '#d54c3c' },
+  deckhand: { style: 'runner', height: 1.75, hip: .16, shoulder: .23, coat: '#e5ddc8', coatLight: '#faf2de', trousers: '#294b65', hair: '#342a22', accent: '#db4f43' },
+  scout: { style: 'courier', height: 1.84, hip: .155, shoulder: .22, coat: '#df765a', coatLight: '#f3aa7e', trousers: '#414e44', hair: '#242d24', accent: '#f4d158' },
+  botanist: { style: 'runner', height: 1.78, shoulder: .235, coat: '#8eaa6b', coatLight: '#b3ca86', trousers: '#58605b', hair: '#68432d', accent: '#f3c666' },
+  ranger: { style: 'guard', height: 2.05, hip: .18, coat: '#d7b45b', coatLight: '#f1d089', trousers: '#476858', hair: '#31302a', accent: '#dd754c' },
+  volcanologist: { style: 'engineer', height: 1.96, hip: .21, shoulder: .30, coat: '#e76e35', coatLight: '#ff9b55', trousers: '#414e62', hair: '#4d3432', accent: '#7ad2d3' },
+};
+for (const [id, changes] of Object.entries(themedProfiles)) profiles[id] = { ...profiles[changes.style], ...changes };
+
 function bone(parent, name, position, bones) {
   const value = new THREE.Bone(); value.name = name; value.position.fromArray(position); parent.add(value); bones.push(value); return value;
 }
@@ -539,10 +553,52 @@ function clipsFor(rig, id) {
   return clips;
 }
 
+function themedEquipment(id, p, r, b) {
+  const y = r.points.head.y, cy = r.chestY, h = r.hipY;
+  if (id === 'captain') {
+    b.ellipsoid('#202e42', 0, 'head', [0, y + .18, .005], [.27, .075, .22]);
+    b.panel('#23364f', 0, 'head', [[-.30,y+.12,.08],[0,y+.39,.08],[.30,y+.12,.08]], .06);
+    b.ribbon(p.trim, 4, 'head', [[-.28,y+.14,.15],[0,y+.35,.15],[.28,y+.14,.15]], .025, .008);
+    for (const sign of [-1,1]) b.bevelBox(p.trim, 0, 'chest', [sign*.26,cy+.015,.01], [.15,.055,.19]);
+  } else if (['navigator','shipwright','deckhand'].includes(id)) {
+    b.loft(id === 'navigator' ? '#d7b35e' : '#ce453c', 0, 'head', [[y+.12,.157,.151],[y+.20,.145,.144]], {steps:4});
+    b.panel('#ce453c', 0, 'hair', [[-.08,y+.15,.14],[.06,y+.17,.14],[.14,y-.16,.19],[-.02,y-.10,.18]], .008);
+    if (id === 'deckhand') {
+      for (let i=0;i<4;i++) b.loft('#264e71', 0, b.blendY('pelvis','chest',h,cy), [[h+.07+i*.064,.17+i*.012,.137],[h+.098+i*.064,.175+i*.012,.138]], {steps:2});
+      b.loft('#d94438',0,'pelvis',[[h+.01,.185,.145],[h+.095,.18,.145]],{steps:3});
+    }
+    if (id === 'shipwright') {
+      b.panel('#765034',3,'pelvis',[[-.19,h+.11,-.15],[.19,h+.11,-.15],[.22,h-.32,-.15],[-.22,h-.32,-.15]], .018);
+      b.bevelBox('#544334',3,'bag',[.25,h,.1],[.17,.22,.13]);
+      b.bevelBox('#b5b8b5',4,'bag',[.29,h+.15,.12],[.07,.28,.05]);
+    }
+  }
+  if (['botanist','ranger'].includes(id)) {
+    b.ellipsoid(id==='ranger'?'#7f6a3e':'#cbb276',0,'head',[0,y+.15,0],[.29,.035,.25]);
+    b.loft(id==='ranger'?'#9c8549':'#dbc68b',0,'head',[[y+.15,.15,.15],[y+.31,.13,.125]],{steps:5});
+    b.loft('#534c34',3,'head',[[y+.155,.154,.154],[y+.19,.15,.15]],{steps:2});
+  }
+  if (id === 'volcanologist') {
+    b.ellipsoid('#e9e5d7',5,'head',[0,y+.18,0],[.18,.16,.175]);
+    b.bevelBox('#faf2da',5,'head',[0,y+.13,-.14],[.39,.035,.14]);
+    b.bevelBox('#3d5f68',6,'head',[0,y+.08,-.16],[.24,.075,.025]);
+  }
+  if (['scout','botanist','ranger','volcanologist'].includes(id)) {
+    const pack = id==='volcanologist'?'#c7c8b3':id==='botanist'?'#526b3a':'#b58c50';
+    b.bevelBox(pack,8,'chest',[0,cy-.19,.22],[id==='volcanologist'?.37:.29,.37,.17],.035);
+    b.bevelBox(p.trim,0,'chest',[0,cy-.27,.32],[.23,.12,.05]);
+    for (const sign of [-1,1]) b.ribbon('#4a4d3a',3,'chest',[[sign*.14,cy+.015,.1],[sign*.17,cy-.12,.14],[sign*.14,cy-.36,.16]],.035,.012);
+    if (id==='botanist') b.bevelBox('#c6d5a2',0,'chest',[.20,cy-.19,.23],[.07,.28,.09]);
+    if (id==='volcanologist') b.bevelBox('#75cbd0',6,'chest',[0,cy-.17,.315],[.16,.10,.02]);
+  }
+}
+
 export function authorAvatar(id) {
   const p = profiles[id]; if (!p) throw new Error(`Unknown avatar: ${id}`);
   const rig = makeSkeleton(p), builder = createBuilder(rig);
-  bodyAndLegs(id, p, rig, builder); arms(id, p, rig, builder); faceAndHair(id, p, rig, builder); equipment(id, p, rig, builder);
+  const style = p.style || id;
+  bodyAndLegs(style, p, rig, builder); arms(style, p, rig, builder); faceAndHair(style, p, rig, builder);
+  if (p.style) themedEquipment(id, p, rig, builder); else equipment(id, p, rig, builder);
   const mesh = builder.finish(); rig.root.name = `${id}_original_v3_1`;
   rig.root.userData = { id, authoring: 'Original procedural Three.js contoured profiles, tailored panels and skinned meshes; not Blender-authored', license: 'Project original asset', height: p.height, version: '3.1.0-preview.1' };
   return { scene: rig.root, animations: clipsFor(rig, id), triangles: mesh.geometry.index.count / 3, vertices: mesh.geometry.attributes.position.count, materialDraws: mesh.material.length };
@@ -551,11 +607,16 @@ export function authorAvatar(id) {
 async function main() {
   const directory = new URL('../assets/characters/', import.meta.url); await mkdir(directory, { recursive: true }); const manifest = {};
   for (const id of Object.keys(profiles)) {
+    if (process.argv.includes('--new-only') && !themedProfiles[id]) continue;
     const asset = authorAvatar(id);
     const result = await new GLTFExporter().parseAsync(asset.scene, { binary: true, animations: asset.animations, onlyVisible: true });
     await writeFile(new URL(`${id}.glb`, directory), Buffer.from(result));
     manifest[id] = { bytes: result.byteLength, triangles: asset.triangles, vertices: asset.vertices, materialDraws: asset.materialDraws, animations: asset.animations.map((a) => a.name), height: profiles[id].height };
     console.log(`${id}: ${result.byteLength.toLocaleString()} bytes; ${asset.triangles.toLocaleString()} triangles`);
+  }
+  if (process.argv.includes('--new-only')) {
+    await writeFile(new URL('maps-manifest.json', directory), JSON.stringify(manifest, null, 2) + '\n');
+    return;
   }
   await writeFile(new URL('manifest.json', directory), JSON.stringify({ generator: 'node scripts/build-avatars.mjs', original: true, version: '3.1.0-preview.1', provenance: 'Original code-authored geometry and animation; no external models, textures or Blender authoring', rigBones: 24, avatars: manifest }, null, 2) + '\n');
 }

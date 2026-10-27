@@ -583,3 +583,44 @@ networkTest('four real clients race with four distinct avatars and preserve iden
     assert.equal(snapshot.you.game.timeLeft, 60);
   }
 });
+
+networkTest('four real clients share map votes, themed rosters and private purchases on all maps', async t => {
+  const { MAPS, MAP_IDS } = await import('../src/maps.js');
+  for (const mapId of MAP_IDS) await t.test(mapId, async t => {
+    let time = 1000;
+    const app = createGameServer({ now: () => time }); t.after(() => app.close());
+    const url = await listen(app);
+    const clients = await Promise.all(Array.from({ length: 4 }, () => client(url)));
+    clients[0].send({ type: 'create', name: 'Host', mapId: 'tunnel' });
+    const created = await clients[0].until(m => m.type === 'snapshot');
+    for (const [i, guest] of clients.slice(1).entries()) {
+      guest.send({ type: 'join', name: `Guest ${i}`, code: created.room.code });
+      await guest.until(m => m.type === 'snapshot');
+    }
+    for (const connection of clients) connection.send({ type: 'vote', mapId });
+    await clients[0].until(m => m.type === 'snapshot' && Object.values(m.room.votes).filter(id => id === mapId).length === 4);
+    clients[0].send({ type: 'start' });
+    const locked = await clients[0].until(m => m.type === 'snapshot' && m.room.phase === 'countdown');
+    assert.equal(locked.room.mapId, mapId);
+    time += 3100;
+    const racing = await Promise.all(clients.map(connection => connection.until(m => m.type === 'snapshot' && m.room.phase === 'racing')));
+    for (const snapshot of racing) {
+      assert.equal(snapshot.you.game.mapId, mapId);
+      assert.equal(snapshot.room.seed, racing[0].room.seed);
+      assert.deepEqual(snapshot.debris, racing[0].debris);
+      assert.equal(new Set(snapshot.players.map(p => p.avatarId)).size, 4);
+      assert.ok(snapshot.players.every(p => MAPS[mapId].avatars.includes(p.avatarId)));
+    }
+    clients[0].send({ type: 'input', action: 'boost', seq: 1, roundId: locked.room.roundId });
+    const bought = await clients[0].until(m => m.type === 'snapshot' && m.you.game.timeSpent === 5);
+    assert.ok(bought.you.game.boostRemaining > 0);
+    const guest = await clients[1].until(m => m.type === 'snapshot' && m.players.find(p => p.id === bought.you.id));
+    assert.equal(guest.you.game.timeSpent, 0);
+    assert.equal(guest.you.game.boostRemaining, 0);
+    for (const path of ['/src/maps.js','/src/graphics/worlds.js','/src/graphics/map-obstacles.js',MAPS[mapId].thumbnail,...MAPS[mapId].avatars.map(id => `/assets/characters/${id}.glb`)]) {
+      const response = await fetch(url + path, { method: 'HEAD' }); assert.equal(response.status, 200, path);
+    }
+    assert.equal((await fetch(url + '/backups/pre-three-maps-20261027.bundle')).status, 404);
+    for (const connection of clients) connection.socket.close();
+  });
+});

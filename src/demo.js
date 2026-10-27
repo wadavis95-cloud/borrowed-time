@@ -1,16 +1,15 @@
 import { ABILITIES, CONFIG, createGame, getJumpHeight } from './game.js';
 import { connectRace } from './network.js';
 
-const NAMES = ['Demo · Ash', 'Demo · Briar', 'Demo · Cleo', 'Demo · Drew'];
 const PREFERRED_LANES = [0, 1, 2, 1];
-// Each runner spends its own clock on a different plan. Ash is the camera's
+// Each runner spends its own clock on a different plan. The first runner is the camera's
 // viewpoint: an early breakaway lets rivals fall behind before their later
 // purchases bring them back. These are inputs, never forced race positions.
 const BOOST_PLANS = [
-  [10.5, 31, 42], // Ash: early burst, recover, then push for the exit.
-  [16, 34],       // Briar: patient chaser with a longer recovery between bursts.
-  [20, 28, 36],   // Cleo: save for repeated mid-race sprints.
-  [24, 40],       // Drew: conserve time, then make two late pushes.
+  [10.5, 31, 42], // First: early burst, recover, then push for the exit.
+  [16, 34],       // Second: patient chaser with a longer recovery between bursts.
+  [20, 28, 36],   // Third: save for repeated mid-race sprints.
+  [24, 40],       // Fourth: conserve time, then make two late pushes.
 ];
 const RECOVERABLE_ERRORS = new Set(['ACTION_UNAVAILABLE', 'NOT_RACING', 'STALE_INPUT', 'STALE_ROUND']);
 
@@ -81,7 +80,7 @@ export function chooseDemoAction(game, index) {
       || game.jumpKind === 'long' && (current.type === 'gap'
         || getJumpHeight({ jumpDuration: game.jumpDuration, jumpRemaining: remaining }) >= CONFIG.barrierClearanceHeight)));
     if (!clearsCurrent) {
-      // Ash and Cleo sometimes buy an alternative through a full-width row;
+      // The first and third racers sometimes buy an alternative through a full-width row;
       // conserving runners deliberately move to its free-hop route instead.
       if (row.length === 3 && current.type !== 'rubble' && index % 2 === 0
         && !game.jumpRemaining && game.timeSpent < 4 && game.timeLeft > ABILITIES.longJump.cost + 5) {
@@ -127,8 +126,8 @@ export function chooseDemoAction(game, index) {
   return null;
 }
 
-export function createDemoRace({ onStatus, onError, onSnapshot, connect = connectRace }) {
-  const runners = NAMES.map(name => ({ name, connection: null, snapshot: null, roundId: null, course: null }));
+export function createDemoRace({ mapId = 'tunnel', onStatus, onError, onSnapshot, connect = connectRace }) {
+  const runners = Array.from({ length: 4 }, () => ({ connection: null, snapshot: null, roundId: null, course: null }));
   let closed = false;
   let timer = null;
   let guestsStarted = false;
@@ -168,9 +167,9 @@ export function createDemoRace({ onStatus, onError, onSnapshot, connect = connec
         onSnapshot(snapshot) {
           if (closed) return;
           runner.snapshot = snapshot;
-          if (runner.roundId !== snapshot.room.roundId) {
+          if (runner.roundId !== snapshot.room.roundId || runner.course?.mapId !== snapshot.room.mapId) {
             runner.roundId = snapshot.room.roundId;
-            runner.course = createGame({ seed: snapshot.room.seed });
+            runner.course = createGame({ seed: snapshot.room.seed, mapId: snapshot.room.mapId });
           }
           if (index !== 0) return;
           onSnapshot(snapshot);
@@ -178,7 +177,7 @@ export function createDemoRace({ onStatus, onError, onSnapshot, connect = connec
           if (!guestsStarted) {
             guestsStarted = true;
             for (let guest = 1; guest < runners.length; guest += 1) {
-              open(guest, { type: 'join', code: snapshot.room.code, name: runners[guest].name });
+              open(guest, { type: 'join', code: snapshot.room.code });
             }
           }
           if (snapshot.room.phase === 'lobby' && snapshot.players.length === 4
@@ -195,12 +194,12 @@ export function createDemoRace({ onStatus, onError, onSnapshot, connect = connec
     }
   }
 
-  open(0, { type: 'create', name: NAMES[0] });
+  open(0, { type: 'create', mapId });
   if (!closed) timer = setInterval(() => {
     if (closed) return;
     for (const [index, runner] of runners.entries()) {
       if (!runner.snapshot || runner.snapshot.room.phase !== 'racing') continue;
-      const game = { ...runner.snapshot.you.game, obstacles: runner.course.obstacles, debris: runner.course.debris };
+      const game = { ...runner.snapshot.you.game, obstacles: runner.course.obstacles, debris: runner.snapshot.debris ?? runner.course.debris };
       const action = chooseDemoAction(game, index);
       if (action && !runner.connection.input(action)) {
         fail('A demo runner could not send its move. Start the demo again to reconnect.');

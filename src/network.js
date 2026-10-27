@@ -81,9 +81,9 @@ export function createRaceView() {
   }
   return {
     push(snapshot, receivedAt) {
-      const newRound = !latest || latest.snapshot.room.roundId !== snapshot.room.roundId;
+      const newRound = !latest || latest.snapshot.room.roundId !== snapshot.room.roundId || latest.snapshot.room.mapId !== snapshot.room.mapId;
       if (newRound) {
-        const generated = createGame({ seed: snapshot.room.seed });
+        const generated = createGame({ seed: snapshot.room.seed, mapId: snapshot.room.mapId });
         course = generated.obstacles;
         debris = generated.debris;
       }

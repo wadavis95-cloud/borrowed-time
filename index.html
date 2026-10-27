@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0c171b">
-  <meta name="description" content="A four-player escape through a collapsing railway tunnel. Spend seconds to leap over danger and race into daylight.">
-  <title>Borrowed Time — Into the Light</title>
+  <meta name="description" content="A four-player escape race through tunnels, a sinking pirate ship and an erupting jungle. Spend seconds for abilities.">
+  <title>Borrowed Time — Three Escapes</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
   <script type="importmap">{"imports":{"three":"/vendor/three.module.js","three/addons/":"/vendor/"}}</script>
@@ -14,12 +14,15 @@
   <div class="app">
     <header class="site-header">
       <a class="brand" href="/" aria-label="Borrowed Time home"><img src="/favicon.svg" alt="" width="30" height="30"><span>BORROWED <span class="brand-light">TIME</span></span></a>
-      <div class="header-actions"><span class="version">V6</span><button id="sound-button" class="quiet-button" aria-pressed="false">Sound off</button><button id="guide-button" class="quiet-button">How to play ↗</button></div>
+      <div class="header-actions"><span class="version">V7 · LOCAL</span><button id="sound-button" class="quiet-button" aria-pressed="false">Sound off</button><button id="guide-button" class="quiet-button">How to play ↗</button></div>
     </header>
     <main>
       <div class="page-heading" id="page-heading"><div><h1>Race the clock.</h1></div><button id="demo-button" class="demo-button" disabled><span aria-hidden="true">▷</span> Watch demo</button></div>
+      <section id="map-picker" class="map-picker" aria-labelledby="map-picker-title">
+        <div class="map-picker-heading"><h2 id="map-picker-title">Choose your escape</h2><span id="map-vote-note">3 maps · Same ticking clock</span></div>
+        <div id="map-cards" class="map-cards"></div>
+      </section>
       <section class="race-menu" id="race-menu" aria-label="Multiplayer setup">
-        <label><span>Name <small>optional</small></span><input id="player-name" maxlength="20" placeholder="Assigned automatically" autocomplete="nickname"></label>
         <button id="create-room" class="room-button" disabled>Create room</button>
         <span class="room-or">or</span>
         <label>Room code<input id="join-code" maxlength="6" placeholder="ABC123" autocapitalize="characters" autocomplete="off" spellcheck="false"></label>
@@ -86,10 +89,10 @@
       <li><strong>Hop small rubble.</strong> <span id="guide-hop">Press W or ↑.</span></li>
       <li><strong>Spend 5 seconds to boost.</strong> <span id="guide-boost">Press Q (or 1).</span></li>
       <li><strong>Spend 4 seconds to leap.</strong> <span id="guide-leap">Press E (or 2).</span> Time the peak of your jump over tall barriers; clear gaps and rubble too.</li>
-      <li><strong>Watch the amber markers.</strong> Move out of the lane before falling stone lands. You can hop the rubble afterward.</li>
+      <li id="guide-hazard">Watch the amber markers. Move out of the marked lane before impact; hop the wreckage afterward.</li>
       <li><strong>Find your way into daylight.</strong> Time gates restore seconds along the route.</li>
     </ul>
-    <div class="guide-note">Create a room and share its code to race with up to three friends. Each runner gets a different jacket color automatically. The host starts the race. Online races keep running when you switch tabs; solo practice can be paused with P or Escape.</div>
+    <div class="guide-note">Create a room and share its code to race with up to three friends. Vote for a map in the lobby. Most votes wins; ties are random. Your character and role name are assigned automatically. The host starts the race. Online races keep running when you switch tabs; solo practice can be paused with P or Escape.</div>
     <p class="guide-more">The four-player demo uses simulated runners connected to the same race server. You can leave it at any time and play your own run.</p>
     <details class="guide-more"><summary>Art credits</summary><p>Runner adapted from <a href="https://studio.blender.org/characters/snow/v4/" target="_blank" rel="noopener">Snow by Blender Studio / Blender Foundation</a>, under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Modified proportions, wardrobe, materials and original movement for Borrowed Time. No endorsement implied. Tunnel surfaces: Concrete Floor Worn 001 (Dimitrios Savva / Rico Cilliers) and Brick Floor 02 (Charlotte Baglioni), <a href="https://polyhaven.com" target="_blank" rel="noopener">Poly Haven</a>, CC0.</p></details>
   </dialog>
