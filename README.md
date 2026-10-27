@@ -58,7 +58,7 @@ Open `http://YOUR-COMPUTER-LAN-IP:4173` on each device and use the same room cod
 | Long jump | E (or 2) | Long jump button |
 | Pause / resume solo | P or Escape | Pause button |
 
-Start with **60 seconds** and reach daylight before the clock runs out. Boost costs **6 seconds**, long jump costs **4**, hits cost **3**, and time pickups restore **5**. Hop small rubble, use a paid long jump for gaps or a well-timed barrier clearance, or change lanes. Jumping too early or too late can still hit a tall barrier.
+Start with **60 seconds** and reach daylight before the clock runs out. Boost costs **5 seconds**, long jump costs **4**, hits cost **3**, and time pickups restore **5**. Hop small rubble, use a paid long jump for gaps or a well-timed barrier clearance, or change lanes. Jumping too early or too late can still hit a tall barrier.
 
 Fresh solo runs and restarts randomize obstacle and roof-debris placements. Multiplayer races share one fresh server-generated course.
 

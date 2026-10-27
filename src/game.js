@@ -31,7 +31,7 @@ export const CONFIG = Object.freeze({
 });
 
 export const ABILITIES = Object.freeze({
-  boost: Object.freeze({ cost: 6, duration: 4, cooldown: 7, multiplier: 1.85 }),
+  boost: Object.freeze({ cost: 5, duration: 4, cooldown: 7, multiplier: 1.85 }),
   longJump: Object.freeze({ cost: 4, duration: 1.4 }),
 });
 

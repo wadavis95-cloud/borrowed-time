@@ -138,7 +138,7 @@ Keep two different clocks in mind. **Elapsed race time** only advances while the
 | --- | --- |
 | Start / finish | 60 seconds; internal exit distance 1,350m; base speed 22→32m/s over 50 elapsed running seconds. |
 | Free hop | 0.65 seconds; 1.15m peak height; clears small rubble. |
-| Boost | Costs 6 seconds; 1.85× speed for 4 seconds; 7-second cooldown from activation. |
+| Boost | Costs 5 seconds; 1.85× speed for 4 seconds; 7-second cooldown from activation. |
 | Long jump | Costs 4 seconds; lasts 1.4 seconds; 3m peak height; clears rubble, gaps, and correctly timed tall barriers. |
 | Collision | Costs 3 seconds; speed becomes 45% for 0.8 seconds. |
 | Time gates | +5 seconds at internal distances of 450m and 900m; displayed as time pickups. |

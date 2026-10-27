@@ -110,24 +110,24 @@ test('reaching the exit exactly as the clock expires counts as an escape', () =>
 test('a boost spends time immediately, increases speed, and cannot bypass its cooldown', () => {
   const game = running();
   assert.deepEqual(buyAbility(game, 'boost'), { ok: true });
-  assert.equal(game.timeLeft, 54);
-  assert.equal(game.timeSpent, 6);
+  assert.equal(game.timeLeft, 55);
+  assert.equal(game.timeSpent, 5);
   assert.equal(buyAbility(game, 'boost').ok, false);
-  assert.equal(game.timeLeft, 54);
+  assert.equal(game.timeLeft, 55);
   updateGame(game, 1);
   closeTo(game.distance, 40.885);
-  closeTo(game.timeLeft, 53);
+  closeTo(game.timeLeft, 54);
   updateGame(game, 3);
   assert.equal(game.boostRemaining, 0);
   assert.equal(buyAbility(game, 'boost').ok, false);
   updateGame(game, 3);
   assert.equal(buyAbility(game, 'boost').ok, true);
-  assert.equal(game.timeSpent, 12);
+  assert.equal(game.timeSpent, 10);
 });
 
 test('abilities require more time than their price and a running game', () => {
   const game = running();
-  game.timeLeft = 6;
+  game.timeLeft = 5;
   assert.equal(buyAbility(game, 'boost').ok, false);
   game.timeLeft = 4;
   assert.equal(buyAbility(game, 'longJump').ok, false);

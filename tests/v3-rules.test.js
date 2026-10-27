@@ -60,7 +60,7 @@ test('boost and stun multiply the integrated accelerating speed through their ex
   for (const game of [whole, stepped]) {
     near(game.distance, 147.78688);
     near(game.speed, 22.8);
-    near(game.timeLeft, 50);
+    near(game.timeLeft, 51);
     assert.equal(game.boostRemaining, 0);
     assert.equal(game.stunRemaining, 0);
   }
