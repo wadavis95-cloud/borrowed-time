@@ -31,20 +31,21 @@
         <button id="leave-room" class="quiet-button">Leave room</button>
       </section>
       <p id="network-error" class="network-error" role="alert" hidden></p>
-      <section id="leaderboard" class="leaderboard" aria-label="Race leaderboard" hidden>
-        <div class="leaderboard-heading"><strong id="leaderboard-title">Live standings</strong><span id="leaderboard-note">First to escape wins</span></div>
-        <ol id="leaderboard-rows" aria-label="Player positions and escape results"></ol>
-      </section>
       <div class="game-layout">
         <section class="arena" aria-label="Escape race">
           <canvas id="game-canvas" aria-label="Three-lane tunnel race toward daylight. Dodge falling stone. Hop rubble or use a long jump to clear barriers and gaps.">This game needs a browser with WebGL 2 support.</canvas>
           <div class="arena-top"><span class="location"><i></i><span id="avatar-label">RUNNER</span></span><span id="race-mode-label" class="mode-label">SOLO PRACTICE</span><button id="pause-button" class="pause-button" aria-label="Pause game" disabled>Ⅱ</button></div>
+      <section id="leaderboard" class="leaderboard" aria-label="Race leaderboard" hidden>
+        <div class="leaderboard-heading"><strong id="leaderboard-title">Live standings</strong><span id="leaderboard-note">First to escape wins</span></div>
+        <ol id="leaderboard-rows" aria-label="Player positions and escape results"></ol>
+      </section>
           <div id="event-toast" class="event-toast" role="status" aria-live="polite"></div>
           <div id="screen-overlay" class="screen-overlay">
             <div class="intro-card">
               <span id="overlay-kicker" class="eyebrow">INTO THE LIGHT</span>
               <h2 id="overlay-title">Preparing your escape.</h2>
               <p id="overlay-description">Loading the runners and tunnel…</p>
+              <div id="results-standings-slot"></div>
               <div id="ability-brief" class="ability-brief" hidden>
                 <div class="brief-power"><span class="brief-icon" aria-hidden="true">ϟ</span><strong>Speed boost</strong><span class="brief-price">SPEND <b id="brief-boost-cost">6s</b></span><small>4-second sprint.</small></div>
                 <div class="brief-power leap"><span class="brief-icon" aria-hidden="true">↗</span><strong>Long jump</strong><span class="brief-price">SPEND <b id="brief-jump-cost">4s</b></span><small>Clear barriers &amp; gaps.</small></div>
@@ -64,10 +65,10 @@
           <section class="abilities-panel" aria-label="Spend time on abilities">
             <div class="ability-heading"><strong>Spend time</strong></div>
             <button id="boost-button" aria-keyshortcuts="q 1" class="ability-button boost" disabled>
-              <span class="ability-icon" aria-hidden="true">ϟ</span><span class="ability-copy"><strong>Boost <kbd>Q</kbd></strong><small id="boost-description">Run faster for 4s</small></span><span class="cost">−6<span>SEC</span></span>
+              <span class="ability-icon" aria-hidden="true">ϟ</span><span class="ability-copy"><strong>Boost <kbd>Q</kbd></strong><span class="ability-hint" aria-hidden="true"></span><small id="boost-description">Run faster for 4s</small></span><span class="cost">−6<span>SEC</span></span>
             </button>
             <button id="long-jump-button" aria-keyshortcuts="e 2" class="ability-button leap" disabled>
-              <span class="ability-icon" aria-hidden="true">↗</span><span class="ability-copy"><strong>Long jump <kbd>E</kbd></strong><small id="jump-description">Clear barriers &amp; gaps</small></span><span class="cost">−4<span>SEC</span></span>
+              <span class="ability-icon" aria-hidden="true">↗</span><span class="ability-copy"><strong>Long jump <kbd>E</kbd></strong><span class="ability-hint" aria-hidden="true"></span><small id="jump-description">Clear barriers &amp; gaps</small></span><span class="cost">−4<span>SEC</span></span>
             </button>
           </section>
         </aside>

@@ -611,7 +611,6 @@ h2 {
 .ability-heading { grid-column:1/-1; display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:3px 12px; margin-bottom:3px }
 .ability-heading strong { font-size:12px; font-weight:650; color:#f0e4ce }
 .ability-heading>span { font-size:10px; color:#b2c5bd }
-.discovering .ability-heading strong { color:var(--orange) }
 
 .ability-button {
   --ability-accent:#edc38e;
@@ -643,12 +642,6 @@ h2 {
 
 .ability-button:disabled {
   opacity:.68
-}
-
-.discovering .ability-button:enabled { animation:ability-beacon 1.8s ease-in-out 2 }
-@keyframes ability-beacon {
-  0%,100% { box-shadow:0 0 0 0 transparent }
-  50% { box-shadow:0 0 0 2px var(--ability-accent),inset 0 0 18px #ffffff0a }
 }
 
 .ability-button.active {
@@ -1240,47 +1233,48 @@ dialog p,.play-guide {
 }
 
 
-/* Compact race standings stay above the course, including final results. */
-.leaderboard {
-  position:sticky; top:8px; z-index:5; margin:0 0 12px;
-  padding:10px 12px; border:1px solid #506b67; border-radius:14px;
-  background:rgba(22,42,45,.97); box-shadow:0 5px 18px #0003;
-}
-.leaderboard-heading { display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:8px }
-.leaderboard-heading strong { color:#d8eee4; font-size:12px }
-.leaderboard-heading>span { color:#aac2be; font-size:10px }
-.leaderboard ol { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; list-style:none; padding:0; margin:0 }
-.standing { display:grid; grid-template-columns:22px 6px minmax(0,1fr); align-items:center; gap:3px 6px; padding:8px; border:1px solid #42595b; border-radius:8px; background:#213438 }
-.standing-place { grid-row:1/3; color:#f2ce8f; font-size:22px; font-variant-numeric:tabular-nums }
-.standing i { width:6px; height:6px; border-radius:50% }
-.standing-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; color:#eef7f1 }
-.standing small { grid-column:2/4; color:#a8c0bd; font-size:10px }
-.standing.is-you { border-color:#b5e3ce; background:#2d4948 }
-.standing.escaped small { color:#a1ebbd }
-.standing.dnf small,.standing.disconnected small { color:#f5bb9d }
-@media(max-width:600px) {
-  .leaderboard { padding:8px; top:4px; margin-bottom:8px }
-  .leaderboard ol { grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px }
-  .standing { padding:5px 7px }
-  .standing-place { font-size:19px }
-}
+/* Live standings belong to the course. They cannot receive taps or float over controls. */
+.leaderboard { position:absolute; top:12px; left:12px; width:132px; z-index:2; padding:7px 8px; border:1px solid #c2d8e52a; border-radius:7px; background:#0a1922a8; pointer-events:none; text-align:left }
+.leaderboard-heading { display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:5px }
+.leaderboard-heading strong { color:#fff; font-size:17px; font-variant-numeric:tabular-nums }
+.leaderboard-heading>span { color:#c6d5db; font-size:7px; letter-spacing:.08em }
+.leaderboard ol { display:grid; gap:2px; list-style:none; padding:0; margin:0 }
+.standing { display:grid; grid-template-columns:12px 5px minmax(0,1fr) 10px; align-items:center; column-gap:5px; min-height:15px; color:#d9e5e9 }
+.standing-place { color:#f4dfb7; font-size:10px; font-variant-numeric:tabular-nums }
+.standing i { width:5px; height:5px; border-radius:50% }
+.standing-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px }
+.standing small { color:#b1e8be; font-size:11px; text-align:right }
+.standing.is-you { color:#fff; font-weight:750 }
+.standing.dnf small,.standing.disconnected small { color:#ff9da6 }
+.arena.race-hud .location { display:none }
+.arena.race-hud .arena-top { justify-content:flex-end }
+.arena.race-hud .mode-label { margin-left:auto }
+.screen-overlay { z-index:3 }
+#results-standings-slot .leaderboard { position:static; width:100%; margin:12px 0 18px; padding:12px; background:#10242be6; pointer-events:auto }
+#results-standings-slot .leaderboard-heading strong { font-size:13px }
+#results-standings-slot .leaderboard-heading>span { font-size:9px; letter-spacing:0 }
+#results-standings-slot .leaderboard ol { gap:8px }
+#results-standings-slot .standing { grid-template-columns:18px 6px minmax(0,1fr) auto; min-height:22px }
+#results-standings-slot .standing-name { font-size:12px }
+#results-standings-slot .standing small { font-size:11px }
+@media(max-width:600px) { .leaderboard { top:8px; left:8px; width:112px; padding:6px } .standing-name { font-size:9px } }
 
 /* High-contrast abilities: color is reinforced by names, costs and key badges. */
-.ability-button { --ability-accent:#d5ff46; background:#d5ff46; border:2px solid #edffad; color:#18220a; box-shadow:0 3px 0 #66831b }
-.ability-button.leap { --ability-accent:#c28aff; background:#c28aff; border-color:#e4c4ff; color:#28113c; box-shadow:0 3px 0 #754ba1 }
+.ability-button { --ability-accent:#ff6b82; background:#d92943; border:2px solid #ff8092; color:#fff; box-shadow:0 3px 0 #7b1224 }
+.ability-button.leap { --ability-accent:#73aeff; background:#2467df; border-color:#83b6ff; color:#fff; box-shadow:0 3px 0 #143b83 }
 .ability-button .ability-icon,.ability-button .ability-copy small,.ability-button .cost { color:inherit }
-.ability-button .cost { background:#ffffff45; font-weight:700 }
+.ability-button .cost { background:#07122140; font-weight:700 }
 .ability-button .ability-copy strong { font-weight:750 }
-.ability-button .ability-copy kbd { color:inherit; background:#ffffff70; border:1px solid #24351155; font-weight:750 }
+.ability-button .ability-copy kbd { color:inherit; background:#07122140; border:1px solid #ffffff60; font-weight:750 }
 .ability-button:disabled { opacity:.62; filter:saturate(.7) }
-.ability-button.active { opacity:1; filter:none; background:#f5ffe3; border-color:var(--ability-accent); box-shadow:0 0 0 2px var(--ability-accent) }
-.ability-button.leap.active { background:#f3e7ff }
+.ability-button.active { opacity:1; filter:none; background:#ffe5eb; color:#7d1427; border-color:var(--ability-accent); box-shadow:0 0 0 2px var(--ability-accent) }
+.ability-button.leap.active { background:#e0edff; color:#143b83 }
 .ability-button:focus-visible { outline:3px solid white; outline-offset:4px }
 .ability-button:not(.has-status) .ability-copy small { display:none }
-.brief-power { border-color:#d5ff4699; background:#26351af5 }
-.brief-power.leap { border-color:#c28aff99; background:#30203ff5 }
-.brief-power .brief-icon,.brief-power .brief-price b { color:#d5ff46 }
-.brief-power.leap .brief-icon,.brief-power.leap .brief-price b { color:#d6b0ff }
+.brief-power { border-color:#ff6b8299; background:#391a22f5 }
+.brief-power.leap { border-color:#73aeff99; background:#182d4bf5 }
+.brief-power .brief-icon,.brief-power .brief-price b { color:#ff9daf }
+.brief-power.leap .brief-icon,.brief-power.leap .brief-price b { color:#a8ceff }
 .clock-note { min-height:0; margin-top:5px }
 .ability-heading { margin-bottom:0 }
 .screen-overlay .intro-card>p:empty { display:none }
@@ -1297,3 +1291,15 @@ html[data-input="touch"] .keyboard-hint,html[data-input="touch"] .ability-copy k
 @media(pointer:coarse) { .touch-controls button { min-height:52px } }
 html[data-input="keyboard"] .game-footer { justify-content:space-between }
 @media(max-width:760px) { .header-actions { gap:12px } }
+
+/* Contextual coach: no modal, pointer capture, resizing or forced purchase. */
+.ability-hint { display:none; font-size:10px; font-weight:750; margin-top:4px }
+.ability-button.coach-cue { outline:2px solid #fff5bc; outline-offset:3px; animation:coach-glow 1.1s ease-in-out 2 }
+.ability-button.coach-cue .ability-hint { display:block }
+.ability-button.coach-cue .ability-copy small { display:none }
+@keyframes coach-glow { 0%,100% { box-shadow:0 0 0 2px #ffe8a866 } 50% { box-shadow:0 0 0 5px #ffe8a8,0 0 18px #ffe8a888 } }
+@media(prefers-reduced-motion:reduce) { .ability-button.coach-cue { animation:none; box-shadow:0 0 0 2px #ffe8a8 } }
+.room-panel.live-room { display:flex; flex-wrap:nowrap; align-items:center; justify-content:space-between; gap:12px; padding:6px 12px }
+.room-panel.live-room .room-presence,.room-panel.live-room .eyebrow { display:none }
+.room-panel.live-room #room-code { font-size:16px }
+.room-panel.live-room #room-code::before { content:'ROOM '; font-size:9px; letter-spacing:.08em; color:#b1c4c8 }

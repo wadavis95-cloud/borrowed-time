@@ -6,10 +6,12 @@ import { AVATARS } from './avatars.js';
 import { createDemoRace } from './demo.js';
 import { createGameAudio } from './audio.js';
 import { createInputMode } from './input.js';
+import { createAbilityCoach } from './ability-coach.js';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('game-canvas');
 const audio = createGameAudio();
+const abilityCoach = createAbilityCoach();
 let renderer = null, graphicsError = '', graphicsLoading = true;
 let graphicsProgress = 0;
 const graphicsMessage = '3D graphics are unavailable. Try an up-to-date browser with graphics acceleration enabled, then reload.';
@@ -69,7 +71,7 @@ async function prepareGraphics() {
 }
 
 function showCourse() {
-  ($('leaderboard').hidden ? canvas.closest('.arena') : $('leaderboard')).scrollIntoView({ block: 'start', behavior: 'auto' });
+  canvas.closest('.arena').scrollIntoView({ block: 'start', behavior: 'auto' });
 }
 
 function notify(text, kind = 'info') {
@@ -88,6 +90,7 @@ function showNetworkError(message = '') {
   $('network-error').hidden = !message;
 }
 function resetVisuals() {
+  abilityCoach.reset();
   renderer?.reset();
   audio.reset();
   lastEvent = 0;
@@ -198,21 +201,28 @@ function updateRoom() {
       $('room-players').append(li);
     }
   }
-  $('room-players').hidden = snapshot?.room.phase === 'racing';
+  $('room-players').hidden = ['racing', 'finished'].includes(snapshot?.room.phase);
 }
 
 function updateLeaderboard() {
-  const visible = mode !== 'solo' && Boolean(snapshot?.standings);
+  const visible = mode !== 'solo' && Boolean(snapshot?.standings) && ['racing', 'finished'].includes(snapshot.room.phase);
   $('leaderboard').hidden = !visible;
+  canvas.closest('.arena').classList.toggle('race-hud', visible);
   if (!visible) { standingsKey = ''; return; }
   const finished = snapshot.room.phase === 'finished';
+  const results = finished || ['won', 'lost'].includes(game.phase);
+  const view = results ? 'results' : 'live';
+  $('leaderboard').dataset.view = view;
+  const target = results ? $('results-standings-slot') : canvas.closest('.arena');
+  if ($('leaderboard').parentElement !== target) target.append($('leaderboard'));
+  const own = snapshot.standings.find(p => p.id === snapshot.you.id);
   const stale = networkStatus !== 'open';
-  $('leaderboard-title').textContent = finished ? 'Race results' : 'Live standings';
-  $('leaderboard-note').textContent = stale ? 'Connection lost · last known positions'
-    : finished ? 'DNF = did not escape' : snapshot.room.phase === 'racing' ? '' : 'Waiting for the start';
+  $('leaderboard-title').textContent = results ? finished ? 'Race results' : 'Still racing' : `${own?.position ?? '—'} / ${snapshot.standings.length}`;
+  $('leaderboard-note').textContent = stale ? 'Offline · last positions'
+    : results ? 'DNF = did not escape' : 'POSITION';
   const rows = snapshot.standings.map(entry => ({ ...entry, ...snapshot.players.find(p => p.id === entry.id) }));
   // Only touch the DOM when order, identity or result changes, not every frame.
-  const displayKey = JSON.stringify([snapshot.room.roundId, snapshot.you.id, mode,
+  const displayKey = JSON.stringify([snapshot.room.roundId, snapshot.you.id, mode, view,
     rows.map(p => [p.id, p.position, p.status, p.name, p.color])]);
   if (displayKey === standingsKey) return;
   standingsKey = displayKey;
@@ -225,12 +235,15 @@ function updateLeaderboard() {
     place.textContent = player.position === null ? '—' : `${player.position}`;
     const name = document.createElement('span');
     name.className = 'standing-name';
-    name.textContent = `${player.name}${player.id === snapshot.you.id && mode !== 'demo' ? ' (you)' : ''}`;
+    name.textContent = `${mode === 'demo' ? player.name.replace(/^Demo · /, '') : player.name}${player.id === snapshot.you.id && mode !== 'demo' ? ' (you)' : ''}`;
     name.title = name.textContent;
     const dot = document.createElement('i');
     dot.style.backgroundColor = player.color;
     const status = document.createElement('small');
-    status.textContent = ({ ready: 'Ready', racing: 'Racing', escaped: '✓ Escaped', dnf: 'DNF · time out', disconnected: 'DNF · left' })[player.status];
+    const statusLabel = ({ ready: 'Ready', racing: 'Racing', escaped: 'Escaped', dnf: 'DNF · time out', disconnected: 'DNF · left' })[player.status];
+    status.textContent = results ? statusLabel : player.status === 'escaped' ? '✓' : ['dnf', 'disconnected'].includes(player.status) ? '×' : '';
+    row.setAttribute('aria-label', `${name.textContent}, ${player.position ? `position ${player.position}, ` : ''}${statusLabel}`);
+    row.title = `${name.textContent} · ${statusLabel}`;
     row.append(place, dot, name, status);
     return row;
   }));
@@ -325,6 +338,7 @@ function updateHUD() {
   $('race-menu').hidden = online || ['running', 'paused'].includes(game.phase);
   $('page-heading').hidden = online || ['running', 'paused'].includes(game.phase);
   $('room-panel').hidden = !online;
+  $('room-panel').classList.toggle('live-room', online && ['racing', 'finished'].includes(snapshot?.room.phase));
   $('restart-button').hidden = online;
   $('race-mode-label').textContent = mode === 'demo' ? 'DEMO' : online ? 'MULTIPLAYER' : 'SOLO';
   $('avatar-label').textContent = AVATARS[game.avatarId]?.name || 'Runner';
@@ -345,8 +359,13 @@ function updateHUD() {
       : game.timeLeft <= ABILITIES.boost.cost ? 'Not enough time' : `${ABILITIES.boost.duration}s sprint`;
   $('jump-description').textContent = game.jumpKind === 'long' ? 'Long jump active'
     : game.timeLeft <= ABILITIES.longJump.cost ? 'Not enough time' : 'Clear barriers & gaps';
-  const discovering = running && game.elapsed < 10 && game.timeSpent === 0;
-  $('boost-button').closest('.abilities-panel').classList.toggle('discovering', discovering);
+  const cue = abilityCoach.update(game, running);
+  for (const [id, ability] of [['boost-button', 'boost'], ['long-jump-button', 'longJump']]) {
+    $(id).classList.toggle('coach-cue', cue?.ability === ability);
+    const label = cue?.ability === ability ? cue.label : '';
+    const hint = $(id).querySelector('.ability-hint');
+    if (hint.textContent !== label) hint.textContent = label;
+  }
   const spent = performance.now() < purchaseUntil;
   $('time-value').closest('.clock-panel').classList.toggle('spent', spent);
   const clockNote = spent ? purchaseFeedback : '';

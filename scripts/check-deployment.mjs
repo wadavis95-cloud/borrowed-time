@@ -8,7 +8,7 @@ const USAGE = 'Usage: node scripts/check-deployment.mjs https://your-game.onrend
 const ASSETS = [
   '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js',
   '/src/renderer.js', '/src/unity-renderer.js', '/src/unity-protocol.js', '/src/network.js', '/src/avatars.js', '/src/hazards.js',
-  '/src/graphics/avatars.js', '/src/graphics/tunnel.js', '/src/demo.js', '/src/audio.js', '/src/input.js',
+  '/src/graphics/avatars.js', '/src/graphics/tunnel.js', '/src/demo.js', '/src/audio.js', '/src/input.js', '/src/ability-coach.js',
   '/vendor/three.module.js', '/vendor/three.core.js', '/vendor/loaders/GLTFLoader.js',
   '/vendor/utils/BufferGeometryUtils.js', '/vendor/utils/SkeletonUtils.js',
   '/docs/character-preview.html', '/assets/characters/courier.glb',

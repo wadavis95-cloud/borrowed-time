@@ -47,6 +47,7 @@ The frontend is what runs in each browser. The backend is the shared Node proces
 | `src/game.js` | State, tuning constants, ability purchases, movement, collisions, finishing. |
 | `src/main.js` | Asset readiness, keyboard/touch handling, solo/online/demo flow, minimal HUD and results. |
 | `src/input.js` | Chooses touch or keyboard layouts from device capabilities and actual input. |
+| `src/ability-coach.js` | Local contextual button hints for unused abilities; never changes the game rules. |
 | `src/hazards.js` | Seeded falling-event schedules and visual phases from elapsed race time. |
 | `src/avatars.js` | Four cosmetic character IDs and display metadata. |
 | `src/renderer.js` | Three.js scene, camera, lighting, hazard presentation and ghost placement. |
