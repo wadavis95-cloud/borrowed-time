@@ -19,7 +19,7 @@ const publicFiles = new Set([
   '/src/renderer.js', '/src/network.js',
   '/src/unity-renderer.js', '/src/unity-protocol.js',
   '/src/avatars.js', '/src/hazards.js', '/src/graphics/avatars.js', '/src/graphics/tunnel.js',
-  '/src/demo.js', '/src/audio.js',
+  '/src/demo.js', '/src/audio.js', '/src/input.js',
   '/docs/character-preview.html',
   '/assets/characters/courier.glb', '/assets/characters/engineer.glb',
   '/assets/characters/guard.glb', '/assets/characters/runner.glb',

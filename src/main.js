@@ -1,10 +1,11 @@
 // The coordinator: browser inputs, solo rules, multiplayer snapshots, 3D scene, and HUD.
-import { CONFIG, ABILITIES, createGame, startGame, pauseGame, resumeGame, moveLane, jump, buyAbility, updateGame } from './game.js';
+import { CONFIG, ABILITIES, createGame, freshCourseSeed, startGame, pauseGame, resumeGame, moveLane, jump, buyAbility, updateGame } from './game.js';
 import { createUnityRenderer } from './unity-renderer.js';
 import { connectRace, createRaceView } from './network.js';
 import { AVATARS } from './avatars.js';
 import { createDemoRace } from './demo.js';
 import { createGameAudio } from './audio.js';
+import { createInputMode } from './input.js';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('game-canvas');
@@ -13,6 +14,7 @@ let renderer = null, graphicsError = '', graphicsLoading = true;
 let graphicsProgress = 0;
 const graphicsMessage = '3D graphics are unavailable. Try an up-to-date browser with graphics acceleration enabled, then reload.';
 let game = createGame();
+let soloSeed = 42;
 let mode = 'solo';
 let connection = null, snapshot = null, raceView = createRaceView();
 let networkStatus = '', connectionGeneration = 0, rosterKey = '';
@@ -21,6 +23,18 @@ let purchaseUntil = 0, purchaseFeedback = '';
 let standingsKey = '';
 let lastFrame = performance.now(), accumulator = 0;
 const STEP = 1 / 60;
+const inputMode = createInputMode({ onChange(mode) {
+  document.documentElement.dataset.input = mode;
+  lastOverlay = '';
+  const touch = mode === 'touch';
+  $('guide-move').textContent = touch ? 'Swipe sideways or tap ← / →.' : 'Press A / D or ← / →.';
+  $('guide-hop').textContent = touch ? 'Swipe up, tap the course, or tap ↑.' : 'Press W or ↑.';
+  $('guide-boost').textContent = touch ? 'Tap Boost.' : 'Press Q (or 1).';
+  $('guide-leap').textContent = touch ? 'Tap Long jump.' : 'Press E (or 2).';
+} });
+const controlHint = () => inputMode.mode === 'touch'
+  ? 'Swipe to move · Swipe up to hop · Tap abilities'
+  : 'A / D move · W hop · Q boost · E long jump';
 const guestName = `Runner ${100 + Math.floor(Math.random() * 900)}`;
 $('player-name').placeholder = guestName;
 
@@ -28,6 +42,7 @@ $('boost-button').querySelector('.cost').firstChild.textContent = `−${ABILITIE
 $('long-jump-button').querySelector('.cost').firstChild.textContent = `−${ABILITIES.longJump.cost}`;
 $('brief-boost-cost').textContent = `${ABILITIES.boost.cost}s`;
 $('brief-jump-cost').textContent = `${ABILITIES.longJump.cost}s`;
+
 
 async function prepareGraphics() {
   try {
@@ -58,14 +73,14 @@ function showCourse() {
 }
 
 function notify(text, kind = 'info') {
-  const message = kind === 'ability' ? `${text} from your clock` : text;
+  const message = text;
   $('event-toast').textContent = message;
   if (kind === 'ability') {
     purchaseUntil = performance.now() + 2600;
     purchaseFeedback = message;
   }
   $('event-toast').dataset.kind = kind;
-  $('event-toast').classList.add('visible');
+  $('event-toast').classList.toggle('visible', kind !== 'ability');
   toastUntil = performance.now() + 1800;
 }
 function showNetworkError(message = '') {
@@ -98,7 +113,8 @@ function returnToMenu() {
 }
 function beginRun() {
   if (mode !== 'solo' || !renderer || graphicsError) return;
-  game = createGame({ seed: 42, avatarId: game.avatarId });
+  soloSeed = freshCourseSeed(soloSeed);
+  game = createGame({ seed: soloSeed, avatarId: game.avatarId });
   startGame(game);
   resetVisuals();
   showNetworkError();
@@ -163,12 +179,12 @@ function updateRoom() {
   else {
     const count = snapshot.players.filter(player => player.connected).length;
     $('room-status').textContent = demo
-      ? snapshot.room.phase === 'finished' ? 'Demo complete · Four simulated runners raced on the live server.' : 'Four simulated runners · Connected to the live race server.'
+      ? snapshot.room.phase === 'finished' ? 'Demo complete' : '4 demo racers'
       : snapshot.room.phase === 'lobby'
-      ? `${count}/4 runners · Share this code. The host starts when everyone is here.`
-      : snapshot.room.phase === 'countdown' ? 'Get ready. Everyone starts together.'
-      : snapshot.room.phase === 'finished' ? 'Race complete. Stay for a rematch or leave.'
-      : 'Race in progress · Switching tabs does not pause your clock.';
+      ? `${count}/4 racers · Share code to invite`
+      : snapshot.room.phase === 'countdown' ? 'Get ready'
+      : snapshot.room.phase === 'finished' ? 'Race complete'
+      : `${count} racers`;
   }
   const key = JSON.stringify([snapshot?.players.map(p => [p.id, p.name, p.connected, p.color, p.avatarId]), snapshot?.room.hostId]);
   if (key !== rosterKey) {
@@ -193,7 +209,7 @@ function updateLeaderboard() {
   const stale = networkStatus !== 'open';
   $('leaderboard-title').textContent = finished ? 'Race results' : 'Live standings';
   $('leaderboard-note').textContent = stale ? 'Connection lost · last known positions'
-    : finished ? 'DNF = did not escape' : snapshot.room.phase === 'racing' ? 'First to escape wins' : 'Waiting for the start';
+    : finished ? 'DNF = did not escape' : snapshot.room.phase === 'racing' ? '' : 'Waiting for the start';
   const rows = snapshot.standings.map(entry => ({ ...entry, ...snapshot.players.find(p => p.id === entry.id) }));
   // Only touch the DOM when order, identity or result changes, not every frame.
   const displayKey = JSON.stringify([snapshot.room.roundId, snapshot.you.id, mode,
@@ -245,9 +261,12 @@ function overlay(kicker, title, description, button, disabled = false, hint = ''
   $('overlay-kicker').textContent = kicker;
   $('overlay-title').textContent = title;
   $('overlay-description').textContent = description;
+  $('overlay-description').hidden = !description;
   $('start-button').textContent = button;
   $('start-button').disabled = disabled;
   $('overlay-hint').textContent = hint;
+  $('overlay-hint').hidden = !hint;
+  $('overlay-kicker').hidden = !kicker;
 }
 function updateOverlay() {
   const brief = !graphicsLoading && !graphicsError && (mode === 'solo' ? game.phase === 'ready'
@@ -276,37 +295,38 @@ function updateOverlay() {
     } else if (room.phase === 'lobby') {
       const count = snapshot.players.filter(player => player.connected).length;
       if (mode === 'demo') {
-        overlay('FOUR-PLAYER DEMO', 'Meet the runners.', 'Four simulated players are joining the same race server.', 'Getting ready…', true, 'Automatic characters. Real multiplayer rules.');
+        overlay('FOUR-PLAYER DEMO', 'Meet the runners.', '', 'Getting ready…', true, '');
         return;
       }
-      overlay('SURVIVE. SPEND. ESCAPE.', 'Your own clock. One exit.', 'Everyone starts with 60 seconds. Abilities spend your own time. First to escape wins.', host ? 'Start race →' : 'Waiting for host…', !host || count < 2, count < 2 ? 'Share the room code. At least two runners must join.' : `${count} runners ready. Everyone starts together.`);
+      overlay('60 SECONDS', 'First to escape wins.', 'Abilities cost seconds from your clock.', host ? 'Start race →' : 'Waiting for host…', !host || count < 2, count < 2 ? 'Invite a friend with the room code.' : controlHint());
     } else if (room.phase === 'countdown') {
-      overlay('YOUR TIME IS YOUR CURRENCY', `${room.countdown}`, 'Abilities spend seconds from your escape clock. Make it out before zero.', 'Starting…', true, 'Move ← → · Free hop SPACE · Boost 1 · Long jump 2');
+      overlay('', `${room.countdown}`, '', 'Starting…', true, controlHint());
     } else if (ended) {
       const winner = snapshot.players.find(player => player.id === room.winnerId);
       const title = mode === 'demo'
-        ? room.phase !== 'finished' ? 'The others are still racing.' : winner ? `${AVATARS[winner.avatarId]?.name || winner.name} wins.` : 'The tunnel won this round.'
+        ? room.phase !== 'finished' ? 'The others are still racing.' : winner ? `${winner.name} wins.` : 'The tunnel won this round.'
         : room.phase !== 'finished' ? (game.phase === 'won' ? 'You escaped.' : 'Time ran out.')
         : winner ? (winner.id === snapshot.you.id ? 'You won the race.' : `${winner.name} won the race.`) : 'The tunnel won this round.';
       overlay(room.phase === 'finished' ? 'RACE COMPLETE' : 'WAITING FOR RUNNERS', title,
-        room.phase === 'finished' ? 'Another route. Another chance to spend your seconds wisely.' : 'The remaining runners are still racing. Stay for the result and rematch.',
+        room.phase === 'finished' ? '' : 'Waiting for the remaining racers.',
         room.phase !== 'finished' ? 'Race still in progress…' : mode === 'demo' ? 'Watch again →' : host ? 'Set up rematch →' : 'Waiting for host…', room.phase !== 'finished' || !host);
     }
     return;
   }
   $('screen-overlay').hidden = game.phase === 'running';
-  if (game.phase === 'ready') overlay(`${CONFIG.initialTime} SECONDS. CHOOSE HOW TO SPEND THEM.`, 'Escape before zero.', 'Your clock is also your currency. Spend seconds on abilities to get through the collapsing tunnel.', 'Start solo escape →', false, 'Move ← → · Free hop SPACE · Abilities 1 / 2');
-  else if (game.phase === 'paused') overlay('TAKE A BREATH', 'Time stands still.', 'Your solo run is paused. The clock and the building will wait.', 'Resume run →', false, 'Press P or ESC to resume');
-  else if (ended) overlay(game.phase === 'won' ? 'ESCAPE COMPLETE' : 'THE CLOCK RAN OUT', game.phase === 'won' ? 'You escaped.' : 'Time ran out.', game.phase === 'won' ? 'A little daylight. A second chance. Ready to go again?' : 'Dodge, leap, and save enough seconds for the exit.', 'Run it again →');
+  if (game.phase === 'ready') overlay(`${CONFIG.initialTime} SECONDS`, 'Escape before zero.', 'Abilities cost seconds from your clock.', 'Play solo →', false, controlHint());
+  else if (game.phase === 'paused') overlay('TAKE A BREATH', 'Time stands still.', '', 'Resume run →', false, 'Press P or ESC to resume');
+  else if (ended) overlay(game.phase === 'won' ? 'ESCAPE COMPLETE' : 'THE CLOCK RAN OUT', game.phase === 'won' ? 'You escaped.' : 'Time ran out.', '', 'New run →');
 }
 function updateHUD() {
   updateLeaderboard();
   const online = mode !== 'solo';
   const running = Boolean(renderer) && !graphicsError && mode !== 'demo' && game.phase === 'running' && (!online || networkStatus === 'open');
-  $('race-menu').hidden = online;
+  $('race-menu').hidden = online || ['running', 'paused'].includes(game.phase);
+  $('page-heading').hidden = online || ['running', 'paused'].includes(game.phase);
   $('room-panel').hidden = !online;
   $('restart-button').hidden = online;
-  $('race-mode-label').textContent = mode === 'demo' ? 'DEMO · SIMULATED RUNNERS' : online ? 'LIVE MULTIPLAYER' : 'SOLO PRACTICE';
+  $('race-mode-label').textContent = mode === 'demo' ? 'DEMO' : online ? 'MULTIPLAYER' : 'SOLO';
   $('avatar-label').textContent = AVATARS[game.avatarId]?.name || 'Runner';
   for (const id of ['create-room', 'join-room', 'restart-button']) $(id).disabled = !renderer || Boolean(graphicsError);
   $('demo-button').disabled = !renderer || Boolean(graphicsError) || online;
@@ -318,16 +338,19 @@ function updateHUD() {
   $('long-jump-button').disabled = !running || game.timeLeft <= ABILITIES.longJump.cost || game.jumpKind === 'long';
   $('boost-button').classList.toggle('active', game.boostRemaining > 0);
   $('long-jump-button').classList.toggle('active', game.jumpKind === 'long');
+  $('boost-button').classList.toggle('has-status', game.boostRemaining > 0 || game.boostCooldown > 0 || game.timeLeft <= ABILITIES.boost.cost);
+  $('long-jump-button').classList.toggle('has-status', game.jumpKind === 'long' || game.timeLeft <= ABILITIES.longJump.cost);
   $('boost-description').textContent = game.boostRemaining > 0 ? `Boosting · ${Math.ceil(game.boostRemaining)}s left`
     : game.boostCooldown > 0 ? `Recharges in ${Math.ceil(game.boostCooldown)}s`
-      : game.timeLeft <= ABILITIES.boost.cost ? 'Not enough time' : `Run faster for ${ABILITIES.boost.duration}s`;
+      : game.timeLeft <= ABILITIES.boost.cost ? 'Not enough time' : `${ABILITIES.boost.duration}s sprint`;
   $('jump-description').textContent = game.jumpKind === 'long' ? 'Long jump active'
     : game.timeLeft <= ABILITIES.longJump.cost ? 'Not enough time' : 'Clear barriers & gaps';
   const discovering = running && game.elapsed < 10 && game.timeSpent === 0;
   $('boost-button').closest('.abilities-panel').classList.toggle('discovering', discovering);
   const spent = performance.now() < purchaseUntil;
   $('time-value').closest('.clock-panel').classList.toggle('spent', spent);
-  const clockNote = spent ? purchaseFeedback : 'Also your ability budget.';
+  const clockNote = spent ? purchaseFeedback : '';
+  $('clock-feedback').hidden = !spent;
   if ($('clock-feedback').textContent !== clockNote) $('clock-feedback').textContent = clockNote;
   $('pause-button').disabled = online || (!running && game.phase !== 'paused');
   $('pause-button').textContent = game.phase === 'paused' ? '▷' : 'Ⅱ';
@@ -369,14 +392,20 @@ for (const [id, action] of [['boost-button','boost'], ['long-jump-button','longJ
 }
 document.addEventListener('keydown', event => {
   if ($('guide-dialog').open || event.altKey || event.ctrlKey || event.metaKey || event.target.closest('input,textarea,select,[contenteditable="true"]')) return;
-  const actions = { ArrowLeft:'left', KeyA:'left', ArrowRight:'right', KeyD:'right', ArrowUp:'jump', KeyW:'jump', Space:'jump', Digit1:'boost', Digit2:'longJump' };
+  const actions = { ArrowLeft:'left', KeyA:'left', ArrowRight:'right', KeyD:'right', ArrowUp:'jump', KeyW:'jump', KeyQ:'boost', KeyE:'longJump', Digit1:'boost', Digit2:'longJump' };
   if (actions[event.code] || ['KeyP', 'Escape'].includes(event.code)) {
     event.preventDefault();
+    inputMode.keyboard();
     if (event.repeat) return;
     if (actions[event.code]) act(actions[event.code]);
     else togglePause();
   }
 });
+document.addEventListener('pointerdown', event => {
+  // Keep an explicitly clicked on-screen control in place until its click fires.
+  if (event.pointerType === 'mouse' && event.target.closest('.touch-controls')) return;
+  inputMode.pointer(event.pointerType);
+}, { passive: true });
 let touchStart = null;
 canvas.addEventListener('pointerdown', event => {
   touchStart = { x:event.clientX, y:event.clientY };

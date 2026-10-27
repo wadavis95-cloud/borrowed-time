@@ -43,7 +43,13 @@ function announce(game, text, kind = 'info') {
   game.recentEvent = { id: game.eventSequence, text, kind };
 }
 
-// A seeded random generator makes Restart replay the same fair course.
+// Each fresh run gets a new seed; explicit seeds remain reproducible for tests.
+export function freshCourseSeed(previous, randomWord = () => globalThis.crypto.getRandomValues(new Uint32Array(1))[0]) {
+  const seed = randomWord() >>> 0;
+  return seed === previous ? (seed + 1) >>> 0 : seed;
+}
+
+// Everyone in one room uses the same seeded course.
 function makeCourse(seed) {
   let value = seed >>> 0;
   const random = () => {

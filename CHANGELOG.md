@@ -2,6 +2,8 @@
 
 ## 6.0.0-preview.1 — Difficulty playtest (local, in progress)
 
+- Randomized each fresh solo run; simplified on-screen copy and added vivid lime/purple abilities.
+- Added adaptive touch/keyboard layouts with A/D movement, W/up hop and Q/E abilities; Space hopping removed at the user’s request. See [input/UI notes](docs/versions/V6_INPUT_AND_UI.md).
 - Made roof panels crack, detach and expose persistent sky openings; collapse timing now follows approaching racers and advances after boosts, with authoritative shared schedules. See [roof-collapse notes](docs/versions/V6_ROOF_COLLAPSE.md).
 - Closed the tunnel roof through the exit approach and increased sample-course roof falls from six to 13, preserving warnings and viable routes.
 - Added a live multiplayer leaderboard with server-ranked positions, escaped/DNF results, rematch resets and final standings.

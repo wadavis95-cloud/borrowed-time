@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  createGame, startGame, pauseGame, resumeGame,
+  createGame, freshCourseSeed, startGame, pauseGame, resumeGame,
   moveLane, jump, buyAbility, updateGame,
 } from '../src/game.js';
 
@@ -14,6 +14,17 @@ function running(course = []) {
 function closeTo(actual, expected) {
   assert.ok(Math.abs(actual - expected) < 0.00001, `${actual} should be close to ${expected}`);
 }
+
+test('fresh-run seeds avoid immediate repeats and change both obstacle and roof layouts', () => {
+  const previous = 42;
+  const next = freshCourseSeed(previous, () => previous);
+  assert.notEqual(next, previous);
+  assert.equal(freshCourseSeed(0xffffffff, () => 0xffffffff), 0);
+  const first = createGame({ seed: previous }), second = createGame({ seed: next });
+  assert.notDeepEqual(first.obstacles, second.obstacles);
+  assert.notDeepEqual(first.debris, second.debris);
+  assert.deepEqual(createGame({ seed: next }).obstacles, second.obstacles, 'a shared multiplayer seed must still produce one fair layout');
+});
 
 test('games use an automatic valid avatar and retain explicit server identity', () => {
   const game = createGame({ course: [] });

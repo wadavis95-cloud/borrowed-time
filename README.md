@@ -51,14 +51,16 @@ Open `http://YOUR-COMPUTER-LAN-IP:4173` on each device and use the same room cod
 | Action | Keyboard | Touch / mouse |
 | --- | --- | --- |
 | Switch lanes | Left / Right arrows or A / D | Swipe sideways or movement buttons |
-| Free hop | Space, Up arrow, or W | Tap the course, swipe up, or Hop |
-| Speed boost | 1 | Speed boost button |
-| Long jump | 2 | Long jump button |
+| Free hop | W or Up arrow | Tap the course, swipe up, or Hop |
+| Speed boost | Q (or 1) | Speed boost button |
+| Long jump | E (or 2) | Long jump button |
 | Pause / resume solo | P or Escape | Pause button |
 
-Start with **60 seconds** and reach daylight before the clock runs out. Boost costs **3 seconds**, long jump costs **2**, hits cost **3**, and time pickups restore **5**. Hop small rubble, use a paid long jump for gaps or a well-timed barrier clearance, or change lanes. Jumping too early or too late can still hit a tall barrier.
+Start with **60 seconds** and reach daylight before the clock runs out. Boost costs **6 seconds**, long jump costs **4**, hits cost **3**, and time pickups restore **5**. Hop small rubble, use a paid long jump for gaps or a well-timed barrier clearance, or change lanes. Jumping too early or too late can still hit a tall barrier.
 
-The HUD emphasizes remaining time, ability prices and availability, movement controls, and hazard feedback. Gameplay and results omit distance, sectors, hit counts, spending totals, and elapsed-run statistics. The simulation keeps those measurements internally.
+Fresh solo runs and restarts randomize obstacle and roof-debris placements. Multiplayer races share one fresh server-generated course.
+
+Controls adapt to keyboard/mouse or touch input, including hybrid devices. Keyboard uses A/D, W, Q and E; Space does not hop. The HUD emphasizes remaining time, ability prices and availability, movement controls, and hazard feedback. Gameplay and results omit distance, sectors, hit counts, spending totals, and elapsed-run statistics. The simulation keeps those measurements internally.
 
 Sound starts muted. Use **Sound off / Sound on** in the header to toggle subtle procedural footsteps, jumps, landings, boosts, collisions, and an escape chime. Audio starts only after that click and stays silent in hidden tabs; no audio assets or service are downloaded.
 

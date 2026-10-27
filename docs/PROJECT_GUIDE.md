@@ -46,6 +46,7 @@ The frontend is what runs in each browser. The backend is the shared Node proces
 | --- | --- |
 | `src/game.js` | State, tuning constants, ability purchases, movement, collisions, finishing. |
 | `src/main.js` | Asset readiness, keyboard/touch handling, solo/online/demo flow, minimal HUD and results. |
+| `src/input.js` | Chooses touch or keyboard layouts from device capabilities and actual input. |
 | `src/hazards.js` | Seeded falling-event schedules and visual phases from elapsed race time. |
 | `src/avatars.js` | Four cosmetic character IDs and display metadata. |
 | `src/renderer.js` | Three.js scene, camera, lighting, hazard presentation and ghost placement. |
@@ -114,7 +115,7 @@ Your button → browser input → WebSocket → server validation
 
 This is **server authority**: clients request actions; the server decides their effects. Clients do not submit trusted balances, positions, winners, or another player's identity. Old round IDs and repeated sequence numbers are rejected. Authority is a useful foundation, not a claim that all possible cheating is solved.
 
-A **snapshot** is a message describing current state. Your own snapshot includes your race details. Opponent data contains identity, assigned avatar, player color, connection/phase information, and motion needed for rendering—not their timers, spending, boost flags, or jump type. Their visible motion can still reveal that they are moving faster or jumping. Shared room data includes the round seed and elapsed race clock, allowing each browser to reconstruct the same obstacle and falling-event schedule.
+A **snapshot** is a message describing current state. Your own snapshot includes your race details. Opponent data contains identity, assigned avatar, player color, connection/phase information, and motion needed for rendering—not their timers, spending, boost flags, or jump type. Their visible motion can still reveal that they are moving faster or jumping. Shared room data includes the round seed and elapsed race clock, allowing each browser to reconstruct the same obstacles. Updated roof-collapse timings arrive explicitly from the server so boosts can advance the shared schedule.
 
 ## State, time, and collisions
 
@@ -136,8 +137,8 @@ Keep two different clocks in mind. **Elapsed race time** only advances while the
 | --- | --- |
 | Start / finish | 60 seconds; internal exit distance 1,350m; base speed 22→32m/s over 50 elapsed running seconds. |
 | Free hop | 0.65 seconds; 1.15m peak height; clears small rubble. |
-| Boost | Costs 3 seconds; 1.85× speed for 4 seconds; 7-second cooldown from activation. |
-| Long jump | Costs 2 seconds; lasts 1.4 seconds; 3m peak height; clears rubble, gaps, and correctly timed tall barriers. |
+| Boost | Costs 6 seconds; 1.85× speed for 4 seconds; 7-second cooldown from activation. |
+| Long jump | Costs 4 seconds; lasts 1.4 seconds; 3m peak height; clears rubble, gaps, and correctly timed tall barriers. |
 | Collision | Costs 3 seconds; speed becomes 45% for 0.8 seconds. |
 | Time gates | +5 seconds at internal distances of 450m and 900m; displayed as time pickups. |
 | Ordinary encounters | First at 90m internally; rows tighten from about 43–48m to 31–36m apart. Most block two lanes; every fourth has one free-hop route through a full-width row. Wider intervals reserve room for ceiling falls. |
@@ -198,7 +199,7 @@ V3 also adds varied masonry surfaces and damaged architecture, warmer lamps and 
 
 The **Watch four-player demo** button calls `createDemoRace` in `src/demo.js`. It opens a normal host connection and three guest connections through `connectRace`, named Demo · Ash, Demo · Briar, Demo · Cleo, and Demo · Drew. Once all four join, the host starts the normal three-second countdown. The app labels these participants as simulated runners and disables manual gameplay controls while watching.
 
-Every 150ms, each bot considers its own private snapshot and the course reconstructed from the shared seed, then sends a normal lane change, hop, paid jump, or boost. It cannot set positions, add time, or read another player's private balance. Slightly staggered planned boosts and different lane choices give the group visible variation; positions still come entirely from server rules. The opening boost waits until after the first timed fall so that hazard is visible near the runners.
+Every 150ms, each bot considers its own private snapshot and the obstacles reconstructed from the shared seed plus server-owned roof timings, then sends a normal lane change, hop, paid jump, or boost. It cannot set positions, add time, or read another player's private balance. Slightly staggered planned boosts and different lane choices give the group visible variation; positions still come entirely from server rules. The opening boost waits until after the first timed fall so that hazard is visible near the runners.
 
 Only the host client's snapshots feed the displayed view. Its opponent list has the same public fields used in human races, and the renderer draws those actual server positions. The other three private snapshots stay inside their respective demo policies.
 

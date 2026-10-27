@@ -1264,3 +1264,36 @@ dialog p,.play-guide {
   .standing { padding:5px 7px }
   .standing-place { font-size:19px }
 }
+
+/* High-contrast abilities: color is reinforced by names, costs and key badges. */
+.ability-button { --ability-accent:#d5ff46; background:#d5ff46; border:2px solid #edffad; color:#18220a; box-shadow:0 3px 0 #66831b }
+.ability-button.leap { --ability-accent:#c28aff; background:#c28aff; border-color:#e4c4ff; color:#28113c; box-shadow:0 3px 0 #754ba1 }
+.ability-button .ability-icon,.ability-button .ability-copy small,.ability-button .cost { color:inherit }
+.ability-button .cost { background:#ffffff45; font-weight:700 }
+.ability-button .ability-copy strong { font-weight:750 }
+.ability-button .ability-copy kbd { color:inherit; background:#ffffff70; border:1px solid #24351155; font-weight:750 }
+.ability-button:disabled { opacity:.62; filter:saturate(.7) }
+.ability-button.active { opacity:1; filter:none; background:#f5ffe3; border-color:var(--ability-accent); box-shadow:0 0 0 2px var(--ability-accent) }
+.ability-button.leap.active { background:#f3e7ff }
+.ability-button:focus-visible { outline:3px solid white; outline-offset:4px }
+.ability-button:not(.has-status) .ability-copy small { display:none }
+.brief-power { border-color:#d5ff4699; background:#26351af5 }
+.brief-power.leap { border-color:#c28aff99; background:#30203ff5 }
+.brief-power .brief-icon,.brief-power .brief-price b { color:#d5ff46 }
+.brief-power.leap .brief-icon,.brief-power.leap .brief-price b { color:#d6b0ff }
+.clock-note { min-height:0; margin-top:5px }
+.ability-heading { margin-bottom:0 }
+.screen-overlay .intro-card>p:empty { display:none }
+.room-panel { padding-top:10px; padding-bottom:10px }
+@media(pointer:fine) { .ability-copy kbd { display:inline-block } }
+
+/* Input mode follows capabilities and actual input, independently of width. */
+html[data-input="keyboard"] .touch-controls { display:none }
+html[data-input="keyboard"] .keyboard-hint { display:inline-flex; gap:5px; align-items:center }
+html[data-input="keyboard"] .ability-copy kbd { display:inline-block }
+html[data-input="touch"] .touch-controls { display:flex }
+html[data-input="touch"] .keyboard-hint,html[data-input="touch"] .ability-copy kbd { display:none }
+.keyboard-hint kbd { padding:3px 7px; border:1px solid #6d8882; border-bottom-width:3px; border-radius:4px; background:#263d3c; color:#edf9f0; font-size:11px }
+@media(pointer:coarse) { .touch-controls button { min-height:52px } }
+html[data-input="keyboard"] .game-footer { justify-content:space-between }
+@media(max-width:760px) { .header-actions { gap:12px } }

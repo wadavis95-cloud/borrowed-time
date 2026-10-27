@@ -14,12 +14,11 @@
   <div class="app">
     <header class="site-header">
       <a class="brand" href="/" aria-label="Borrowed Time home"><img src="/favicon.svg" alt="" width="30" height="30"><span>BORROWED <span class="brand-light">TIME</span></span></a>
-      <div class="header-actions"><span class="version">V6 · PLAY WITH FRIENDS</span><button id="sound-button" class="quiet-button" aria-pressed="false">Sound off</button><button id="guide-button" class="quiet-button">How to play ↗</button></div>
+      <div class="header-actions"><span class="version">V6</span><button id="sound-button" class="quiet-button" aria-pressed="false">Sound off</button><button id="guide-button" class="quiet-button">How to play ↗</button></div>
     </header>
     <main>
-      <div class="page-heading"><div><p class="eyebrow">THE SURVIVAL RACE</p><h1>Your clock is your currency.</h1><p class="game-premise">Escape the collapsing tunnel before time runs out. Spend seconds on abilities to get through.</p></div><button id="demo-button" class="demo-button" disabled><span aria-hidden="true">▷</span> Watch four-player demo</button></div>
+      <div class="page-heading" id="page-heading"><div><h1>Race the clock.</h1></div><button id="demo-button" class="demo-button" disabled><span aria-hidden="true">▷</span> Watch demo</button></div>
       <section class="race-menu" id="race-menu" aria-label="Multiplayer setup">
-        <div class="race-invite"><strong>Race friends to the exit.</strong><small>Separate clocks. Same collapsing tunnel.</small></div>
         <label><span>Name <small>optional</small></span><input id="player-name" maxlength="20" placeholder="Assigned automatically" autocomplete="nickname"></label>
         <button id="create-room" class="room-button" disabled>Create room</button>
         <span class="room-or">or</span>
@@ -47,9 +46,8 @@
               <h2 id="overlay-title">Preparing your escape.</h2>
               <p id="overlay-description">Loading the runners and tunnel…</p>
               <div id="ability-brief" class="ability-brief" hidden>
-                <div class="brief-power"><span class="brief-icon" aria-hidden="true">ϟ</span><strong>Speed boost</strong><span class="brief-price">SPEND <b id="brief-boost-cost">6s</b></span><small>Run faster for 4 seconds.</small></div>
-                <div class="brief-power leap"><span class="brief-icon" aria-hidden="true">↗</span><strong>Long jump</strong><span class="brief-price">SPEND <b id="brief-jump-cost">4s</b></span><small>Leap over tall barriers and gaps.</small></div>
-                <p>Use the ability buttons during your run. Small rubble only needs a <strong>free hop</strong>.</p>
+                <div class="brief-power"><span class="brief-icon" aria-hidden="true">ϟ</span><strong>Speed boost</strong><span class="brief-price">SPEND <b id="brief-boost-cost">6s</b></span><small>4-second sprint.</small></div>
+                <div class="brief-power leap"><span class="brief-icon" aria-hidden="true">↗</span><strong>Long jump</strong><span class="brief-price">SPEND <b id="brief-jump-cost">4s</b></span><small>Clear barriers &amp; gaps.</small></div>
               </div>
               <button id="start-button" class="primary-button" disabled>Loading…</button>
               <p id="overlay-hint" class="overlay-hint"></p>
@@ -58,25 +56,24 @@
         </section>
         <aside class="dashboard" aria-label="Race controls and status">
           <section class="clock-panel">
-            <div class="panel-label"><span>TIME TO ESCAPE</span><span id="status-label" class="status-label">READY</span></div>
+            <div class="panel-label"><span>TIME LEFT</span><span id="status-label" class="status-label">READY</span></div>
             <div class="clock"><span id="time-value">60.0</span><span class="unit">SEC</span></div>
-            <p id="clock-feedback" class="clock-note">Also your ability budget.</p>
+            <p id="clock-feedback" class="clock-note" hidden></p>
             <div class="time-track"><div id="time-fill"></div></div>
           </section>
           <section class="abilities-panel" aria-label="Spend time on abilities">
-            <div class="ability-heading"><strong>Spend seconds on abilities</strong><span>Taken from your escape clock</span></div>
-            <button id="boost-button" class="ability-button boost" disabled>
-              <span class="ability-icon" aria-hidden="true">ϟ</span><span class="ability-copy"><strong>Speed boost <kbd>1</kbd></strong><small id="boost-description">Run faster for 4s</small></span><span class="cost">−6<span>SEC</span></span>
+            <div class="ability-heading"><strong>Spend time</strong></div>
+            <button id="boost-button" aria-keyshortcuts="q 1" class="ability-button boost" disabled>
+              <span class="ability-icon" aria-hidden="true">ϟ</span><span class="ability-copy"><strong>Boost <kbd>Q</kbd></strong><small id="boost-description">Run faster for 4s</small></span><span class="cost">−6<span>SEC</span></span>
             </button>
-            <button id="long-jump-button" class="ability-button leap" disabled>
-              <span class="ability-icon" aria-hidden="true">↗</span><span class="ability-copy"><strong>Long jump <kbd>2</kbd></strong><small id="jump-description">Clear barriers &amp; gaps</small></span><span class="cost">−4<span>SEC</span></span>
+            <button id="long-jump-button" aria-keyshortcuts="e 2" class="ability-button leap" disabled>
+              <span class="ability-icon" aria-hidden="true">↗</span><span class="ability-copy"><strong>Long jump <kbd>E</kbd></strong><small id="jump-description">Clear barriers &amp; gaps</small></span><span class="cost">−4<span>SEC</span></span>
             </button>
-            <p class="purchase-note">Buy a way through. Keep enough time to escape.</p>
           </section>
         </aside>
       </div>
-      <div class="touch-controls" aria-label="Movement controls"><button id="left-button" aria-label="Move left" disabled>←<span>LEFT</span></button><button id="hop-button" aria-label="Free hop over small rubble" disabled>↑<span>FREE HOP</span></button><button id="right-button" aria-label="Move right" disabled>→<span>RIGHT</span></button></div>
-      <footer class="game-footer"><span class="keyboard-hint">← → Move <b>·</b> SPACE Hop <b>·</b> 1 / 2 Abilities <b>·</b> P Pause</span><button id="restart-button" class="quiet-button" disabled>Restart run ↻</button></footer>
+      <div class="touch-controls" aria-label="Movement controls"><button id="left-button" aria-label="Move left" disabled>←<span>LEFT</span></button><button id="hop-button" aria-keyshortcuts="w ArrowUp" aria-label="Free hop over small rubble" disabled>↑<span>HOP</span></button><button id="right-button" aria-label="Move right" disabled>→<span>RIGHT</span></button></div>
+      <footer class="game-footer"><span class="keyboard-hint"><kbd>A</kbd> <kbd>D</kbd> Move <b>·</b> <kbd>W</kbd> Hop</span><button id="restart-button" class="quiet-button" disabled>Restart run ↻</button></footer>
     </main>
   </div>
   <dialog id="guide-dialog">
@@ -84,10 +81,10 @@
     <h2>One clock. Two jobs.</h2>
     <p>Your countdown is both your time to escape and your ability budget. Every purchase takes seconds off that same clock. You run automatically; dodge, hop and choose when an advantage is worth the time.</p>
     <ul class="play-guide">
-      <li><strong>Switch lanes.</strong> Use ← / →, A / D, the buttons, or swipe sideways.</li>
-      <li><strong>Hop small rubble.</strong> Press SPACE, tap the course, or swipe up.</li>
-      <li><strong>Spend 6 seconds to boost.</strong> Press 1 or tap Speed boost to break away.</li>
-      <li><strong>Spend 4 seconds to leap.</strong> Press 2 or tap Long jump. Time the peak of your jump over tall barriers; clear gaps and rubble too.</li>
+      <li><strong>Switch lanes.</strong> <span id="guide-move">Press A / D or ← / →.</span></li>
+      <li><strong>Hop small rubble.</strong> <span id="guide-hop">Press W or ↑.</span></li>
+      <li><strong>Spend 6 seconds to boost.</strong> <span id="guide-boost">Press Q (or 1).</span></li>
+      <li><strong>Spend 4 seconds to leap.</strong> <span id="guide-leap">Press E (or 2).</span> Time the peak of your jump over tall barriers; clear gaps and rubble too.</li>
       <li><strong>Watch the amber markers.</strong> Move out of the lane before falling stone lands. You can hop the rubble afterward.</li>
       <li><strong>Find your way into daylight.</strong> Time gates restore seconds along the route.</li>
     </ul>
