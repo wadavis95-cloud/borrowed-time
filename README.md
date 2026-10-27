@@ -6,7 +6,7 @@ Version **6.0.0-preview.1** tests a much harder course following feedback that V
 
 The UI now introduces the main tradeoff before play: your countdown is also your ability currency. The start screen and multiplayer lobby show both ability prices and benefits, the HUD labels the shared time budget, and purchases visibly debit that same clock. Starting still takes one click. See the [UI update notes](docs/versions/V6_UI_UPDATE.md).
 
-V6 keeps V5's Unity visuals and approved running style across solo practice, private multiplayer races and the four-player demo. The completed V5 checkpoint is preserved as `v5.0.0-preview.1`. The public deployment remains V4. See the [Unity guide](docs/UNITY_GUIDE.md) and [V5 release record](docs/versions/V5_RELEASE.md).
+At the user's request, V6 now uses the brighter, stylized **V4 visuals from immediately before Unity** by default, including the original four separate characters. The harder V6 course and clearer ability UI remain. Unity is preserved as an optional comparison at `?graphics=unity`; the completed V5 checkpoint is preserved as `v5.0.0-preview.1`. The public deployment remains V4.
 
 **[Play the public V4 game](https://borrowed-time.onrender.com)** on your phone or computer. Create a room, send friends the same link and six-character room code, and start when 2–4 players have joined. No installation or account is needed. The free host can take about a minute to wake after inactivity. Physical-phone performance and touch feel still need actual-device testing.
 
@@ -20,9 +20,9 @@ npm install
 npm start
 ```
 
-Open [http://localhost:4173](http://localhost:4173). Keep the terminal running; **Ctrl+C** stops the server. The game uses `ws` for server-side WebSockets and an exported Unity 6000.6.7f1 / URP 17.6 Web build for graphics. WebGL 2, WebAssembly and graphics acceleration are required. The compressed build is included under `assets/unity/v5`; playing it requires Node, not an installed Unity Editor. The server streams those files with the appropriate gzip and binary headers.
+Open [http://localhost:4173](http://localhost:4173). Keep the terminal running; **Ctrl+C** stops the server. The game uses `ws` for server-side WebSockets and Three.js with the four original GLB characters for graphics. WebGL 2 and graphics acceleration are required. The optional Unity comparison also requires WebAssembly; its compressed build remains included under `assets/unity/v5`.
 
-The app loads the Unity scene before enabling play and shows download progress. A failed asset load or unavailable graphics produces a recovery message and a **Reload game** button.
+The app preloads the characters before enabling play. A failed asset load or unavailable graphics produces a recovery message and a **Reload game** button.
 
 ## Race or watch
 
@@ -32,7 +32,7 @@ The app loads the Unity scene before enabling play and shows download progress. 
 4. The host starts after at least two players join. A shared three-second countdown starts everyone on the same course.
 5. Once every run ends, the host can prepare a rematch.
 
-The server randomly assigns **Courier**, **Engineer**, **Station Guard**, and **Rooftop Runner** without duplicates in a room. Each player also receives a distinct color. Identities and colors stay with their players through rematches; all four use the same rules. The Unity integration currently uses one refined body and four jacket palettes. The previous four distinct models remain available with the classic renderer. There is no character-selection screen.
+The server randomly assigns **Courier**, **Engineer**, **Station Guard**, and **Rooftop Runner** without duplicates in a room. Each player also receives a distinct color. Identities and colors stay with their players through rematches; all four use the same rules. The default visuals use their four distinct original models. The optional Unity comparison uses one body with four jacket palettes. There is no character-selection screen.
 
 Choose **Watch four-player demo** to watch four explicitly labeled simulated runners. The demo opens four real WebSocket clients, joins a normal private room, and sends ordinary movement and purchase inputs. The displayed opponents come from server snapshots. It starts automatically, supports rematches, and closes every demo connection when you exit or a connection fails. Human private-room play remains available separately.
 
@@ -81,9 +81,9 @@ Socket tests are skipped in the ordinary test command. Save browser files and re
 
 Internal tuning is a **1,350m course**, with base speed increasing from **22 to 32m/s over 50 elapsed running seconds**. An unobstructed, unboosted run reaches the exit at 50 seconds. V6 ordinary rows begin roughly 43–48m apart and tighten to about 31–36m; reserved 76–81m intervals contain their own ceiling-fall encounter. +5s time gates sit at 450m and 900m internally. These distances are developer tuning values, not player HUD readouts. The [project guide](docs/PROJECT_GUIDE.md) explains exact movement integration, shared jump height, and collision timing.
 
-The current visual pipeline lives in the included `unity/` project. Its C# receiver accepts course and movement JSON from `src/unity-protocol.js`. The model is adapted from Blender Studio's Snow, with original wardrobe and procedural pose work. Read [art credits](assets/unity/CREDITS.md) and the [beginner Unity guide](docs/UNITY_GUIDE.md).
+The default visual pipeline is `src/renderer.js`, `src/graphics/tunnel.js` and `src/graphics/avatars.js`, with original characters generated by `scripts/build-avatars.mjs`. These graphics files and assets match the V4 release. The included `unity/` project and its C# receiver are preserved for the optional comparison. Read [art credits](assets/unity/CREDITS.md) and the [beginner Unity guide](docs/UNITY_GUIDE.md) for that version.
 
-For comparison or a lightweight fallback, open [the classic renderer](http://localhost:4173/?graphics=classic). The original Three.js assets and `npm run build:avatars` pipeline are preserved. The isolated Unity preview also remains separate from this game build. Physical-phone performance of Unity needs actual-device testing; a desktop narrow viewport is not a phone benchmark.
+Open [the Unity comparison](http://localhost:4173/?graphics=unity) to revisit that visual experiment. The plain game URL and `?graphics=classic` use the restored V4 presentation. The isolated Unity preview also remains separate. Physical-phone performance needs actual-device testing; a desktop narrow viewport is not a phone benchmark.
 
 The included `Dockerfile` packages the Node service and public assets. With Docker installed, use `docker build -t borrowed-time .` and `docker run --rm -p 4173:4173 borrowed-time`. The container defaults to port 4173 and honors the host's `PORT` environment variable. The live Render Free service uses one Docker instance in Virginia and `/health`, as recorded in `render.yaml`. It deploys from `main` in the private [GitHub repository](https://github.com/wadavis95-cloud/borrowed-time). Keep one instance because rooms live in memory; restarts or deploys end active rooms. An idle free service can take about a minute to wake.
 

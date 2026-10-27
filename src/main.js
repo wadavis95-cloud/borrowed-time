@@ -30,7 +30,9 @@ $('brief-jump-cost').textContent = `${ABILITIES.longJump.cost}s`;
 
 async function prepareGraphics() {
   try {
-    if (new URLSearchParams(location.search).get('graphics') === 'classic') {
+    // Restore the last pre-Unity (V4) presentation as the normal game.
+    // Keep the Unity study available only when explicitly requested.
+    if (new URLSearchParams(location.search).get('graphics') !== 'unity') {
       const [{ createRenderer }, { preloadAvatars }] = await Promise.all([
         import('./renderer.js'), import('./graphics/avatars.js'),
       ]);

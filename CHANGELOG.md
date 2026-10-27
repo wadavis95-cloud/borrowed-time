@@ -2,6 +2,8 @@
 
 ## 6.0.0-preview.1 — Difficulty playtest (local, in progress)
 
+- Restored the brighter pre-Unity V4 graphics as the default at the user's request. Retained V6 difficulty and ability UI; Unity remains available at `?graphics=unity`. Restore point: `pre-v4-visual-return-20261027`.
+
 - Target a substantially harder run based on feedback that V5 felt about 3/10; the desired 7.5/10 needs player assessment.
 - Increased the practice course from 15 rows / 20 obstacles to 25 rows / 56 obstacles, plus six ceiling-fall encounters.
 - Blocked two lanes on ordinary rows, moved the open route between rows, and added repeated full-width encounters with a free-hop route.

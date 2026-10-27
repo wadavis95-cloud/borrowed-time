@@ -1,5 +1,7 @@
 # How the Unity version connects to the game
 
+**Current selection:** The plain game URL now uses the restored pre-Unity V4 graphics. Append `?graphics=unity` to run the preserved Unity version described below. The game rules and current UI are shared by both.
+
 Borrowed Time now has two cooperating parts: JavaScript runs the game and Unity draws it. The browser still owns the buttons, timer display, sound and room menu. In multiplayer, the Node server decides what actually happened. Unity receives those results and turns them into the runner, tunnel, hazards and camera view.
 
 This keeps the existing four-player races and time purchases while giving us a separate place to improve art and animation.
@@ -91,7 +93,7 @@ The separate animation study and its preview remain available outside the game i
 
 The Unity version currently uses **one Snow-based body and wardrobe with four automatic clothing palettes**. The four identities remain, but they do not yet have four distinct body designs. The older Three.js renderer retains its original separate character models. Keep the Snow base and surface-asset credits with the project.
 
-For a comparison, append `?graphics=classic` to the game's URL, for example `http://localhost:4173/?graphics=classic`. This explicitly selects the preserved Three.js renderer. Remove the query parameter to use Unity. It is a review/fallback option, not an automatic renderer switch during a race.
+For the Unity comparison, append `?graphics=unity` to the game's URL, for example `http://localhost:4173/?graphics=unity`. The plain URL and `?graphics=classic` select the restored pre-Unity Three.js renderer. This choice is made at page load, not automatically during a race.
 
 **Rebuilding and running locally**
 
