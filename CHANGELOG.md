@@ -1,5 +1,12 @@
 # Changelog
 
+## Spacing and starting-speed playtest
+
+- Raised starting speed from 22 to 24m/s, retaining the 32m/s cap and 50-second acceleration ramp.
+- Widened ordinary set-spacing settings from 44→30m to 60→46m; reserved gaps from 76 to 88m. Within-set lane patterns are unchanged.
+- Scheduled roof debris in alternate eligible gaps so the new breathing room is not filled with a fall after every set.
+- Seed 42 changes from 25 sets / 56 ground obstacles / 13 falls to 19 sets / 42 ground obstacles / nine falls. Mean time between ordinary sets increases from 1.44s to 2.01s despite the faster start.
+
 ## Boost-price playtest — deployed October 27, 2026
 
 - Reduced boost from six seconds to five after phone-playtest feedback. Duration, speed multiplier and cooldown are unchanged. Long jump still costs four seconds. Deployed as runtime `3c410c6` for phone playtesting.

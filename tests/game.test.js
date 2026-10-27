@@ -44,7 +44,7 @@ test('the clock and movement start together and freeze while paused', () => {
   assert.equal(game.timeLeft, 60);
   startGame(game);
   updateGame(game, 1);
-  closeTo(game.distance, 22.1);
+  closeTo(game.distance, 24.08);
   closeTo(game.timeLeft, 59);
   pauseGame(game);
   const paused = structuredClone(game);
@@ -52,7 +52,7 @@ test('the clock and movement start together and freeze while paused', () => {
   assert.deepEqual(game, paused);
   resumeGame(game);
   updateGame(game, 1);
-  closeTo(game.distance, 44.4);
+  closeTo(game.distance, 48.32);
   closeTo(game.elapsed, 2);
 });
 
@@ -77,9 +77,10 @@ test('an unobstructed run is winnable and stops exactly at the exit', () => {
   updateGame(game, 90);
   assert.equal(game.phase, 'won');
   assert.equal(game.distance, 1350);
-  closeTo(game.elapsed, 50);
-  closeTo(game.finishTime, 50);
-  closeTo(game.timeLeft, 20);
+  const cleanFinish = (-24 + Math.sqrt(24 ** 2 + .32 * 1350)) / .16;
+  closeTo(game.elapsed, cleanFinish);
+  closeTo(game.finishTime, cleanFinish);
+  closeTo(game.timeLeft, 70 - cleanFinish);
   assert.ok(game.checkpoints.every((checkpoint) => checkpoint.passed));
   const finished = structuredClone(game);
   updateGame(game, 10);
@@ -92,14 +93,14 @@ test('running out of time stops movement at the moment the clock expires', () =>
   updateGame(game, 10);
   assert.equal(game.phase, 'lost');
   assert.equal(game.timeLeft, 0);
-  closeTo(game.distance, 11.025);
+  closeTo(game.distance, 12.02);
   closeTo(game.elapsed, 0.5);
   assert.equal(game.finishTime, null);
 });
 
 test('reaching the exit exactly as the clock expires counts as an escape', () => {
   const game = running();
-  game.distance = 1327.9;
+  game.distance = 1325.92;
   game.timeLeft = 1;
   game.checkpoints.forEach((checkpoint) => { checkpoint.passed = true; });
   updateGame(game, 3);
@@ -115,7 +116,7 @@ test('a boost spends time immediately, increases speed, and cannot bypass its co
   assert.equal(buyAbility(game, 'boost').ok, false);
   assert.equal(game.timeLeft, 55);
   updateGame(game, 1);
-  closeTo(game.distance, 40.885);
+  closeTo(game.distance, 44.548);
   closeTo(game.timeLeft, 54);
   updateGame(game, 3);
   assert.equal(game.boostRemaining, 0);
@@ -148,7 +149,7 @@ test('a barrier crossed during a long frame hits only once and briefly slows the
   closeTo(game.timeLeft, 56.4);
   updateGame(game, 3);
   assert.equal(game.hits, 1);
-  closeTo(game.speed, 22.72);
+  closeTo(game.speed, 24.576);
 });
 
 test('changing lanes avoids a barrier', () => {

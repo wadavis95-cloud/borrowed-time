@@ -8,7 +8,7 @@ function run(debris, course = []) {
   startGame(game);
   return game;
 }
-const chunk = { id: 'ceiling', lane: 1, z: 22.1, warnAt: 0, fallAt: 0.5, impactAt: 1 };
+const chunk = { id: 'ceiling', lane: 1, z: 24.08, warnAt: 0, fallAt: 0.5, impactAt: 1 };
 const near = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-7, `${actual} != ${expected}`);
 
 test('debris presentation changes phase exactly on the shared event boundaries', () => {
@@ -58,11 +58,11 @@ test('a runner can pass a warning before impact without being hit', () => {
   const game = run([{ ...chunk, z: 9, impactAt: 2 }]);
   updateGame(game, 3);
   assert.equal(game.hits, 0);
-  near(game.distance, 66.9);
+  near(game.distance, 72.72);
 });
 
 test('an impact covers a runner just past the landing point', () => {
-  const game = run([{ ...chunk, z: 21.1 }]);
+  const game = run([{ ...chunk, z: 23.08 }]);
   updateGame(game, 1);
   assert.equal(game.hits, 1);
 });
@@ -110,7 +110,7 @@ test('solo pause freezes impact time and purchases do not retime the debris sche
 });
 
 test('large updates and small updates resolve the same impacts and slowdowns', () => {
-  const events = [chunk, { ...chunk, id: 'later', z: 68.4218, warnAt: 2, fallAt: 3, impactAt: 3.5 }];
+  const events = [chunk, { ...chunk, id: 'later', z: 74.32144, warnAt: 2, fallAt: 3, impactAt: 3.5 }];
   const whole = run(events), stepped = run(events);
   updateGame(whole, 8);
   for (let i = 0; i < 800; i += 1) updateGame(stepped, .01);
@@ -121,7 +121,7 @@ test('large updates and small updates resolve the same impacts and slowdowns', (
 
 test('fatal masonry cannot be revived by a checkpoint at the same position', () => {
   const game = run([{ ...chunk, z: 450, impactAt: .1 }]);
-  game.distance = 447.799;
+  game.distance = 447.5992;
   game.timeLeft = 1;
   updateGame(game, 1);
   assert.equal(game.phase, 'lost');

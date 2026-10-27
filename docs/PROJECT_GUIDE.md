@@ -130,19 +130,19 @@ game.distance += game.speed * step + acceleration * step * step / 2;
 game.timeLeft = Math.max(0, game.timeLeft - step);
 ```
 
-These lines advance elapsed time, add the distance traveled during constant acceleration, and keep the countdown nonnegative. Base speed rises from 22 to 32m/s over the first 50 elapsed running seconds, then stays at 32m/s. Before the cap, an unobstructed unboosted runner travels `22t + 0.1t²` meters; at 50 seconds that is exactly 1,350m. Pause freezes this progress. Purchases change the spendable balance, not the acceleration clock.
+These lines advance elapsed time, add the distance traveled during constant acceleration, and keep the countdown nonnegative. Base speed rises from 24 to 32m/s over the first 50 elapsed running seconds, then stays at 32m/s. Before the cap, an unobstructed unboosted runner travels `24t + 0.08t²` meters; at 50 seconds that is 1,400m, so an uninterrupted run reaches the 1,350m exit at about 48.43 seconds. Pause freezes this progress. Purchases change the spendable balance, not the acceleration clock.
 
 Keep two different clocks in mind. **Elapsed race time** only advances while the simulation runs and schedules the falling masonry. **Remaining time** is your spendable balance: purchases and hits subtract from it, while checkpoints add to it. Buying a boost does not fast-forward a falling event. Online, the server advances a shared room race clock, and browser interpolation carries that clock into the hazard visuals. A runner finishing does not stop the room's clock while others are still racing.
 
 | Rule | Current value |
 | --- | --- |
-| Start / finish | 60 seconds; internal exit distance 1,350m; base speed 22→32m/s over 50 elapsed running seconds. |
+| Start / finish | 60 seconds; internal exit distance 1,350m; base speed 24→32m/s over 50 elapsed running seconds. |
 | Free hop | 0.65 seconds; 1.15m peak height; clears small rubble. |
 | Boost | Costs 5 seconds; 1.85× speed for 4 seconds; 7-second cooldown from activation. |
 | Long jump | Costs 4 seconds; lasts 1.4 seconds; 3m peak height; clears rubble, gaps, and correctly timed tall barriers. |
 | Collision | Costs 3 seconds; speed becomes 45% for 0.8 seconds. |
 | Time gates | +5 seconds at internal distances of 450m and 900m; displayed as time pickups. |
-| Ordinary encounters | First at 90m internally; rows tighten from about 43–48m to 31–36m apart. Most block two lanes; every fourth has one free-hop route through a full-width row. Wider intervals reserve room for ceiling falls. |
+| Ordinary encounters | First at 90m internally; ordinary spacing eases from 60m toward 46m plus 0–5m variation, with 88–93m reserved gaps. Most block two lanes; every fourth has one free-hop route through a full-width row. Wider intervals reserve room for ceiling falls. |
 | Falling masonry | Warning begins 2.4 seconds before impact; the final 0.45 seconds are the visible descent. |
 
 These distances and heights are developer tuning measurements, not gameplay HUD readouts. Purchases require strictly more time than their price. A long jump can upgrade a normal hop but cannot extend an active long jump. The internal `timeSpent` field records purchases, not countdown or collision losses.

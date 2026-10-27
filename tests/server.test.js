@@ -124,7 +124,7 @@ test('only the host can start, with two players, and countdown starts both clock
   assert.equal(manager.snapshot('host').room.phase, 'racing');
   assert.equal(manager.snapshot('guest').you.game.phase, 'running');
   advance(1000);
-  assert.ok(Math.abs(manager.snapshot('host').you.game.distance - 22.1) < 1e-7);
+  assert.ok(Math.abs(manager.snapshot('host').you.game.distance - 24.08) < 1e-7);
   assert.equal(manager.snapshot('host').you.game.elapsed, manager.snapshot('guest').you.game.elapsed);
 });
 

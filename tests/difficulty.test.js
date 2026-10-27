@@ -16,15 +16,15 @@ test('hard courses remove spare escape lanes and repeatedly require a hop', () =
   for (let seed = 1; seed <= 64; seed += 1) {
     const game = createGame({ seed });
     const rows = rowsFor(game);
-    assert.ok(rows.length >= 24, `seed ${seed}: only ${rows.length} rows`);
+    assert.ok(rows.length >= 18 && rows.length <= 21, `seed ${seed}: only ${rows.length} rows`);
     assert.ok(rows.every(row => row.obstacles.length >= 2));
     const jumpRows = rows.filter(row => row.obstacles.length === CONFIG.laneCount);
-    assert.ok(jumpRows.length >= 5, 'a lane-only run must face repeated jump decisions');
+    assert.ok(jumpRows.length >= 4, 'a lane-only run must face repeated jump decisions');
     for (const row of jumpRows) {
       assert.ok(row.obstacles.some(obstacle => obstacle.type === 'rubble'), 'a free hop route must exist');
     }
     for (let lane = 0; lane < CONFIG.laneCount; lane += 1) {
-      assert.ok(game.obstacles.filter(o => o.lane === lane && o.type !== 'rubble').length >= 6,
+      assert.ok(game.obstacles.filter(o => o.lane === lane && o.type !== 'rubble').length >= 4,
         'no lane should provide a straight-through hop-only escape');
     }
   }
@@ -46,9 +46,12 @@ test('a free-move route weaves one lane at a time and the later decision gaps ti
       previousLane = lane;
       if (index === 0) continue;
       const gap = row.z - rows[index - 1].z;
-      assert.ok(gap >= 30, 'retain a readable decision window even at the tightest point');
+      assert.ok(gap >= 46, 'retain a readable decision window even at the tightest point');
+      const previousEnd = Math.max(...rows[index - 1].obstacles.map(o => o.z + o.length));
+      assert.ok((row.z - previousEnd) / CONFIG.topSpeed >= 1.15,
+        'the clear space after a whole set must provide breathing room at top speed');
       // Wide gaps contain their own falling-debris encounter.
-      if (gap < 60) (row.z < 500 ? early : row.z > 850 ? late : []).push(gap);
+      if (gap < CONFIG.debrisEncounterSpacing) (row.z < 500 ? early : row.z > 850 ? late : []).push(gap);
     }
     const average = values => values.reduce((a, b) => a + b, 0) / values.length;
     assert.ok(average(late) < average(early) - 4, 'later rows should give less recovery time');
@@ -77,6 +80,6 @@ test('128 hard courses can be cleared at normal input intervals without buying a
     assert.equal(game.phase, 'won', `seed ${seed}: free route did not finish`);
     assert.equal(game.hits, 0, `seed ${seed}: free route took a hit`);
     assert.equal(game.timeSpent, 0);
-    assert.ok(hops >= 5 && changes >= 20, 'clearing the harder course must require repeated decisions');
+    assert.ok(hops >= 4 && changes >= 14, 'clearing the harder course must require repeated decisions');
   }
 });
