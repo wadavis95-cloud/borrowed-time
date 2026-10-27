@@ -1,10 +1,11 @@
 # Changelog
 
-## 8.0.0-preview.1 — Six maps
+## 8.0.0-preview.1 — Six maps (deployed October 27, 2026)
 
 - Added Frozen Summit, Orbital Escape and Sandstorm Canyon, each with its own environment, themed hazards, four animated characters and illustrated thumbnail.
 - Expanded map selection and lobby voting to six maps and 24 automatic role identities. Retained existing camera, movement, time prices and course pacing.
 - Added negotiated gzip character delivery with raw fallback, reducing the complete cast download by 56%.
+- Deployed runtime `8f9552f` to the existing public Render URL and verified assets, compression, multiplayer and browser votes.
 - Preserved V7 in a verified complete-history bundle. See [V8 release notes](docs/versions/V8_SIX_MAPS.md).
 
 ## 7.0.0-preview.1 — Three maps and lobby voting (local only)

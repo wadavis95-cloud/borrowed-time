@@ -1,6 +1,6 @@
 # V8 · Six escapes
 
-October 27, 2026. Release prepared for the existing Render service; public verification is recorded below after deployment.
+October 27, 2026. Deployed and verified on the existing Render service.
 
 ## What changed
 
@@ -47,4 +47,12 @@ V7 checkpoint: `cad74f265b9c459ab1af9bb9e9a844ce79ee69f6`, branch `codex/v7-thre
 
 ## Public deployment
 
-Pending final publication and verification.
+- Public URL: https://borrowed-time.onrender.com/
+- Runtime commit: `8f9552f43f276c75e2d55c6c155ca500e4b6f2c8`.
+- Render deploy: `dep-dbgik05ckfvc738gec40`, confirmed Live; build/deploy duration 35.5 seconds.
+- Public release checker passed all 57 asset routes, health, real WSS countdown, movement, host-only Boost spending/lead, Long jump, shared hazards, standings and room cleanup.
+- Public SHA-256 matches local for maps.js, main.js and expansion-worlds.js. Public pilot GLB is served gzip, with Vary, and decompresses exactly to its raw local source.
+- Two real browser clients joined Frozen Summit, both voted Orbital Escape, and both received the same winning map and correctly reassigned station roles at countdown.
+- Refresh old game pages before a new race so all clients regenerate the course with the latest map definitions.
+
+V7 had remained local; this deployment also publishes its pirate ship, volcanic jungle, thumbnail voting and automatic names for the first time. The public service now has all six maps. Physical-phone performance remains a user playtest.
