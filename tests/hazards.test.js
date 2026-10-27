@@ -19,6 +19,32 @@ test('debris presentation changes phase exactly on the shared event boundaries',
   }
 });
 
+test('approaching roof collapse lands ahead of normal and boosted arrivals, including a boost after warning', () => {
+  for (const boostAt of [null, 0, 'warning']) {
+    const game = createGame({ seed: 42 });
+    const event = game.debris[0];
+    game.debris = [event];
+    game.obstacles = []; game.checkpoints = [];
+    game.lane = (event.lane + 1) % 3;
+    startGame(game);
+    let bought = false, initialImpact = event.impactAt;
+    for (let tick = 0; tick < 1200 && game.distance < event.z; tick++) {
+      if (!bought && (boostAt === 0 || boostAt === 'warning' && game.elapsed >= event.warnAt)) {
+        assert.equal(buyAbility(game, 'boost').ok, true);
+        bought = true;
+      }
+      updateGame(game, 1 / 120);
+    }
+    assert.ok(game.distance >= event.z);
+    assert.ok(event.armed);
+    assert.ok(event.impactAt <= game.elapsed, 'the runner must not pass before impact');
+    assert.ok(game.elapsed - event.impactAt < .3, 'collapse should happen near arrival');
+    assert.ok(event.warnAt < event.fallAt && event.fallAt < event.impactAt);
+    assert.ok(event.impactAt < initialImpact);
+    assert.equal(game.hits, 0);
+  }
+});
+
 test('falling masonry hits at its impact time even during a paid jump', () => {
   const game = run([chunk]);
   buyAbility(game, 'longJump');

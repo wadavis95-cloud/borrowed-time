@@ -40,9 +40,47 @@ export function createFallingDebris(seed, obstacles, {
     events.push({
       id: `debris-${events.length}`, lane: lanes[Math.floor(random() * lanes.length)], z,
       warnAt: Math.max(0, impactAt - 2.4), fallAt: impactAt - .45, impactAt,
+      approachTriggered: true,
     });
   }
   return events;
+}
+
+// Advance a shared collapse to just ahead of the earliest approaching racer.
+// Recheck after purchases, so boosts cannot outrun the old unboosted schedule.
+export function scheduleApproachingDebris(events, racers, config, boostMultiplier = 1.85) {
+  const { baseSpeed, topSpeed, accelerationDuration } = config;
+  for (const event of events) {
+    if (!event.approachTriggered) continue;
+    let earliest = Infinity;
+    for (const racer of racers) {
+      if (racer.phase !== 'running' || racer.distance >= event.z || racer.elapsed >= event.impactAt) continue;
+      const boundaries = [0, 2.55, racer.boostRemaining, racer.stunRemaining, accelerationDuration - racer.elapsed]
+        .filter(t => Number.isFinite(t) && t >= 0 && t <= 2.55).sort((a, b) => a - b);
+      let distance = event.z - racer.distance;
+      for (let i = 1; i < boundaries.length; i++) {
+        const start = boundaries[i - 1], end = boundaries[i], middle = (start + end) / 2;
+        if (end === start) continue;
+        const factor = (racer.boostRemaining > middle ? boostMultiplier : 1)
+          * (racer.stunRemaining > middle ? config.stunMultiplier : 1);
+        const speed = (baseSpeed + (topSpeed - baseSpeed) * Math.min(1, (racer.elapsed + start) / accelerationDuration)) * factor;
+        const acceleration = racer.elapsed + middle < accelerationDuration ? (topSpeed - baseSpeed) / accelerationDuration * factor : 0;
+        const travelled = speed * (end - start) + .5 * acceleration * (end - start) ** 2;
+        if (distance <= travelled) {
+          const arrival = start + 2 * distance / (speed + Math.sqrt(speed * speed + 2 * acceleration * distance));
+          earliest = Math.min(earliest, racer.elapsed + Math.max(.01, arrival - .15));
+          break;
+        }
+        distance -= travelled;
+      }
+    }
+    if (!Number.isFinite(earliest)) continue;
+    if (event.armed && earliest >= event.impactAt - 1e-7) continue;
+    event.impactAt = Math.min(event.impactAt, earliest);
+    event.fallAt = event.impactAt - .65;
+    event.warnAt = Math.max(0, event.impactAt - 2.4);
+    event.armed = true;
+  }
 }
 
 export function getDebrisPhase(event, elapsed) {

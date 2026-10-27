@@ -6,6 +6,19 @@ export const LANE_WIDTH = 2.4;
 const SECTION_LENGTH = 18;
 const SPRING = 3.5;
 const RADIUS = 4.7;
+const COLLAPSE_DEPTH = 3.4;
+function roofAngles(lane) {
+  const x = (lane - 1) * LANE_WIDTH;
+  return [Math.acos((x + 1.05) / RADIUS), Math.acos((x - 1.05) / RADIUS)];
+}
+export function roofHeight(lane) {
+  return SPRING + Math.sqrt(RADIUS * RADIUS - ((lane - 1) * LANE_WIDTH) ** 2);
+}
+export function roofSlabGeometry(lane) {
+  const geometry = archShell(COLLAPSE_DEPTH, ...roofAngles(lane));
+  geometry.translate(-(lane - 1) * LANE_WIDTH, -roofHeight(lane), COLLAPSE_DEPTH / 2);
+  return geometry;
+}
 
 function random(seed) {
   let value = seed;
@@ -242,7 +255,6 @@ export function createTunnel(scene, courseLength) {
   const timber = new THREE.MeshStandardMaterial({ color: '#484338', roughness: .98 });
   const amber = new THREE.MeshBasicMaterial({ color: '#ffd69b', toneMapped: false });
   const dark = new THREE.MeshStandardMaterial({ color: '#162e3a', roughness: .82 });
-  const sectionGeometry = archShell(SECTION_LENGTH), ribGeometry = archRibGeometry();
   const boxGeometry = beveledBoxGeometry(.055), flatBox = new THREE.BoxGeometry(1, 1, 1);
   const rubbleGeometry = new THREE.IcosahedronGeometry(1, 1), cylinder = new THREE.CylinderGeometry(1, 1, 1, 8);
   const valveGeometry = new THREE.TorusGeometry(.18, .025, 6, 16), plaqueGeometry = new THREE.PlaneGeometry(1.9, .59);
@@ -269,8 +281,6 @@ export function createTunnel(scene, courseLength) {
       batch.colors.push(new THREE.Color().setScalar(material === trim || material === worn ? .82 + rng() * .28 : 1));
     }
     const box = (material, x, y, z, sx, sy, sz, rz = 0, ry = 0) => instance(boxGeometry, material, x, y, z, sx, sy, sz, rz, ry);
-    // Continuous crown keeps the whole race covered, including the exit approach.
-    mesh(section, sectionGeometry, stone, 0, 0, 0);
     const pavementGeometry = new THREE.PlaneGeometry(9.6, SECTION_LENGTH);
     const pavementUV = pavementGeometry.attributes.uv;
     for (let i = 0; i < pavementUV.count; i++) pavementUV.setXY(i, pavementUV.getX(i) * 2, pavementUV.getY(i) * 4);
@@ -337,14 +347,6 @@ export function createTunnel(scene, courseLength) {
         instance(rubbleGeometry, n % 2 ? worn : trim, side * (4.08 + rng() * .5), s * .4, -rng() * 18, s * 1.5, s, s, rng(), rng() * 3);
       }
     }
-    for (const z of [-.4, -9.4]) {
-      mesh(section, ribGeometry, trim, 0, 0, z);
-      // Voussoir joints are narrow inlays instead of large repeated cuboids.
-      for (let j = 0; j < 23; j++) {
-        const angle = (j + .5) / 23 * Math.PI;
-        box(dark, Math.cos(angle) * 4.59, SPRING + Math.sin(angle) * 4.59, z + .232, .016, .24, .012, angle - Math.PI / 2);
-      }
-    }
     for (const x of [-3.85, -1.2, 1.2, 3.85]) {
       // Slim rails guide the three lanes while leaving paving visually dominant.
       box(timber, x, -.045, -9, .18, .035, 18);
@@ -358,6 +360,51 @@ export function createTunnel(scene, courseLength) {
       instances.receiveShadow = material === trim || material === worn; instances.computeBoundingSphere(); section.add(instances);
     }
     mergeStaticSurfaces(section);
+  }
+
+  // Split only the roof panels that can collapse. The rest stays intact.
+  // Dynamic pieces are added after static merging so they can actually leave
+  // holes rather than drawing a falling rock beneath an unbroken ceiling.
+  let roofKey = '', roofGroups = [], collapsePanels = new Map();
+  function prepareRoof(events) {
+    const key = events.map(event => `${event.id}:${event.lane}:${event.z}`).join('|');
+    if (roofGroups.length && key === roofKey) return;
+    roofKey = key;
+    for (const group of roofGroups) {
+      group.traverse(item => item.geometry?.dispose());
+      group.removeFromParent();
+    }
+    roofGroups = []; collapsePanels = new Map();
+    const holes = events.map(event => ({ ...event, worldZ: -event.z * DISTANCE_SCALE, angles: roofAngles(event.lane) }));
+    function piece(group, geometry, material, z, hole) {
+      const item = mesh(group, geometry, material, 0, 0, z);
+      if (hole) {
+        if (!collapsePanels.has(hole.id)) collapsePanels.set(hole.id, []);
+        collapsePanels.get(hole.id).push(item);
+      }
+    }
+    function arcs(hole) {
+      return hole ? [[0, hole.angles[0]], hole.angles, [hole.angles[1], Math.PI]] : [[0, Math.PI]];
+    }
+    for (const section of sections) {
+      const group = new THREE.Group(); section.add(group); roofGroups.push(group);
+      const start = section.position.z, end = start - SECTION_LENGTH;
+      const nearby = holes.filter(h => h.worldZ + COLLAPSE_DEPTH / 2 > end && h.worldZ - COLLAPSE_DEPTH / 2 < start);
+      const cuts = [start, end, ...nearby.flatMap(h => [Math.min(start, h.worldZ + COLLAPSE_DEPTH / 2), Math.max(end, h.worldZ - COLLAPSE_DEPTH / 2)])].sort((a, b) => b - a);
+      for (let i = 0; i < cuts.length - 1; i++) {
+        const depth = cuts[i] - cuts[i + 1];
+        if (depth < .0001) continue;
+        const mid = (cuts[i] + cuts[i + 1]) / 2;
+        const hole = nearby.find(h => Math.abs(h.worldZ - mid) < COLLAPSE_DEPTH / 2);
+        for (const [a, b] of arcs(hole)) {
+          piece(group, archShell(depth, a, b), stone, cuts[i] - start, hole && a === hole.angles[0] ? hole : null);
+        }
+      }
+      for (const z of [-.4, -9.4]) {
+        const hole = nearby.find(h => Math.abs(h.worldZ - (start + z)) < COLLAPSE_DEPTH / 2 + .23);
+        for (const [a, b] of arcs(hole)) piece(group, archRibGeometry(a, b), trim, z, hole && a === hole.angles[0] ? hole : null);
+      }
+    }
   }
 
   // Daylight and the clocktower remain ahead through the tunnel mouth.
@@ -439,6 +486,8 @@ export function createTunnel(scene, courseLength) {
   sc.fillStyle = skyGradient; sc.fillRect(0, 0, 16, 128);
   const skyMap = new THREE.CanvasTexture(skyCanvas); skyMap.colorSpace = THREE.SRGBColorSpace;
   mesh(city, new THREE.PlaneGeometry(360, 160), new THREE.MeshBasicMaterial({ map: skyMap, fog: false }), 0, 35, -100);
+  const overheadSky = mesh(root, new THREE.PlaneGeometry(400, length + 400), new THREE.MeshBasicMaterial({ color: '#91cde9', fog: false }), 0, 24, -length / 2);
+  overheadSky.rotation.x = Math.PI / 2;
   const haloMaterial = new THREE.SpriteMaterial({ map: radialTexture(), color: '#ffe2a5', transparent: true, opacity: .19, depthWrite: false, fog: false, toneMapped: false });
   const halo = new THREE.Sprite(haloMaterial); halo.position.set(-9, 9, -length - 12); halo.scale.set(28, 25, 1); root.add(halo);
 
@@ -451,7 +500,19 @@ export function createTunnel(scene, courseLength) {
   dust.name = 'Local dust / bounded 72 particles'; scene.add(dust);
 
   return {
-    update(distance, elapsed, reducedMotion) {
+    update(distance, elapsed, reducedMotion, events = []) {
+      prepareRoof(events);
+      for (const event of events) {
+        for (const panel of collapsePanels.get(event.id) || []) {
+          panel.visible = elapsed < event.fallAt;
+          const cracking = elapsed >= event.warnAt && panel.visible;
+          const crack = cracking ? THREE.MathUtils.clamp((elapsed - event.warnAt) / Math.max(.01, event.fallAt - event.warnAt), 0, 1) : 0;
+          panel.scale.x = 1 - crack * .12;
+          panel.position.x = (event.lane - 1) * LANE_WIDTH * crack * .12;
+          panel.position.y = !reducedMotion && cracking
+            ? Math.sin((elapsed - event.warnAt) * 35) * .025 : 0;
+        }
+      }
       root.position.z = distance * DISTANCE_SCALE;
       for (const section of sections) {
         const relative = section.position.z + root.position.z;

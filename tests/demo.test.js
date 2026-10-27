@@ -210,7 +210,7 @@ test('the opening timed impact occurs beside the demo runners before their first
     if (tick % 9 === 0) applyAction(game, chooseDemoAction(game, 0));
     updateGame(game, 1 / 60);
   }
-  assert.ok(Math.abs(game.distance - firstImpact.z) < 2, 'the fall should remain in the visible foreground');
+  assert.ok(firstImpact.z - game.distance >= 0 && firstImpact.z - game.distance < 6, 'the roof should land just ahead of the approaching runner');
   assert.equal(game.hits, 0);
 });
 

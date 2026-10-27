@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { CONFIG, getJumpHeight } from './game.js';
 import { getDebrisPhase } from './hazards.js';
 import { createAvatar } from './graphics/avatars.js';
-import { createTunnel, radialTexture, masonrySurface, beveledBoxGeometry, DISTANCE_SCALE, LANE_WIDTH } from './graphics/tunnel.js';
+import { createTunnel, radialTexture, masonrySurface, beveledBoxGeometry, roofSlabGeometry, roofHeight, DISTANCE_SCALE, LANE_WIDTH } from './graphics/tunnel.js';
 
 const clamp = THREE.MathUtils.clamp;
 const VISIBLE_METRES = 255;
@@ -113,6 +113,7 @@ export function createRenderer(canvas) {
 
   const hazardSurface = masonrySurface();
   const stone = new THREE.MeshStandardMaterial({ color: '#b6b8a6', ...hazardSurface, bumpScale: .045, roughness: .9 });
+  const roofSlabMaterial = stone.clone(); roofSlabMaterial.side = THREE.DoubleSide;
   const brokenStone = new THREE.MeshStandardMaterial({ color: '#a4b1ab', ...hazardSurface, bumpScale: .06, roughness: .96 });
   const darkIron = new THREE.MeshStandardMaterial({ color: '#39464b', roughness: .6, metalness: .35 });
   const stripe = new THREE.MeshStandardMaterial({ map: stripeTexture(), roughness: .86, emissive: '#51351b', emissiveIntensity: .15 });
@@ -180,14 +181,14 @@ export function createRenderer(canvas) {
     }
     return group;
   }
-  function makeDebris() {
+  function makeDebris(event) {
     const group = new THREE.Group(); scene.add(group);
     const ringMaterial = new THREE.MeshBasicMaterial({ color: '#ffc069', transparent: true, opacity: .95, side: THREE.DoubleSide, toneMapped: false });
     const ring = makeMesh(group, ringGeometry, ringMaterial, 0, .045, 0); ring.rotation.x = -Math.PI / 2;
     const fillMaterial = new THREE.MeshBasicMaterial({ color: '#ff9a55', transparent: true, opacity: .14, side: THREE.DoubleSide, depthWrite: false });
     const fill = makeMesh(group, new THREE.CircleGeometry(.88, 32), fillMaterial, 0, .035, 0); fill.rotation.x = -Math.PI / 2;
     const chunk = new THREE.Group(); group.add(chunk);
-    const main = makeMesh(chunk, stoneGeometry, stone, 0, 0, 0, .74, .81, .61); main.castShadow = true;
+    const main = makeMesh(chunk, roofSlabGeometry(event.lane), roofSlabMaterial, 0, 0, 0); main.castShadow = true;
     for (let i = 0; i < 4; i++) makeMesh(chunk, stoneGeometry, brokenStone, Math.sin(i * 2.4) * .87, .4 + Math.cos(i) * .4, Math.cos(i * 2.4) * .6, .15, .23, .2);
     const rubble = new THREE.Group(); stones(rubble, 9, 1.2); group.add(rubble);
     const marker = makeMesh(group, new THREE.PlaneGeometry(.72, .72), new THREE.MeshBasicMaterial({ map: signTexture('!', '#ffe8b6', '#73492f', 64), side: THREE.DoubleSide, toneMapped: false }), 0, 2.65, .1);
@@ -251,7 +252,7 @@ export function createRenderer(canvas) {
     sun.intensity = 1.92 + daylight * .9;
     lampLeft.intensity = lampRight.intensity = 12 * (1 - daylight * .7);
     renderer.toneMappingExposure = 1.04 - daylight * .09;
-    tunnel.update(distance, elapsed, reducedMotion);
+    tunnel.update(distance, elapsed, reducedMotion, state.debris || []);
 
     const avatarKey = `${state.avatarId || 'courier'}:${state.playerColor || ''}`;
     if (localAvatarKey !== avatarKey) {
@@ -310,18 +311,18 @@ export function createRenderer(canvas) {
       const phase = getDebrisPhase(event, elapsed);
       if (phase === 'waiting') continue;
       let entry = debrisCache.get(event.id);
-      if (!entry) { entry = makeDebris(); debrisCache.set(event.id, entry); }
+      if (!entry) { entry = makeDebris(event); debrisCache.set(event.id, entry); }
       entry.group.visible = true; entry.group.position.set((event.lane - 1) * LANE_WIDTH, 0, -relative * DISTANCE_SCALE);
       const warning = phase === 'warning', falling = phase === 'falling', landed = phase === 'landed';
       entry.ring.visible = entry.fill.visible = !landed;
       entry.marker.visible = warning;
       entry.rubble.visible = landed;
-      entry.chunk.visible = warning || falling;
+      entry.chunk.visible = falling;
       const pulse = reducedMotion ? 1 : .5 + .5 * Math.sin((elapsed - event.warnAt) * 9);
       entry.ringMaterial.opacity = .65 + .35 * pulse;
       entry.fillMaterial.opacity = .1 + .12 * pulse;
       const fall = falling ? clamp((elapsed - event.fallAt) / (event.impactAt - event.fallAt), 0, 1) : 0;
-      entry.chunk.position.y = 7.15 - fall * fall * 6.55;
+      entry.chunk.position.y = roofHeight(event.lane) - fall * fall * (roofHeight(event.lane) - .6);
       entry.chunk.rotation.set(fall * 1.6, fall * 2.1, fall * .8);
       const impactAge = elapsed - event.impactAt;
       entry.dust.visible = !reducedMotion && landed && impactAge >= 0 && impactAge < .85;
@@ -365,7 +366,7 @@ export function createRenderer(canvas) {
   }
 
   const retainedGeometries = new Set([stoneGeometry, boxGeometry, ringGeometry]);
-  const retainedMaterials = new Set([stone, brokenStone, darkIron, stripe, mint, gapDark, shadowMaterial]);
+  const retainedMaterials = new Set([stone, roofSlabMaterial, brokenStone, darkIron, stripe, mint, gapDark, shadowMaterial]);
   function disposeDynamicGroup(group) {
     scene.remove(group);
     const geometries = new Set(), materials = new Set(), textures = new Set();

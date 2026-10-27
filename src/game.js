@@ -1,4 +1,4 @@
-import { createFallingDebris } from './hazards.js';
+import { createFallingDebris, scheduleApproachingDebris } from './hazards.js';
 import { AVATAR_IDS } from './avatars.js';
 
 // All distances are metres; all durations and prices are seconds.
@@ -298,7 +298,7 @@ function checkRunEnd(game) {
   }
 }
 
-export function updateGame(game, dt) {
+export function updateGame(game, dt, sharedSchedule = false) {
   if (game.phase !== 'running' || !Number.isFinite(dt) || dt <= 0) return;
   let remaining = dt;
   resolveCrossings(game);
@@ -307,6 +307,9 @@ export function updateGame(game, dt) {
   // Split a frame at meaningful moments: a collision, checkpoint, effect
   // ending, exit, or timer expiry. Large frames behave like small frames.
   while (remaining > EPSILON && game.phase === 'running') {
+    // Online rooms schedule against all racers before stepping anyone. Solo
+    // schedules here; hand-authored fixed-time fixtures remain unchanged.
+    if (!sharedSchedule) scheduleApproachingDebris(game.debris, [game], CONFIG, ABILITIES.boost.multiplier);
     refreshSpeed(game);
     const acceleration = game.elapsed < CONFIG.accelerationDuration
       ? (CONFIG.topSpeed - CONFIG.baseSpeed) / CONFIG.accelerationDuration * speedMultiplier(game) : 0;
@@ -315,6 +318,7 @@ export function updateGame(game, dt) {
     const timeTo = (distance) => 2 * distance
       / (game.speed + Math.sqrt(game.speed * game.speed + 2 * acceleration * distance));
     let step = Math.min(remaining, game.timeLeft, timeTo(CONFIG.courseLength - game.distance));
+    if (game.debris.some(event => event.approachTriggered && !event.armed && event.impactAt > game.elapsed)) step = Math.min(step, 1 / 60);
     if (game.elapsed < CONFIG.accelerationDuration) {
       step = Math.min(step, CONFIG.accelerationDuration - game.elapsed);
     }

@@ -53,6 +53,24 @@ test('rooms allow four connected guests, normalize codes, and reject duplicate m
   assert.equal(manager.snapshot('fifth'), null);
 });
 
+test('boosting racer advances the same roof-collapse schedule for everyone in the room', () => {
+  const { manager, send, advance, race } = setup();
+  const code = race();
+  const room = manager.rooms.get(code);
+  const original = manager.snapshot('host').debris[0].impactAt;
+  for (const player of room.players.values()) {
+    player.game.obstacles = []; player.game.checkpoints = [];
+    player.game.lane = (player.game.debris[0].lane + 1) % 3;
+  }
+  send('guest', { type: 'input', action: 'boost', seq: 1, roundId: room.roundId });
+  for (let i = 0; i < 60; i++) advance(100);
+  const host = manager.snapshot('host'), guest = manager.snapshot('guest');
+  assert.deepEqual(host.debris, guest.debris);
+  assert.ok(host.debris[0].impactAt < original);
+  assert.deepEqual(Object.keys(host.debris[0]).sort(), ['fallAt', 'id', 'impactAt', 'lane', 'warnAt', 'z']);
+  assert.ok(guest.you.game.distance >= host.debris[0].z || guest.you.game.elapsed < host.debris[0].impactAt + .5);
+});
+
 test('standings follow progress, then escape order, preserve DNF results and reset on rematch', () => {
   const { manager, create, join, send, advance } = setup();
   const code = create();

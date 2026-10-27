@@ -13,6 +13,19 @@ function snapshot(distance, lane = 1, roundId = 'one') {
   };
 }
 
+test('view uses server collapse timings instead of the original seeded schedule', () => {
+  const view = createRaceView();
+  const first = snapshot(100);
+  first.debris = [{ id: 'roof', lane: 0, z: 150, warnAt: 1, fallAt: 2.75, impactAt: 3.4 }];
+  view.push(first, 1000);
+  assert.deepEqual(view.sample(1000).game.debris, first.debris);
+  const next = snapshot(120);
+  next.debris = [{ ...first.debris[0], fallAt: 2.1, impactAt: 2.75 }];
+  view.push(next, 1050);
+  assert.deepEqual(view.sample(1075).game.debris, next.debris);
+  assert.equal(first.debris[0].impactAt, 3.4);
+});
+
 test('rendering interpolates actual positions without advancing authoritative state', () => {
   const view = createRaceView();
   const first = snapshot(100, 0), second = snapshot(110, 2);

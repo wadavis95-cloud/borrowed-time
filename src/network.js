@@ -88,6 +88,7 @@ export function createRaceView() {
         debris = generated.debris;
       }
       previous = newRound ? null : latest;
+      if (snapshot.debris) debris = snapshot.debris;
       latest = { snapshot, receivedAt };
     },
     sample(now) {

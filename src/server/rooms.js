@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import { buyAbility, createGame, jump, moveLane, startGame, updateGame } from '../game.js';
+import { ABILITIES, CONFIG, buyAbility, createGame, jump, moveLane, startGame, updateGame } from '../game.js';
 import { AVATAR_IDS } from '../avatars.js';
+import { scheduleApproachingDebris } from '../hazards.js';
 
 const STEP_MS = 1000 / 60;
 const COLORS = ['#65ead3', '#d4b3ff', '#ffc482', '#9ac9ff'];
@@ -207,9 +208,11 @@ export function createRoomManager({
       // Bound each timer callback's work; any backlog is picked up on the next tick.
       const steps = Math.min(120, Math.floor((time - room.lastStepAt + 1e-6) / STEP_MS));
       for (let step = 0; step < steps; step += 1) {
+        const racers = [...room.players.values()].map(player => player.game);
+        for (const game of racers) scheduleApproachingDebris(game.debris, racers, CONFIG, ABILITIES.boost.multiplier);
         room.raceElapsed += 1 / 60;
         for (const player of room.players.values()) {
-          updateGame(player.game, 1 / 60);
+          updateGame(player.game, 1 / 60, true);
           // Different collisions split simulation steps differently. Keep the
           // surviving racers on one clock despite floating point roundoff.
           if (player.game.phase === 'running') player.game.elapsed = room.raceElapsed;
@@ -245,6 +248,7 @@ export function createRoomManager({
         countdown: room.phase === 'countdown' ? Math.max(0, Math.ceil((room.countdownEnd - now()) / 1000)) : 0,
       },
       you: { id, name: player.name, game: structuredClone(ownGame) },
+      debris: player.game.debris.map(({ id, lane, z, warnAt, fallAt, impactAt }) => ({ id, lane, z, warnAt, fallAt, impactAt })),
       standings: ordered.map((other, index) => ({
         id: other.id,
         position: racing && other.game.phase !== 'lost' ? index + 1 : null,
