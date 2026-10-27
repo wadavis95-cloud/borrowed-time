@@ -30,8 +30,8 @@ export const CONFIG = Object.freeze({
 });
 
 export const ABILITIES = Object.freeze({
-  boost: Object.freeze({ cost: 3, duration: 4, cooldown: 7, multiplier: 1.85 }),
-  longJump: Object.freeze({ cost: 2, duration: 1.4 }),
+  boost: Object.freeze({ cost: 6, duration: 4, cooldown: 7, multiplier: 1.85 }),
+  longJump: Object.freeze({ cost: 4, duration: 1.4 }),
 });
 
 const EPSILON = 0.00000001;

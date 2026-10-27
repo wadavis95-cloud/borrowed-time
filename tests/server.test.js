@@ -82,16 +82,16 @@ test('server actions move and charge only their connection owner, rejecting stal
   assert.equal(manager.snapshot('host').you.game.lane, 0);
   assert.equal(manager.snapshot('guest').you.game.lane, 1);
   assert.equal(input('boost', 2).ok, true);
-  assert.equal(manager.snapshot('host').you.game.timeLeft, 57);
-  assert.equal(manager.snapshot('host').you.game.timeSpent, 3);
+  assert.equal(manager.snapshot('host').you.game.timeLeft, 54);
+  assert.equal(manager.snapshot('host').you.game.timeSpent, 6);
   assert.equal(manager.snapshot('guest').you.game.timeLeft, 60);
   assert.equal(input('longJump', 2).code, 'STALE_INPUT');
   assert.equal(input('longJump', 3, { roundId: 'old-round' }).code, 'STALE_ROUND');
   assert.equal(input('teleport', 3).code, 'INVALID_ACTION');
   assert.equal(input('longJump', 3).ok, true);
-  assert.equal(manager.snapshot('host').you.game.timeLeft, 55);
+  assert.equal(manager.snapshot('host').you.game.timeLeft, 50);
   assert.equal(input('boost', 4).code, 'ACTION_UNAVAILABLE');
-  assert.equal(manager.snapshot('host').you.game.timeLeft, 55);
+  assert.equal(manager.snapshot('host').you.game.timeLeft, 50);
 });
 
 test('public transforms cannot disclose another runner’s balance, purchases, or ability flags', () => {
@@ -107,7 +107,7 @@ test('public transforms cannot disclose another runner’s balance, purchases, o
     'avatarId', 'color', 'connected', 'distance', 'id', 'jumpDuration', 'jumpRemaining', 'lane', 'name', 'phase',
   ]);
   assert.equal(snapshot.players[1].jumpRemaining, 1.4);
-  assert.equal(manager.snapshot('guest').you.game.timeLeft, 58);
+  assert.equal(manager.snapshot('guest').you.game.timeLeft, 56);
   const room = manager.rooms.get(snapshot.room.code);
   assert.deepEqual(room.players.get('host').game.obstacles, room.players.get('guest').game.obstacles);
 });
@@ -324,7 +324,7 @@ networkTest('two real clients share a countdown but receive private state and co
   await guest.until((m) => m.type === 'snapshot' && m.room.phase === 'racing');
   host.send({ type: 'input', action: 'left', seq: 1, roundId: racing.room.roundId, playerId: joined.you.id });
   host.send({ type: 'input', action: 'boost', seq: 2, roundId: racing.room.roundId });
-  const own = await host.until((m) => m.type === 'snapshot' && m.you.game.timeSpent === 3);
+  const own = await host.until((m) => m.type === 'snapshot' && m.you.game.timeSpent === 6);
   const other = await guest.until((m) => m.type === 'snapshot' && m.players.some((p) => p.id === created.you.id && p.lane === 0));
   assert.equal(own.you.game.lane, 0);
   assert.equal(other.you.game.lane, 1);

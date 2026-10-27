@@ -24,7 +24,7 @@ test('falling masonry hits at its impact time even during a paid jump', () => {
   buyAbility(game, 'longJump');
   updateGame(game, 1);
   assert.equal(game.hits, 1);
-  near(game.timeLeft, 54);
+  near(game.timeLeft, 52);
   assert.ok(game.speed < 18);
 });
 

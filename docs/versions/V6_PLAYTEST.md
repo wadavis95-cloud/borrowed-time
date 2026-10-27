@@ -17,9 +17,13 @@ The user rated the existing difficulty about 3/10 and requested an aggressive mo
 
 Most encounters leave one empty lane, and that lane moves left or right by one lane per row. Every fourth row blocks all three lanes but includes exactly one low-rubble route that a free hop clears. Tall barriers and gaps make paid long jump an alternative. Wider 76–81m intervals reserve a separate ceiling-fall encounter; their existing warning duration remains readable.
 
-The initial countdown, 50-second nominal clean run, acceleration, collision penalties, time pickups and ability prices remain as in V5. The greater pressure comes from more frequent decisions and fewer empty escape lanes. The Unity build, character running style and camera are retained.
+The initial countdown, 50-second nominal clean run, acceleration, collision penalties, time pickups remain as in V5. The greater pressure comes from more frequent decisions and fewer empty escape lanes. The default visuals have since returned to the pre-Unity V4 presentation.
 
 The tuning controls live in `src/game.js`: `encounterSpacing`, `minimumEncounterSpacing`, `encounterVariation`, `debrisEncounterSpacing`, and `debrisEvery`, plus the generator's full-width-row interval. Increasing ordinary spacing or making full-width rows less frequent provides a straightforward way to dial this back.
+
+## Ability price playtest
+
+Following feedback that escaping still felt too forgiving, boost now costs **6 seconds** (previously 3), and long jump costs **4 seconds** (previously 2). Durations, speed effects, starting clock and time pickups are unchanged. Both solo and multiplayer use these shared prices. A boost trades more escape time for race position; repeated purchases should carry a noticeable survival cost. This tuning does not reduce the margin for a player who never buys abilities.
 
 ## Fairness and verification
 

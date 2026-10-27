@@ -99,26 +99,26 @@ test('reaching the exit exactly as the clock expires counts as an escape', () =>
 test('a boost spends time immediately, increases speed, and cannot bypass its cooldown', () => {
   const game = running();
   assert.deepEqual(buyAbility(game, 'boost'), { ok: true });
-  assert.equal(game.timeLeft, 57);
-  assert.equal(game.timeSpent, 3);
+  assert.equal(game.timeLeft, 54);
+  assert.equal(game.timeSpent, 6);
   assert.equal(buyAbility(game, 'boost').ok, false);
-  assert.equal(game.timeLeft, 57);
+  assert.equal(game.timeLeft, 54);
   updateGame(game, 1);
   closeTo(game.distance, 40.885);
-  closeTo(game.timeLeft, 56);
+  closeTo(game.timeLeft, 53);
   updateGame(game, 3);
   assert.equal(game.boostRemaining, 0);
   assert.equal(buyAbility(game, 'boost').ok, false);
   updateGame(game, 3);
   assert.equal(buyAbility(game, 'boost').ok, true);
-  assert.equal(game.timeSpent, 6);
+  assert.equal(game.timeSpent, 12);
 });
 
 test('abilities require more time than their price and a running game', () => {
   const game = running();
-  game.timeLeft = 3;
+  game.timeLeft = 6;
   assert.equal(buyAbility(game, 'boost').ok, false);
-  game.timeLeft = 2;
+  game.timeLeft = 4;
   assert.equal(buyAbility(game, 'longJump').ok, false);
   assert.equal(game.timeSpent, 0);
   game.timeLeft = 10;
@@ -171,7 +171,7 @@ test('a normal hop cannot clear a gap but a paid long jump can', () => {
   assert.equal(buyAbility(longJump, 'longJump').ok, false);
   updateGame(longJump, 2);
   assert.equal(longJump.hits, 0);
-  assert.equal(longJump.timeSpent, 2);
+  assert.equal(longJump.timeSpent, 4);
 });
 
 test('a long jump that ends before the gap does not grant permanent protection', () => {
