@@ -107,10 +107,10 @@ test('custom courses stay isolated from generated debris', () => {
   assert.deepEqual(createGame({ course: [{ z: 9, lane: 1, type: 'barrier' }] }).debris, []);
 });
 
-test('normal courses contain deterministic sparse debris between regular encounters', () => {
+test('normal courses contain frequent deterministic debris between regular encounters', () => {
   for (let seed = 1; seed <= 20; seed += 1) {
     const game = createGame({ seed });
-    assert.ok(game.debris?.length >= 3 && game.debris.length <= 6);
+    assert.ok(game.debris?.length >= 8 && game.debris.length <= 20);
     assert.deepEqual(game.debris, createGame({ seed }).debris);
     for (const event of game.debris) {
       assert.ok([0, 1, 2].includes(event.lane));
@@ -127,4 +127,28 @@ test('the debris builder keeps its two-argument API and schedules arrivals after
   const [event] = hazards.createFallingDebris(42, obstacles);
   near(event.z, 1441);
   near(event.impactAt, 52.84375);
+});
+
+test('extra roof falls preserve the connecting route through tighter ground rows', () => {
+  const route = row => [0, 1, 2].find(lane => !row.some(o => o.lane === lane))
+    ?? row.find(o => o.type === 'rubble')?.lane;
+  for (let seed = 1; seed <= 64; seed += 1) {
+    const game = createGame({ seed });
+    const distances = [...new Set(game.obstacles.map(o => o.z))];
+    let extraFalls = 0;
+    for (const event of game.debris) {
+      const before = distances.filter(z => z < event.z).at(-1);
+      const after = distances.find(z => z > event.z);
+      const previous = game.obstacles.filter(o => o.z === before);
+      const next = game.obstacles.filter(o => o.z === after);
+      const previousEnd = Math.max(...previous.map(o => o.z + o.length));
+      assert.ok(event.z - previousEnd >= 18 && after - event.z >= 18);
+      if (after - previousEnd < 60) {
+        extraFalls += 1;
+        assert.notEqual(event.lane, route(previous));
+        assert.notEqual(event.lane, route(next));
+      }
+    }
+    assert.ok(extraFalls >= 1, `seed ${seed}: missing extra falls`);
+  }
 });

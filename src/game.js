@@ -26,6 +26,7 @@ export const CONFIG = Object.freeze({
   encounterVariation: 6,
   debrisEncounterSpacing: 76,
   debrisEvery: 1,
+  debrisMinimumGap: 36,
   debrisImpactRadius: 2,
 });
 

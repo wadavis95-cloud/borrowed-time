@@ -118,7 +118,7 @@ test('scheduled debris lands at accelerated nominal arrival with a fast readable
     near(event.z, 22 * time + .1 * time * time);
     near(event.impactAt - event.fallAt, .45);
     assert.ok(event.fallAt - event.warnAt >= 1.8);
-    assert.ok(game.obstacles.every(obstacle => Math.abs(obstacle.z - event.z) >= 30));
+    assert.ok(game.obstacles.every(obstacle => Math.abs(obstacle.z - event.z) >= rules.CONFIG.debrisMinimumGap / 2));
   }
 });
 

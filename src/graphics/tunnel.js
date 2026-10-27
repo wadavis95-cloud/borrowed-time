@@ -229,7 +229,7 @@ function mergeStaticSurfaces(parent) {
 // Architecture is chunked and instanced. Offscreen sections never submit draws,
 // and decorative rubble/cables stay outside all three traversable lanes.
 export function createTunnel(scene, courseLength) {
-  const root = new THREE.Group(); root.name = 'Weathered railway / open-air station'; scene.add(root);
+  const root = new THREE.Group(); root.name = 'Weathered railway / covered escape tunnel'; scene.add(root);
   const length = courseLength * DISTANCE_SCALE;
   const masonry = masonrySurface(), paving = masonrySurface(true), dressed = dressedStoneSurface(), metal = agedMetalSurface();
   const stone = new THREE.MeshStandardMaterial({ color: '#c2c6b9', ...masonry, bumpScale: .072, roughness: .95, side: THREE.DoubleSide });
@@ -243,18 +243,12 @@ export function createTunnel(scene, courseLength) {
   const amber = new THREE.MeshBasicMaterial({ color: '#ffd69b', toneMapped: false });
   const dark = new THREE.MeshStandardMaterial({ color: '#162e3a', roughness: .82 });
   const sectionGeometry = archShell(SECTION_LENGTH), ribGeometry = archRibGeometry();
-  const brokenShells = [archShell(SECTION_LENGTH, 0, 1.06), archShell(SECTION_LENGTH, 2.02, Math.PI)];
-  const brokenRibs = [archRibGeometry(0, 1.09), archRibGeometry(2.08, Math.PI)];
   const boxGeometry = beveledBoxGeometry(.055), flatBox = new THREE.BoxGeometry(1, 1, 1);
   const rubbleGeometry = new THREE.IcosahedronGeometry(1, 1), cylinder = new THREE.CylinderGeometry(1, 1, 1, 8);
   const valveGeometry = new THREE.TorusGeometry(.18, .025, 6, 16), plaqueGeometry = new THREE.PlaneGeometry(1.9, .59);
   const plaqueMaterial = new THREE.MeshStandardMaterial({ map: railwayPlaqueTexture(), roughness: .52, metalness: .2 });
-  const glowMap = radialTexture();
-  const poolMaterial = new THREE.MeshBasicMaterial({ map: glowMap, color: '#ffe2a7', transparent: true, opacity: .14, depthWrite: false, blending: THREE.AdditiveBlending });
-  const poolGeometry = new THREE.PlaneGeometry(4.2, 8.5), shaftGeometry = new THREE.CylinderGeometry(.1, 2.3, 9.1, 12, 1, true);
   const object = new THREE.Object3D(), sections = [], rng = random(19);
   const cableMaterial = new THREE.MeshStandardMaterial({ color: '#283b42', roughness: .55, metalness: .45 });
-  const shaftMaterial = new THREE.MeshBasicMaterial({ color: '#ffe2ae', transparent: true, opacity: .028, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
   function mesh(parent, geometry, material, x, y, z) {
     const item = new THREE.Mesh(geometry, material); item.position.set(x, y, z); parent.add(item); return item;
   }
@@ -264,9 +258,7 @@ export function createTunnel(scene, courseLength) {
   for (let index = 0; index < Math.ceil((length + 18) / SECTION_LENGTH); index++) {
     const section = new THREE.Group(); section.position.z = 12 - index * SECTION_LENGTH;
     section.name = `Tunnel section ${index}`; root.add(section); sections.push(section);
-    const metres = index * SECTION_LENGTH / DISTANCE_SCALE;
-    const open = metres > courseLength - 230 || (index > 2 && index % 6 === 4);
-    const damaged = open || index % 4 === 2;
+    const damaged = index % 4 === 2 || (index > 2 && index % 6 === 4);
     const batches = new Map();
     function instance(geometry, material, x, y, z, sx, sy, sz, rz = 0, ry = 0) {
       const key = `${geometry.uuid}:${material.uuid}`;
@@ -277,8 +269,8 @@ export function createTunnel(scene, courseLength) {
       batch.colors.push(new THREE.Color().setScalar(material === trim || material === worn ? .82 + rng() * .28 : 1));
     }
     const box = (material, x, y, z, sx, sy, sz, rz = 0, ry = 0) => instance(boxGeometry, material, x, y, z, sx, sy, sz, rz, ry);
-    if (open) for (const geometry of brokenShells) mesh(section, geometry, stone, 0, 0, 0);
-    else mesh(section, sectionGeometry, stone, 0, 0, 0);
+    // Continuous crown keeps the whole race covered, including the exit approach.
+    mesh(section, sectionGeometry, stone, 0, 0, 0);
     const pavementGeometry = new THREE.PlaneGeometry(9.6, SECTION_LENGTH);
     const pavementUV = pavementGeometry.attributes.uv;
     for (let i = 0; i < pavementUV.count; i++) pavementUV.setXY(i, pavementUV.getX(i) * 2, pavementUV.getY(i) * 4);
@@ -346,12 +338,10 @@ export function createTunnel(scene, courseLength) {
       }
     }
     for (const z of [-.4, -9.4]) {
-      if (open) for (const geometry of brokenRibs) mesh(section, geometry, trim, 0, 0, z);
-      else mesh(section, ribGeometry, trim, 0, 0, z);
+      mesh(section, ribGeometry, trim, 0, 0, z);
       // Voussoir joints are narrow inlays instead of large repeated cuboids.
       for (let j = 0; j < 23; j++) {
         const angle = (j + .5) / 23 * Math.PI;
-        if (open && angle > 1.03 && angle < 2.14) continue;
         box(dark, Math.cos(angle) * 4.59, SPRING + Math.sin(angle) * 4.59, z + .232, .016, .24, .012, angle - Math.PI / 2);
       }
     }
@@ -362,19 +352,6 @@ export function createTunnel(scene, courseLength) {
       instance(flatBox, rail, x, .012, -9, .055, .04, 18);
       for (let z = -.7; z > -18; z -= 2.5) box(iron, x, -.015, z, .27, .055, .11);
     }
-    if (open) {
-      for (const side of [-1, 1]) {
-        for (let n = 0; n < 8; n++) {
-          const angle = side < 0 ? 2.02 + rng() * .12 : .94 + rng() * .13;
-          box(worn, Math.cos(angle) * 4.68, SPRING + Math.sin(angle) * 4.68, -n * 2.35, .5 + rng() * .25, .23, .75, angle, rng() * .2);
-        }
-        curve(section, [[side * 2.3, 7.4, -1], [side * 1.8, 6.6, -5], [side * 2.4, 7.5, -10]], iron, .035);
-      }
-      const shaft = mesh(section, shaftGeometry, shaftMaterial, 1, 4.2, -6.5);
-      shaft.rotation.z = -.34;
-      const pool = mesh(section, poolGeometry, poolMaterial, -.35, -.045, -6.5);
-      pool.rotation.set(-Math.PI / 2, 0, -.22);
-    }
     for (const { geometry, material, matrices, colors } of batches.values()) {
       const instances = new THREE.InstancedMesh(geometry, material, matrices.length);
       matrices.forEach((matrix, i) => { instances.setMatrixAt(i, matrix); instances.setColorAt(i, colors[i]); });
@@ -383,8 +360,8 @@ export function createTunnel(scene, courseLength) {
     mergeStaticSurfaces(section);
   }
 
-  // The open final station frames a physical clocktower and a warm city skyline.
-  // Tower is centred in the vanishing point and the last 230m have no crown roof.
+  // Daylight and the clocktower remain ahead through the tunnel mouth.
+  // The crown stays intact above the runner all the way to the finish.
   const city = new THREE.Group(); city.name = 'Exit clocktower'; city.position.z = -length; root.add(city);
   const cityStone = new THREE.MeshStandardMaterial({ color: '#f0dfb9', ...dressed, bumpScale: .022, roughness: .83, fog: false });
   const cityShade = new THREE.MeshStandardMaterial({ color: '#a99b7c', ...dressed, bumpScale: .025, roughness: .89, fog: false });

@@ -25,6 +25,14 @@ The tuning controls live in `src/game.js`: `encounterSpacing`, `minimumEncounter
 
 Following feedback that escaping still felt too forgiving, boost now costs **6 seconds** (previously 3), and long jump costs **4 seconds** (previously 2). Durations, speed effects, starting clock and time pickups are unchanged. Both solo and multiplayer use these shared prices. A boost trades more escape time for race position; repeated purchases should carry a noticeable survival cost. This tuning does not reduce the margin for a player who never buys abilities.
 
+## Covered tunnel and more roof falls
+
+The pre-Unity renderer now has continuous roof shells and complete arch ribs through the entire race, including the last 230 metres. Removed the overhead openings and their sky shafts; daylight and the clocktower remain visible through the exit ahead. Wall lamps and the brighter visual palette are retained.
+
+Roof falls may now occupy gaps of at least 36 metres between a ground obstacle’s far edge and the next row (previously 60). Solo seed 42 has **13 roof-fall encounters**, up from six, with the same ground course. Warning time stays 2.4 seconds and falling animation stays 0.45 seconds. Each fall remains at least 18 metres clear of adjacent ground obstacles. In the new tighter gaps, falling debris avoids the connecting free routes of both surrounding rows. Large reserved gaps retain their original random-lane behavior. The two-argument debris-builder API retains its original sparse defaults.
+
+Verified: 99 standard tests passed; all 28 network tests passed separately. A 64-seed check covers buffers and connecting routes; the existing 128-course controller still escapes without purchases or hits. Local browser demo checked separately. Public deployment is unchanged.
+
 ## Fairness and verification
 
 - Generated courses remain deterministic from their seed. Solo and server-owned multiplayer use the same generator.
