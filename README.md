@@ -1,10 +1,10 @@
-# Borrowed Time · V4 preview
+# Borrowed Time · V5
 
 A browser escape runner for **solo practice or private races with 2–4 players**. Race through a crumbling Victorian railway tunnel, dodge falling masonry, and spend your remaining seconds on abilities. Real opponents appear as translucent 3D runners and cannot collide with you.
 
-Version **4.0.0-preview.1** is deployed for public friend play and improves phone layouts while retaining V3.1's characters, graphics and game rules. See the [V4 release record](docs/versions/V4_RELEASE.md) for verification and real-phone test steps. The game also runs locally or on your LAN.
+Version **5.0.0-preview.1** completes V5's Unity visuals and approved running style across solo practice, private multiplayer races and the four-player demo. The runner has smoother arm swings and strides, a slight forward lean, and level lane changes from the pulled-back camera. JavaScript and the Node server still own the race rules and networking. V5 is a completed local checkpoint; the public deployment remains V4. See the [Unity guide](docs/UNITY_GUIDE.md) and [V5 release record](docs/versions/V5_RELEASE.md).
 
-**[Play Borrowed Time](https://borrowed-time.onrender.com)** on your phone or computer. Create a room, send friends the same link and six-character room code, and start when 2–4 players have joined. No installation or account is needed. The free host can take about a minute to wake after inactivity. Physical-phone performance and touch feel still need actual-device testing.
+**[Play the public V4 game](https://borrowed-time.onrender.com)** on your phone or computer. Create a room, send friends the same link and six-character room code, and start when 2–4 players have joined. No installation or account is needed. The free host can take about a minute to wake after inactivity. Physical-phone performance and touch feel still need actual-device testing.
 
 ## Run it
 
@@ -16,9 +16,9 @@ npm install
 npm start
 ```
 
-Open [http://localhost:4173](http://localhost:4173). Keep the terminal running; **Ctrl+C** stops the server. The game uses `ws` for server-side WebSockets and Three.js **0.180.0** through **WebGL 2**. A browser with WebGL 2 and graphics acceleration is required. The Node server serves the game, graphics library, and character assets locally. No frontend compilation or CDN is needed.
+Open [http://localhost:4173](http://localhost:4173). Keep the terminal running; **Ctrl+C** stops the server. The game uses `ws` for server-side WebSockets and an exported Unity 6000.6.7f1 / URP 17.6 Web build for graphics. WebGL 2, WebAssembly and graphics acceleration are required. The compressed build is included under `assets/unity/v5`; playing it requires Node, not an installed Unity Editor. The server streams those files with the appropriate gzip and binary headers.
 
-The app loads all four character assets before enabling play. A failed asset load or unavailable graphics produces a recovery message and a **Reload game** button.
+The app loads the Unity scene before enabling play and shows download progress. A failed asset load or unavailable graphics produces a recovery message and a **Reload game** button.
 
 ## Race or watch
 
@@ -28,7 +28,7 @@ The app loads all four character assets before enabling play. A failed asset loa
 4. The host starts after at least two players join. A shared three-second countdown starts everyone on the same course.
 5. Once every run ends, the host can prepare a rematch.
 
-The server randomly assigns **Courier**, **Engineer**, **Station Guard**, and **Rooftop Runner** without duplicates in a room. Each player also receives a distinct color. Characters and colors stay with their players through rematches; all four use the same rules. There is no character-selection screen.
+The server randomly assigns **Courier**, **Engineer**, **Station Guard**, and **Rooftop Runner** without duplicates in a room. Each player also receives a distinct color. Identities and colors stay with their players through rematches; all four use the same rules. The Unity integration currently uses one refined body and four jacket palettes. The previous four distinct models remain available with the classic renderer. There is no character-selection screen.
 
 Choose **Watch four-player demo** to watch four explicitly labeled simulated runners. The demo opens four real WebSocket clients, joins a normal private room, and sends ordinary movement and purchase inputs. The displayed opponents come from server snapshots. It starts automatically, supports rematches, and closes every demo connection when you exit or a connection fails. Human private-room play remains available separately.
 
@@ -77,10 +77,10 @@ Socket tests are skipped in the ordinary test command. Save browser files and re
 
 Internal V3 tuning is a **1,350m course**, with base speed increasing from **22 to 32m/s over 50 elapsed running seconds**. An unobstructed, unboosted run reaches the exit at 50 seconds. Ordinary encounters are spaced 72–89m apart; +5s time gates sit at 450m and 900m internally. These distances are developer tuning values, not player HUD readouts. The [project guide](docs/PROJECT_GUIDE.md) explains exact movement integration, shared jump height, and collision timing.
 
-The character pipeline uses original procedural Three.js geometry and animation authored by `scripts/build-avatars.mjs`, exported as locally served GLBs. Each asset has a 24-bone skin and four clips: idle, run, jump, and stumble. The [character study](http://localhost:4173/docs/character-preview.html) is a developer art reference served by the running local app; it does not select a gameplay character. See [asset provenance and rebuilding](assets/characters/README.md).
+The current visual pipeline lives in the included `unity/` project. Its C# receiver accepts course and movement JSON from `src/unity-protocol.js`. The model is adapted from Blender Studio's Snow, with original wardrobe and procedural pose work. Read [art credits](assets/unity/CREDITS.md) and the [beginner Unity guide](docs/UNITY_GUIDE.md).
 
-This is a more developed procedural art pass, with contoured skinned characters, varied tunnel surfaces and architecture, lighting, dust, impact feedback, and restrained boost/camera effects. The assets were generated in Node with Three.js; they were not sculpted or authored in Blender. Final art polish, physical mobile-device validation, and broad performance testing remain work for later releases.
+For comparison or a lightweight fallback, open [the classic renderer](http://localhost:4173/?graphics=classic). The original Three.js assets and `npm run build:avatars` pipeline are preserved. The isolated Unity preview also remains separate from this game build. Physical-phone performance of Unity needs actual-device testing; a desktop narrow viewport is not a phone benchmark.
 
 The included `Dockerfile` packages the Node service and public assets. With Docker installed, use `docker build -t borrowed-time .` and `docker run --rm -p 4173:4173 borrowed-time`. The container defaults to port 4173 and honors the host's `PORT` environment variable. The live Render Free service uses one Docker instance in Virginia and `/health`, as recorded in `render.yaml`. It deploys from `main` in the private [GitHub repository](https://github.com/wadavis95-cloud/borrowed-time). Keep one instance because rooms live in memory; restarts or deploys end active rooms. An idle free service can take about a minute to wake.
 
-Read the [beginner project guide](docs/PROJECT_GUIDE.md), [V4 design](docs/versions/V4_DESIGN.md), [V4 release record](docs/versions/V4_RELEASE.md), and [changelog](CHANGELOG.md). [V3.1](docs/versions/V3_1_RELEASE.md), [V3](docs/versions/V3_RELEASE.md), [V2](docs/versions/V2_RELEASE.md) and [V1](docs/versions/V1_RELEASE.md) remain preserved in their release tags.
+Read the [Unity integration guide](docs/UNITY_GUIDE.md), [V5 release record](docs/versions/V5_RELEASE.md), [beginner project guide](docs/PROJECT_GUIDE.md), [V4 design](docs/versions/V4_DESIGN.md), [V4 release record](docs/versions/V4_RELEASE.md), and [changelog](CHANGELOG.md). [V3.1](docs/versions/V3_1_RELEASE.md), [V3](docs/versions/V3_RELEASE.md), [V2](docs/versions/V2_RELEASE.md) and [V1](docs/versions/V1_RELEASE.md) remain preserved in their release tags.

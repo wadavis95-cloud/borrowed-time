@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { open } from 'node:fs/promises';
+import { pipeline } from 'node:stream/promises';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { resolve, extname } from 'node:path';
@@ -7,16 +8,27 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { createRoomManager } from './rooms.js';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
-const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.glb': 'model/gltf-binary' };
+const types = {
+  '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml; charset=utf-8',
+  '.glb': 'model/gltf-binary', '.wasm': 'application/wasm', '.data': 'application/octet-stream',
+};
 // This allowlist keeps server code, repository files, and secrets off HTTP.
 const publicFiles = new Set([
   '/index.html', '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js',
   '/src/renderer.js', '/src/network.js',
+  '/src/unity-renderer.js', '/src/unity-protocol.js',
   '/src/avatars.js', '/src/hazards.js', '/src/graphics/avatars.js', '/src/graphics/tunnel.js',
   '/src/demo.js', '/src/audio.js',
   '/docs/character-preview.html',
   '/assets/characters/courier.glb', '/assets/characters/engineer.glb',
   '/assets/characters/guard.glb', '/assets/characters/runner.glb',
+  // Exported runtime files only. Never expose the Unity project or arbitrary
+  // files under assets/unity. Plain equivalents also support local exports.
+  '/assets/unity/v5/Race.loader.js',
+  '/assets/unity/v5/Race.framework.js', '/assets/unity/v5/Race.framework.js.gz',
+  '/assets/unity/v5/Race.data', '/assets/unity/v5/Race.data.gz',
+  '/assets/unity/v5/Race.wasm', '/assets/unity/v5/Race.wasm.gz',
 ]);
 // These are the only dependency files exposed to the browser. The module imports
 // ./three.core.js, so both public URLs live beside one another.
@@ -28,47 +40,68 @@ const vendorFiles = new Map([
   ['/vendor/utils/SkeletonUtils.js', 'node_modules/three/examples/jsm/utils/SkeletonUtils.js'],
 ]);
 
-async function serveFile(request, response) {
-  if (request.method !== 'GET' && request.method !== 'HEAD') {
-    response.writeHead(405, { Allow: 'GET, HEAD' });
-    response.end();
-    return;
-  }
-  let pathname;
-  try { pathname = new URL(request.url, 'http://localhost').pathname; } catch {
-    response.writeHead(400);
-    response.end('Invalid request');
-    return;
-  }
-  if (pathname === '/health') {
-    response.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' });
-    response.end(request.method === 'HEAD' ? undefined : 'ok');
-    return;
-  }
-  const file = pathname === '/' ? '/index.html' : pathname;
-  if (!publicFiles.has(file) && !vendorFiles.has(file)) {
-    response.writeHead(404, { 'Content-Type': 'text/plain' });
-    response.end('Not found');
-    return;
-  }
-  try {
-    const body = await readFile(resolve(root, vendorFiles.get(file) || '.' + file));
-    response.writeHead(200, {
-      'Content-Type': `${types[extname(file)] || 'application/octet-stream'}${extname(file) === '.glb' ? '' : '; charset=utf-8'}`,
-      'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
-    });
-    response.end(request.method === 'HEAD' ? undefined : body);
-  } catch {
-    response.writeHead(500, { 'Content-Type': 'text/plain' });
-    response.end('Could not load the game file. Check the terminal.');
-  }
+export function createStaticFileHandler({ publicRoot = root } = {}) {
+  return async function serveFile(request, response) {
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      response.writeHead(405, { Allow: 'GET, HEAD' });
+      response.end();
+      return;
+    }
+    let pathname;
+    try { pathname = new URL(request.url, 'http://localhost').pathname; } catch {
+      response.writeHead(400);
+      response.end(request.method === 'HEAD' ? undefined : 'Invalid request');
+      return;
+    }
+    if (pathname === '/health') {
+      response.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' });
+      response.end(request.method === 'HEAD' ? undefined : 'ok');
+      return;
+    }
+    const file = pathname === '/' ? '/index.html' : pathname;
+    if (!publicFiles.has(file) && !vendorFiles.has(file)) {
+      response.writeHead(404, { 'Content-Type': 'text/plain' });
+      response.end(request.method === 'HEAD' ? undefined : 'Not found');
+      return;
+    }
+    let handle;
+    try {
+      handle = await open(resolve(publicRoot, vendorFiles.get(file) || '.' + file), 'r');
+      const stats = await handle.stat();
+      if (!stats.isFile()) {
+        response.writeHead(404, { 'Content-Type': 'text/plain' });
+        response.end(request.method === 'HEAD' ? undefined : 'Not found');
+        return;
+      }
+      const compressed = file.endsWith('.gz');
+      const extension = extname(compressed ? file.slice(0, -3) : file);
+      response.writeHead(200, {
+        'Content-Type': types[extension] || 'application/octet-stream',
+        'Content-Length': stats.size,
+        ...(compressed ? { 'Content-Encoding': 'gzip' } : {}),
+        'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
+      });
+      if (request.method === 'HEAD') response.end();
+      // Backpressure keeps concurrent large Web builds from being buffered in
+      // memory. Pipeline also closes the file if a browser cancels its download.
+      else await pipeline(handle.createReadStream(), response);
+    } catch (error) {
+      if (response.headersSent || response.destroyed) return;
+      const missing = error.code === 'ENOENT' || error.code === 'ENOTDIR';
+      response.writeHead(missing ? 404 : 500, { 'Content-Type': 'text/plain' });
+      response.end(request.method === 'HEAD' ? undefined : missing
+        ? 'Not found' : 'Could not load the game file. Check the terminal.');
+    } finally {
+      await handle?.close();
+    }
+  };
 }
 
 export function createGameServer({
   now = Date.now, roomOptions = {}, maxConnections = 128, heartbeatMs = 30000,
 } = {}) {
   const rooms = createRoomManager({ ...roomOptions, now });
-  const server = createServer(serveFile);
+  const server = createServer(createStaticFileHandler());
   const sockets = new Map();
   const websocketServer = new WebSocketServer({ noServer: true, maxPayload: 4096, perMessageDeflate: false });
   let closing = false;

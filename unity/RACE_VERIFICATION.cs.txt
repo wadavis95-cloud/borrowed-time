@@ -1,0 +1,35 @@
+var receiver=UnityEngine.Object.FindFirstObjectByType<BorrowedTimeRaceRenderer>();
+if(receiver==null)throw new Exception("Missing race receiver");
+var results=new System.Collections.Generic.List<object>();
+foreach(int fps in new[]{30,60,120})
+{
+ var lines=System.IO.File.ReadAllLines("/Users/wes/Documents/ChatGPT/Handshake Multiplayer game/test-results/unity-frames-"+fps+".jsonl");
+ receiver.ResetPresentation();receiver.LoadCourse(lines[0]);
+ float maxZ=0,maxJump=0,maxContact=0,maxDrift=0;
+ foreach(var line in lines.Skip(1))
+ {
+  var frame=JsonUtility.FromJson<RaceFrame>(line);
+  receiver.RenderFrame(line);
+  if(receiver.LastError!=null)throw new Exception(receiver.LastError);
+  if(receiver.AcceptedSequence!=frame.sequence)throw new Exception("Frame was not accepted");
+  maxZ=Mathf.Max(maxZ,Mathf.Abs(receiver.LocalActor.transform.position.z-frame.player.distance*.21f));
+  maxJump=Mathf.Max(maxJump,Mathf.Abs(receiver.LocalActor.PresentedJumpHeight-frame.player.jumpHeight*.43f));
+  maxContact=Mathf.Max(maxContact,receiver.LocalActor.Pose.LastGroundContactError);
+  maxDrift=Mathf.Max(maxDrift,receiver.LocalActor.Pose.LastPlantedFootHorizontalDrift);
+ }
+ var actor=receiver.LocalActor;
+ var gait=(float)typeof(RaceActor).GetField("gaitPhase",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).GetValue(actor);
+ var before=actor.transform.position;float landing=actor.LandingAmount;
+ var frozen=JsonUtility.FromJson<RaceFrame>(lines.Last());
+ for(int i=0;i<30;i++){frozen.sequence++;receiver.RenderFrame(JsonUtility.ToJson(frozen));}
+ if(actor.transform.position!=before||actor.LandingAmount!=landing)throw new Exception("Stale snapshot moved the actor");
+ int accepted=receiver.AcceptedSequence;
+ receiver.RenderFrame(lines[1]);
+ if(receiver.AcceptedSequence!=accepted)throw new Exception("Old sequence accepted");
+ var ghosts=receiver.GetComponentsInChildren<RaceActor>().Where(a=>a.IsGhost).ToArray();
+ if(ghosts.Length!=1||ghosts.Any(a=>a.BoostVisible))throw new Exception("Ghost effect isolation failed");
+ if(Mathf.Abs(ghosts[0].transform.position.x+1.15f)>.0001f)throw new Exception("Opponent lane mismatch");
+ if(maxZ>.00001f||maxJump>.00001f)throw new Exception("Pose drifted from rules");
+ results.Add(new {fps,frames=lines.Length-1,maxZ,maxJump,maxContact,maxDrift,gait,ghosts=ghosts.Length});
+}
+return results;

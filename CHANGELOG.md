@@ -1,5 +1,25 @@
 # Changelog
 
+## 5.0.0-preview.1 — Unity game integration (local)
+
+V5 is complete as a local checkpoint, including the approved final running style in solo play, private multiplayer and the demo. Saved as `v5.0.0-preview.1`; the public deployment remains V4.
+
+- Integrated the approved rear-camera runner, silhouette, run/jump/landing/lane animation and tunnel into solo practice and the real multiplayer game.
+- Kept JavaScript rules, time purchases, HUD/input, audio, WebSocket snapshots and server authority. Unity consumes presentation data only.
+- Replaced the study's scripted obstacles with the actual seeded course, shared-clock falling masonry, time pickups and a final exit.
+- Added translucent public-movement opponents, four jacket palettes on the approved body, and local-only boost/hit effects.
+- Added a compressed Unity Web build, streaming binary serving, load progress, and a retained classic renderer at `?graphics=classic`.
+- Preserved the pre-integration source archive and Git bundle. The isolated Unity preview and public V4 deployment remain separate.
+
+See [V5 release details](docs/versions/V5_RELEASE.md), [Unity guide](docs/UNITY_GUIDE.md), and [art credits](assets/unity/CREDITS.md).
+
+### Running-style follow-up — 2026-10-27 (local)
+
+- Reworked the Unity game's arm swings and stride into a continuous, stylized run with a slight forward lean.
+- Removed sideways torso banking and turning during lane changes; the running cycle continues across lanes.
+- Smoothed animation cadence and limited it during boosts; retained the rear camera and all race rules.
+- Preserved a full source/build backup before editing. See the [motion update and verification record](docs/versions/V5_RUNNING_UPDATE.md).
+
 ## 4.0.0-preview.1 — Public friend playtest
 
 - Deployed [Borrowed Time](https://borrowed-time.onrender.com) with public HTTPS and same-origin secure WebSockets, backed by the private GitHub repository.

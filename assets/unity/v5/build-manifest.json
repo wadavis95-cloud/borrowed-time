@@ -1,0 +1,28 @@
+{
+  "unity": "6000.6.7f1",
+  "version": "5.0.0-preview.1",
+  "scene": "Assets/Study/Scenes/Race.unity",
+  "files": {
+    "Race.loader.js": {
+      "bytes": 27914,
+      "sha256": "de400dd168fd9876f7037b290d64c511cf74a258a6193679d7a007262977db6f"
+    },
+    "Race.framework.js.gz": {
+      "bytes": 75099,
+      "sha256": "86f1dffe8da69cbdb4c2d480088209e85528eb030c8d03ef566d1505bc579614"
+    },
+    "Race.data.gz": {
+      "bytes": 30474739,
+      "sha256": "24960ba8479df51351ae411d58604191cb009d8219d0ab85c719c78691581d49"
+    },
+    "Race.wasm.gz": {
+      "bytes": 9518628,
+      "sha256": "9ab01634b551bab038c5a87f1f5c5af48eec5d73bc028d41aff951fc632524fc"
+    }
+  },
+  "motionPass": "2026-10-27: fluid arms and stride, forward lean, level lane changes",
+  "motionSources": {
+    "GroundedRunnerPose.cs": "2d41b954ca4d13fbfa6cc622edf937dfa1b76f8d1c619474b05dcbca4d3797b9",
+    "RaceActor.cs": "9871f3c19e66e5c2bda7e3678d4a4f0cde93b16914e353a0a4746c82e5230a42"
+  }
+}

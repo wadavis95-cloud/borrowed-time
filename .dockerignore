@@ -5,3 +5,4 @@ docs/*
 !docs/character-preview.html
 test-results
 coverage
+unity

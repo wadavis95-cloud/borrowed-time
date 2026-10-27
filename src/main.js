@@ -1,9 +1,8 @@
 // The coordinator: browser inputs, solo rules, multiplayer snapshots, 3D scene, and HUD.
 import { CONFIG, ABILITIES, createGame, startGame, pauseGame, resumeGame, moveLane, jump, buyAbility, updateGame } from './game.js';
-import { createRenderer } from './renderer.js';
+import { createUnityRenderer } from './unity-renderer.js';
 import { connectRace, createRaceView } from './network.js';
 import { AVATARS } from './avatars.js';
-import { preloadAvatars } from './graphics/avatars.js';
 import { createDemoRace } from './demo.js';
 import { createGameAudio } from './audio.js';
 
@@ -11,6 +10,7 @@ const $ = (id) => document.getElementById(id);
 const canvas = $('game-canvas');
 const audio = createGameAudio();
 let renderer = null, graphicsError = '', graphicsLoading = true;
+let graphicsProgress = 0;
 const graphicsMessage = '3D graphics are unavailable. Try an up-to-date browser with graphics acceleration enabled, then reload.';
 let game = createGame();
 let mode = 'solo';
@@ -27,14 +27,21 @@ $('long-jump-button').querySelector('.cost').firstChild.textContent = `−${ABIL
 
 async function prepareGraphics() {
   try {
-    await preloadAvatars();
+    if (new URLSearchParams(location.search).get('graphics') === 'classic') {
+      const [{ createRenderer }, { preloadAvatars }] = await Promise.all([
+        import('./renderer.js'), import('./graphics/avatars.js'),
+      ]);
+      await preloadAvatars();
+      renderer = createRenderer(canvas);
+    } else {
+      renderer = await createUnityRenderer(canvas, { onProgress(progress) {
+        graphicsProgress = Math.round(progress * 100);
+        updateOverlay();
+      } });
+    }
   } catch (error) {
-    console.error('Character assets could not load:', error);
-    graphicsError = 'The runner models could not load. Check your connection, then reload to try again.';
-  }
-  if (!graphicsError) {
-    try { renderer = createRenderer(canvas); }
-    catch (error) { console.error('Graphics initialization failed:', error); graphicsError = graphicsMessage; }
+    console.error('Graphics initialization failed:', error);
+    graphicsError = 'The game graphics could not load. Check your connection and browser, then reload to try again.';
   }
   graphicsLoading = false;
   updateHUD();
@@ -196,7 +203,7 @@ function overlay(kicker, title, description, button, disabled = false, hint = ''
 function updateOverlay() {
   if (graphicsLoading) {
     $('screen-overlay').hidden = false;
-    overlay('INTO THE LIGHT', 'Preparing your escape.', 'Loading the runners and tunnel…', 'Loading…', true);
+    overlay('INTO THE LIGHT', 'Preparing your escape.', `Loading the runner and tunnel… ${graphicsProgress}%`, 'Loading…', true);
     return;
   }
   if (graphicsError) {

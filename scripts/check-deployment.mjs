@@ -6,7 +6,7 @@ import { WebSocket } from 'ws';
 const USAGE = 'Usage: node scripts/check-deployment.mjs https://your-game.onrender.com';
 const ASSETS = [
   '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js',
-  '/src/renderer.js', '/src/network.js', '/src/avatars.js', '/src/hazards.js',
+  '/src/renderer.js', '/src/unity-renderer.js', '/src/unity-protocol.js', '/src/network.js', '/src/avatars.js', '/src/hazards.js',
   '/src/graphics/avatars.js', '/src/graphics/tunnel.js', '/src/demo.js', '/src/audio.js',
   '/vendor/three.module.js', '/vendor/three.core.js', '/vendor/loaders/GLTFLoader.js',
   '/vendor/utils/BufferGeometryUtils.js', '/vendor/utils/SkeletonUtils.js',
@@ -182,7 +182,17 @@ async function main() {
       assert.ok(type.includes(expected), `${path} has the wrong content type; check the public asset route.`);
     }));
   }
-  console.log(`✓ Game page and ${ASSETS.length} public assets, including four GLBs and the character preview`);
+  console.log(`✓ Game page and ${ASSETS.length} public assets, including the classic fallback`);
+  for (const [file, type] of [
+    ['Race.loader.js', 'text/javascript'], ['Race.framework.js.gz', 'text/javascript'],
+    ['Race.data.gz', 'application/octet-stream'], ['Race.wasm.gz', 'application/wasm'],
+  ]) {
+    const asset = await request(target, `/assets/unity/v5/${file}`, { method: 'HEAD' });
+    assert.ok((asset.headers.get('content-type') ?? '').includes(type), `${file}: wrong Unity MIME`);
+    assert.ok(Number(asset.headers.get('content-length')) > 0, `${file}: missing Unity build`);
+    if (file.endsWith('.gz')) assert.equal(asset.headers.get('content-encoding'), 'gzip', `${file}: missing gzip header`);
+  }
+  console.log('✓ Unity loader, scene data, framework and WebAssembly headers');
   await checkMultiplayer(target);
   console.log('Deployment checks passed. Next: open this URL on two devices and check the touch controls and graphics.');
 }
