@@ -123,6 +123,14 @@ a {
   padding:23px 0
 }
 
+.game-premise {
+  max-width:550px;
+  margin:9px 0 0;
+  color:#b8cbc4;
+  font-size:13px;
+  line-height:1.6
+}
+
 .eyebrow {
   display:block;
   color:var(--orange);
@@ -413,8 +421,11 @@ h1 {
 .screen-overlay {
   position:absolute;
   inset:0;
-  display:grid;
-  place-items:center;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  overflow-y:auto;
+  overscroll-behavior:contain;
   background:linear-gradient(#0a151b35,#0a151bad);
   backdrop-filter:blur(4px);
   padding:30px;
@@ -422,8 +433,40 @@ h1 {
 }
 
 .intro-card {
-  max-width:470px
+  width:100%;
+  max-width:500px;
+  margin:auto 0;
+  flex-shrink:0
 }
+
+.arena.briefing { min-height:480px }
+.briefing .intro-card>p { margin-bottom:16px }
+.ability-brief {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin:0 0 19px
+}
+.brief-power {
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:4px 9px;
+  padding:12px 14px;
+  border:1px solid #bc965c80;
+  border-radius:10px;
+  background:linear-gradient(135deg,#352e22ed,#1f2725ed);
+  text-align:left
+}
+.brief-power.leap { border-color:#749ea480; background:linear-gradient(135deg,#20383ded,#182829ed) }
+.brief-icon { grid-row:1; grid-column:1; font-size:21px; line-height:1; color:var(--orange) }
+.leap .brief-icon { color:#b5e2ed }
+.brief-power strong { grid-row:2; grid-column:1; font-size:13px }
+.brief-price { grid-column:2; grid-row:1/3; align-self:center; font-size:8px; letter-spacing:.1em; color:#d4c7a7; text-align:right }
+.brief-price b { display:block; margin-top:3px; font-size:26px; line-height:1; letter-spacing:-.03em; color:var(--orange) }
+.leap .brief-price b { color:#b5e2ed }
+.brief-power small { grid-column:1/-1; font-size:11px; line-height:1.45; color:#c6d7ce }
+.ability-brief>p { grid-column:1/-1; margin:1px 0 0; font-size:11px; line-height:1.5; color:#becfc7 }
+.ability-brief>p strong { color:#edf4ed }
 
 .intro-card .eyebrow {
   font-size:10px
@@ -489,6 +532,11 @@ h2 {
   padding-right:8px;
   max-width:300px
 }
+
+.clock-note { min-height:31px; margin:5px 0 0; font-size:11px; line-height:1.4; color:#b3c6bd }
+.clock-panel.spent .clock-note { color:var(--orange) }
+.clock-panel.spent:not(.low) #time-value { color:var(--orange) }
+.clock-panel.spent:not(.low) .time-track div { background:var(--orange) }
 
 .panel-label {
   font-size:9px;
@@ -560,7 +608,13 @@ h2 {
   align-content:start
 }
 
+.ability-heading { grid-column:1/-1; display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:3px 12px; margin-bottom:3px }
+.ability-heading strong { font-size:12px; font-weight:650; color:#f0e4ce }
+.ability-heading>span { font-size:10px; color:#b2c5bd }
+.discovering .ability-heading strong { color:var(--orange) }
+
 .ability-button {
+  --ability-accent:#edc38e;
   display:flex;
   align-items:center;
   text-align:left;
@@ -569,16 +623,17 @@ h2 {
   min-width:0;
   min-height:72px;
   padding:12px 16px;
-  border:1px solid #60776a;
-  background:linear-gradient(130deg,#2e4036,#25352f);
+  border:1px solid #a88c60;
+  background:linear-gradient(130deg,#493b26,#2e3028);
   border-radius:9px;
   color:var(--text);
   touch-action:manipulation
 }
 
 .ability-button.leap {
-  background:linear-gradient(130deg,#283e48,#21323c);
-  border-color:#577782
+  --ability-accent:#a7dae4;
+  background:linear-gradient(130deg,#2b454c,#22343a);
+  border-color:#729ba3
 }
 
 .ability-button:hover:enabled {
@@ -587,7 +642,13 @@ h2 {
 }
 
 .ability-button:disabled {
-  opacity:.47
+  opacity:.68
+}
+
+.discovering .ability-button:enabled { animation:ability-beacon 1.8s ease-in-out 2 }
+@keyframes ability-beacon {
+  0%,100% { box-shadow:0 0 0 0 transparent }
+  50% { box-shadow:0 0 0 2px var(--ability-accent),inset 0 0 18px #ffffff0a }
 }
 
 .ability-button.active {
@@ -621,7 +682,8 @@ h2 {
   display:block;
   margin-top:5px;
   font-size:10px;
-  color:#b5c5bc
+  color:#d0ded6;
+  line-height:1.4
 }
 
 .cost {
@@ -629,15 +691,22 @@ h2 {
   font-weight:400;
   line-height:1;
   letter-spacing:-.04em;
-  color:#f0e8c5;
-  white-space:nowrap
+  color:#ffe1a9;
+  white-space:nowrap;
+  padding:8px;
+  min-width:44px;
+  text-align:center;
+  border-radius:6px;
+  background:#07171966
 }
+
+.leap .cost { color:#c5edf5 }
 
 .cost span {
   display:block;
   font-size:7px;
   letter-spacing:.12em;
-  text-align:right;
+  text-align:center;
   margin-top:5px
 }
 
@@ -817,6 +886,7 @@ dialog p,.play-guide {
   .page-heading h1 {
     font-size:23px
   }
+  .game-premise { font-size:12px; margin-top:7px }
   .demo-button {
     font-size:10px;
     padding:8px 11px;
@@ -853,7 +923,7 @@ dialog p,.play-guide {
   }
   .arena {
     /* Leave room for the clock, abilities and movement row after showCourse(). */
-    height:clamp(200px,min(56dvh,calc(100dvh - 250px - env(safe-area-inset-top) - env(safe-area-inset-bottom))),550px);
+    height:clamp(200px,min(50dvh,calc(100dvh - 330px - env(safe-area-inset-top) - env(safe-area-inset-bottom))),550px);
     scroll-margin-top:calc(8px + env(safe-area-inset-top))
   }
   .arena-top {
@@ -882,6 +952,13 @@ dialog p,.play-guide {
   .screen-overlay {
     padding:24px
   }
+  .arena.briefing { min-height:430px }
+  .ability-brief { gap:8px; margin-bottom:16px }
+  .brief-power { padding:10px; gap:4px 6px }
+  .brief-power strong { font-size:12px }
+  .brief-power small { font-size:10px }
+  .brief-price b { font-size:24px }
+  .ability-brief>p { font-size:10px }
   .intro-card>p {
     font-size:12px;
     line-height:1.65;
@@ -917,11 +994,15 @@ dialog p,.play-guide {
     grid-column:1/-1;
     margin-top:8px
   }
+  .clock-note { grid-column:1/-1; min-height:16px; margin-top:4px; font-size:10px }
+  .ability-heading { gap:3px; margin-bottom:4px }
+  .ability-heading strong { font-size:12px }
+  .ability-heading>span { font-size:10px }
   .abilities-panel {
     gap:6px 9px
   }
   .ability-button {
-    min-height:65px;
+    min-height:76px;
     padding:10px;
     gap:9px
   }
@@ -932,7 +1013,7 @@ dialog p,.play-guide {
     font-size:11px
   }
   .ability-copy small {
-    font-size:9px;
+    font-size:10px;
     line-height:1.4
   }
   .cost {
@@ -971,20 +1052,23 @@ dialog p,.play-guide {
     padding:9px
   }
   .ability-icon {
-    font-size:23px
+    display:none
   }
   .ability-copy strong {
-    font-size:10px
+    font-size:11px
   }
   .ability-copy small {
-    font-size:8px
+    font-size:10px
   }
   .mode-label {
     font-size:7px
   }
   .cost {
-    font-size:19px
+    font-size:20px;
+    padding:7px
   }
+  .brief-power strong { font-size:11px }
+  .brief-price b { font-size:22px }
 }
 
 /* Touch hardware is not necessarily narrow: landscape phones and tablets still
@@ -1020,6 +1104,7 @@ dialog p,.play-guide {
     height:max(200px,calc(100dvh - 84px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
     scroll-margin-top:calc(8px + env(safe-area-inset-top))
   }
+  .arena.briefing { min-height:0 }
   .arena-top {
     top:10px;
     left:10px;
@@ -1063,6 +1148,9 @@ dialog p,.play-guide {
   .clock #time-value {
     font-size:32px
   }
+  .clock-note { grid-column:1/-1; min-height:26px; font-size:9px; margin-top:3px }
+  .ability-heading strong { font-size:11px }
+  .ability-heading>span { font-size:9px }
   .time-track {
     grid-column:1/-1;
     margin-top:6px
@@ -1117,6 +1205,13 @@ dialog p,.play-guide {
   .screen-overlay {
     padding:16px
   }
+  .ability-brief { gap:7px; margin-bottom:10px }
+  .brief-power { padding:8px; gap:4px }
+  .brief-icon,.ability-brief>p { display:none }
+  .brief-power strong { grid-row:1; font-size:11px }
+  .brief-power small { grid-row:2; font-size:9px }
+  .brief-price { grid-row:1; font-size:7px }
+  .brief-price b { font-size:20px }
   .intro-card h2 {
     font-size:26px;
     margin:8px 0 10px
@@ -1139,7 +1234,8 @@ dialog p,.play-guide {
 @media(prefers-reduced-motion:reduce) {
   *,*::before,*::after {
     scroll-behavior:auto!important;
-    transition:none!important
+    transition:none!important;
+    animation:none!important
   }
 }
 

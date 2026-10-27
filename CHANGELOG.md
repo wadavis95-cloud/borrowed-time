@@ -8,6 +8,7 @@
 - Tightened later encounter spacing while reserving separate spaces for readable ceiling falls.
 - Updated demo navigation to recognize full-width hop routes and use the same rules as players.
 - Preserved the V5 checkpoint, Unity motion, timer budget, running speed and ability prices. See [V6 playtest notes](docs/versions/V6_PLAYTEST.md).
+- Added a one-click pre-run ability briefing, clearer ability benefits/prices, explicit survival-and-time-currency copy, and purchase feedback beside the clock. See [UI update notes](docs/versions/V6_UI_UPDATE.md).
 
 
 ## 5.0.0-preview.1 — Unity game integration (local)

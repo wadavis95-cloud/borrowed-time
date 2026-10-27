@@ -17,6 +17,7 @@ let mode = 'solo';
 let connection = null, snapshot = null, raceView = createRaceView();
 let networkStatus = '', connectionGeneration = 0, rosterKey = '';
 let lastOverlay = '', lastEvent = 0, toastUntil = 0;
+let purchaseUntil = 0, purchaseFeedback = '';
 let lastFrame = performance.now(), accumulator = 0;
 const STEP = 1 / 60;
 const guestName = `Runner ${100 + Math.floor(Math.random() * 900)}`;
@@ -24,6 +25,8 @@ $('player-name').placeholder = guestName;
 
 $('boost-button').querySelector('.cost').firstChild.textContent = `−${ABILITIES.boost.cost}`;
 $('long-jump-button').querySelector('.cost').firstChild.textContent = `−${ABILITIES.longJump.cost}`;
+$('brief-boost-cost').textContent = `${ABILITIES.boost.cost}s`;
+$('brief-jump-cost').textContent = `${ABILITIES.longJump.cost}s`;
 
 async function prepareGraphics() {
   try {
@@ -52,7 +55,12 @@ function showCourse() {
 }
 
 function notify(text, kind = 'info') {
-  $('event-toast').textContent = text;
+  const message = kind === 'ability' ? `${text} from your clock` : text;
+  $('event-toast').textContent = message;
+  if (kind === 'ability') {
+    purchaseUntil = performance.now() + 2600;
+    purchaseFeedback = message;
+  }
   $('event-toast').dataset.kind = kind;
   $('event-toast').classList.add('visible');
   toastUntil = performance.now() + 1800;
@@ -69,6 +77,9 @@ function resetVisuals() {
   lastOverlay = '';
   lastFrame = performance.now();
   $('event-toast').classList.remove('visible');
+  $('event-toast').textContent = '';
+  purchaseUntil = 0;
+  purchaseFeedback = '';
 }
 function returnToMenu() {
   connectionGeneration++;
@@ -201,6 +212,10 @@ function overlay(kicker, title, description, button, disabled = false, hint = ''
   $('overlay-hint').textContent = hint;
 }
 function updateOverlay() {
+  const brief = !graphicsLoading && !graphicsError && (mode === 'solo' ? game.phase === 'ready'
+    : ['lobby', 'countdown'].includes(snapshot?.room.phase));
+  $('ability-brief').hidden = !brief;
+  canvas.closest('.arena').classList.toggle('briefing', brief);
   if (graphicsLoading) {
     $('screen-overlay').hidden = false;
     overlay('INTO THE LIGHT', 'Preparing your escape.', `Loading the runner and tunnel… ${graphicsProgress}%`, 'Loading…', true);
@@ -226,9 +241,9 @@ function updateOverlay() {
         overlay('FOUR-PLAYER DEMO', 'Meet the runners.', 'Four simulated players are joining the same race server.', 'Getting ready…', true, 'Automatic characters. Real multiplayer rules.');
         return;
       }
-      overlay('PRIVATE RACE', 'Better with company.', 'Share the room code above. You’ll see other runners as transparent models on the same course.', host ? 'Start race →' : 'Waiting for host…', !host || count < 2, count < 2 ? 'At least two runners must join to start.' : `${count} runners ready. Everyone starts together.`);
+      overlay('SURVIVE. SPEND. ESCAPE.', 'Your own clock. One exit.', 'Everyone starts with 60 seconds. Abilities spend your own time. First to escape wins.', host ? 'Start race →' : 'Waiting for host…', !host || count < 2, count < 2 ? 'Share the room code. At least two runners must join.' : `${count} runners ready. Everyone starts together.`);
     } else if (room.phase === 'countdown') {
-      overlay('GET READY', `${room.countdown}`, 'Same course. Your own clock. Reach the exit first.', 'Starting…', true, 'Move ← → · Hop SPACE · Boost 1 · Long jump 2');
+      overlay('YOUR TIME IS YOUR CURRENCY', `${room.countdown}`, 'Abilities spend seconds from your escape clock. Make it out before zero.', 'Starting…', true, 'Move ← → · Free hop SPACE · Boost 1 · Long jump 2');
     } else if (ended) {
       const winner = snapshot.players.find(player => player.id === room.winnerId);
       const title = mode === 'demo'
@@ -242,7 +257,7 @@ function updateOverlay() {
     return;
   }
   $('screen-overlay').hidden = game.phase === 'running';
-  if (game.phase === 'ready') overlay(`${CONFIG.initialTime} SECONDS. ONE WAY OUT.`, 'Daylight is ahead.', 'Watch for falling stone. Dodge, jump, and spend seconds to escape. Create a room above to race friends.', 'Practice solo →', false, 'Move ← → · Hop SPACE · Abilities 1 / 2');
+  if (game.phase === 'ready') overlay(`${CONFIG.initialTime} SECONDS. CHOOSE HOW TO SPEND THEM.`, 'Escape before zero.', 'Your clock is also your currency. Spend seconds on abilities to get through the collapsing tunnel.', 'Start solo escape →', false, 'Move ← → · Free hop SPACE · Abilities 1 / 2');
   else if (game.phase === 'paused') overlay('TAKE A BREATH', 'Time stands still.', 'Your solo run is paused. The clock and the building will wait.', 'Resume run →', false, 'Press P or ESC to resume');
   else if (ended) overlay(game.phase === 'won' ? 'ESCAPE COMPLETE' : 'THE CLOCK RAN OUT', game.phase === 'won' ? 'You escaped.' : 'Time ran out.', game.phase === 'won' ? 'A little daylight. A second chance. Ready to go again?' : 'Dodge, leap, and save enough seconds for the exit.', 'Run it again →');
 }
@@ -264,8 +279,17 @@ function updateHUD() {
   $('long-jump-button').disabled = !running || game.timeLeft <= ABILITIES.longJump.cost || game.jumpKind === 'long';
   $('boost-button').classList.toggle('active', game.boostRemaining > 0);
   $('long-jump-button').classList.toggle('active', game.jumpKind === 'long');
-  $('boost-description').textContent = game.boostRemaining > 0 ? 'Boosting' : game.boostCooldown > 0 ? `Ready in ${Math.ceil(game.boostCooldown)}s` : 'Break away';
-  $('jump-description').textContent = game.jumpKind === 'long' ? 'Airborne' : 'Leap over obstacles';
+  $('boost-description').textContent = game.boostRemaining > 0 ? `Boosting · ${Math.ceil(game.boostRemaining)}s left`
+    : game.boostCooldown > 0 ? `Recharges in ${Math.ceil(game.boostCooldown)}s`
+      : game.timeLeft <= ABILITIES.boost.cost ? 'Not enough time' : `Run faster for ${ABILITIES.boost.duration}s`;
+  $('jump-description').textContent = game.jumpKind === 'long' ? 'Long jump active'
+    : game.timeLeft <= ABILITIES.longJump.cost ? 'Not enough time' : 'Clear barriers & gaps';
+  const discovering = running && game.elapsed < 10 && game.timeSpent === 0;
+  $('boost-button').closest('.abilities-panel').classList.toggle('discovering', discovering);
+  const spent = performance.now() < purchaseUntil;
+  $('time-value').closest('.clock-panel').classList.toggle('spent', spent);
+  const clockNote = spent ? purchaseFeedback : 'Also your ability budget.';
+  if ($('clock-feedback').textContent !== clockNote) $('clock-feedback').textContent = clockNote;
   $('pause-button').disabled = online || (!running && game.phase !== 'paused');
   $('pause-button').textContent = game.phase === 'paused' ? '▷' : 'Ⅱ';
   $('pause-button').setAttribute('aria-label', online ? 'Multiplayer cannot be paused' : game.phase === 'paused' ? 'Resume game' : 'Pause game');

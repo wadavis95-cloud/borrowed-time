@@ -1,8 +1,10 @@
-# Borrowed Time · V6 difficulty playtest
+# Borrowed Time · V6 gameplay and UI playtest
 
 A browser escape runner for **solo practice or private races with 2–4 players**. Race through a crumbling Victorian railway tunnel, dodge falling masonry, and spend your remaining seconds on abilities. Real opponents appear as translucent 3D runners and cannot collide with you.
 
 Version **6.0.0-preview.1** tests a much harder course following feedback that V5 felt about 3/10. The target is roughly 7.5/10, to be judged through playtesting. Most rows block two lanes, the open route moves, and occasional full-width rows require a hop or a paid long-jump alternative. Encounters tighten as the race progresses. See the [V6 playtest notes](docs/versions/V6_PLAYTEST.md).
+
+The UI now introduces the main tradeoff before play: your countdown is also your ability currency. The start screen and multiplayer lobby show both ability prices and benefits, the HUD labels the shared time budget, and purchases visibly debit that same clock. Starting still takes one click. See the [UI update notes](docs/versions/V6_UI_UPDATE.md).
 
 V6 keeps V5's Unity visuals and approved running style across solo practice, private multiplayer races and the four-player demo. The completed V5 checkpoint is preserved as `v5.0.0-preview.1`. The public deployment remains V4. See the [Unity guide](docs/UNITY_GUIDE.md) and [V5 release record](docs/versions/V5_RELEASE.md).
 
