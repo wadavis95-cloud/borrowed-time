@@ -1,4 +1,5 @@
 // Transport sends intentions; it never decides whether an ability or movement succeeds.
+import {telemetry} from './telemetry.js';
 import { createGame } from './game.js';
 
 export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
@@ -8,7 +9,9 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
   let closed = false;
   let sequence = 0;
   let roundId = null;
-  let lastMessage = performance.now();
+  let lastMessage = performance.now(),lastSnapshotAt=null,probeAt=null;
+  let probing=false;const pendingInputs=new Map();
+  const probeTimer=setInterval(()=>{if(probing&&socket.readyState===WebSocket.OPEN&&(probeAt===null||performance.now()-probeAt>10000)){probeAt=performance.now();send({type:'probe',at:probeAt});}},5000);
   const watchdog = setInterval(() => {
     if (performance.now() - lastMessage > 10000) {
       onError('The server stopped responding. Return to the menu to reconnect.');
@@ -30,9 +33,13 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
     if (closed) return;
     let message;
     try { message = JSON.parse(data); } catch { return; }
-    lastMessage = performance.now();
+    if(message.type!=='probe')lastMessage = performance.now();
+    if(message.type==='connected')probing=message.telemetry===true;
+    if(message.type==='probe'&&message.at===probeAt){telemetry.observe('rtt',performance.now()-probeAt);probeAt=null;}
     if (message.type === 'snapshot') {
-      if (roundId !== message.room.roundId) { roundId = message.room.roundId; sequence = 0; }
+      const at=performance.now();if(lastSnapshotAt!==null)telemetry.observe('gap',at-lastSnapshotAt);lastSnapshotAt=at;
+      if (roundId !== message.room.roundId) { roundId = message.room.roundId; sequence = 0;pendingInputs.clear(); }
+      for(const [seq,sentAt]of pendingInputs){if(seq<=message.you.inputSeq){telemetry.observe('input',performance.now()-sentAt);pendingInputs.delete(seq);}}
       onSnapshot(message);
     } else if (message.type === 'error') {
       onError(message.message, message.code);
@@ -46,19 +53,20 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
     if (!closed) onError('Could not reach the race server. Check your connection and try again.');
   });
   socket.addEventListener('close', () => {
-    clearInterval(watchdog);
-    if (!closed) onStatus('disconnected');
+    clearInterval(watchdog);clearInterval(probeTimer);
+    if (!closed){telemetry.count('disconnects');onStatus('disconnected');}
   });
   return {
     send,
     input(action) {
       if (roundId === null) return false;
-      return send({ type: 'input', action, seq: ++sequence, roundId });
+      const seq=++sequence;if(probing){pendingInputs.set(seq,performance.now());if(pendingInputs.size>60)pendingInputs.delete(pendingInputs.keys().next().value);}
+      return send({ type: 'input', action, seq, roundId });
     },
     close() {
-      send({ type: 'leave' });
+      clearInterval(probeTimer);send({ type: 'leave' });
       closed = true;
-      clearInterval(watchdog);
+      clearInterval(watchdog);clearInterval(probeTimer);
       socket.close();
     },
   };

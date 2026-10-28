@@ -9,6 +9,7 @@ import { ABILITIES } from '../src/game.js';
 // the real transport, then removes the room. No browser or extra dependencies.
 const USAGE = 'Usage: node scripts/check-deployment.mjs https://your-game.onrender.com';
 const ASSETS = [
+  '/src/telemetry.js', '/monitor/index.html', '/monitor/dashboard.js', '/monitor/dashboard.css',
   '/src/music.js', '/assets/music/CREDITS.txt', ...Object.values(MUSIC_TRACKS).map(track=>track.src),
   '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js', '/src/maps.js',
   '/src/graphics/worlds.js', '/src/graphics/map-obstacles.js', '/src/movement-feedback.js', '/src/race-presentation.js', '/src/race-ui.js', '/src/loading.js', '/src/finish-destinations.js', '/src/graphics/finish.js', '/src/graphics/readability.js', '/src/graphics/motion-effects.js',
@@ -198,6 +199,9 @@ async function main() {
       assert.ok(type.includes(expected), `${path} has the wrong content type; check the public asset route.`);
     }));
   }
+  const metricsResponse=await fetch(new URL('/ops/metrics',target),{redirect:'error',signal:AbortSignal.timeout(15000)});
+  assert.ok([401,503].includes(metricsResponse.status),'Private metrics must require a key or be disabled.');
+  console.log('✓ Operational metrics are protected or disabled');
   console.log(`✓ Game page and ${ASSETS.length} public assets, including the classic fallback`);
   for (const [file, type] of [
     ['Race.loader.js', 'text/javascript'], ['Race.framework.js.gz', 'text/javascript'],

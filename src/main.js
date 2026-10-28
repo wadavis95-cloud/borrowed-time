@@ -1,4 +1,5 @@
 // The coordinator: browser inputs, solo rules, multiplayer snapshots, 3D scene, and HUD.
+import {telemetry} from './telemetry.js';
 import { CONFIG, ABILITIES, createGame, freshCourseSeed, pauseGame, resumeGame, moveLane, jump, buyAbility, updateGame } from './game.js';
 import { createUnityRenderer } from './unity-renderer.js';
 import { connectRace, createRaceView } from './network.js';
@@ -38,7 +39,7 @@ let connection = null, snapshot = null, raceView = createRaceView();
 let networkStatus = '', connectionGeneration = 0, rosterKey = '';
 let lastOverlay = '', lastEvent = 0, toastUntil = 0;
 let standingsKey = '';
-let lastFrame = performance.now(), accumulator = 0;
+let lastFrame = performance.now(), accumulator = 0,firstRendered=false;
 const STEP = 1 / 60;
 const inputMode = createInputMode({ onChange(mode) {
   document.documentElement.dataset.input = mode;
@@ -155,7 +156,7 @@ async function prepareGraphics() {
       } });
     }
   } catch (error) {
-    console.error('Graphics initialization failed:', error);
+    telemetry.count('graphicsErrors');console.error('Graphics initialization failed:', error);
     graphicsError = error?.message?.includes('taking too long') ? error.message : 'The game graphics could not load. Check your connection and browser, then reload to try again.';
   }
   graphicsLoading = false;
@@ -573,6 +574,7 @@ canvas.addEventListener('pointerup', event => {
   else if (dy < -25 || (Math.abs(dx) < 10 && Math.abs(dy) < 10)) act('jump');
   touchStart = null;
 });
+canvas.addEventListener('webglcontextlost',()=>telemetry.count('contextLosses'));
 canvas.addEventListener('pointercancel', () => { touchStart = null; });
 // Solo pauses on tab switches. A multiplayer clock belongs to the server and keeps running.
 document.addEventListener('visibilitychange', () => {
@@ -587,7 +589,10 @@ $('guide-button').addEventListener('click', () => {
 $('close-guide').addEventListener('click', () => $('guide-dialog').close());
 
 function frame(now) {
-  const dt = Math.min((now - lastFrame) / 1000, .1);
+  telemetry.context(game.mapId,inputMode.mode,mode==='online'?'online':mode==='demo'?'demo':'solo');
+  const frameMs=now-lastFrame;
+  if(!document.hidden&&game.phase==='running')telemetry.frame(frameMs);
+  const dt = Math.min(frameMs / 1000, .1);
   lastFrame = now;
   if (!graphicsError && mode === 'solo' && !document.hidden && (game.phase === 'running' || soloRace && !soloRace.finished && game.phase !== 'paused')) {
     accumulator += dt;
@@ -598,9 +603,10 @@ function frame(now) {
   if (renderer && !graphicsError) {
     try {
       renderer.draw(view?.game || game, now / 1000, dt, view?.opponents || []);
+      if(!firstRendered&&telemetry.enabled){firstRendered=true;telemetry.ready(performance.now());}
     } catch {
       // A lost graphics context must not leave a connected player racing blind.
-      graphicsError = graphicsMessage;
+      telemetry.count('graphicsErrors');graphicsError = graphicsMessage;
       connectionGeneration++;
       connection?.close();
       connection = null;

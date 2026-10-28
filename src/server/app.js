@@ -8,6 +8,7 @@ import { WebSocket, WebSocketServer } from 'ws';
 import {MUSIC_TRACKS} from '../music.js';
 import { MAP_IDS } from '../maps.js';
 import { ALL_AVATAR_IDS } from '../avatars.js';
+import {createMonitoring} from './monitoring.js';
 import { createRoomManager } from './rooms.js';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
@@ -19,6 +20,7 @@ const types = {
 };
 // This allowlist keeps server code, repository files, and secrets off HTTP.
 const publicFiles = new Set([
+  '/src/telemetry.js', '/monitor/index.html', '/monitor/dashboard.js', '/monitor/dashboard.css',
   '/src/music.js', '/assets/music/CREDITS.txt', ...Object.values(MUSIC_TRACKS).map(track=>track.src),
   '/index.html', '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js',
   '/src/renderer.js', '/src/network.js', '/src/movement-feedback.js', '/src/race-presentation.js', '/src/race-ui.js', '/src/loading.js', '/src/finish-destinations.js', '/src/graphics/finish.js', '/src/graphics/readability.js', '/src/graphics/motion-effects.js', '/src/maps.js', '/src/graphics/worlds.js', '/src/graphics/map-obstacles.js',
@@ -66,7 +68,7 @@ export function createStaticFileHandler({ publicRoot = root } = {}) {
       response.end(request.method === 'HEAD' ? undefined : 'ok');
       return;
     }
-    const file = pathname === '/' ? '/index.html' : pathname;
+    const file = pathname === '/' ? '/index.html' : pathname === '/monitor' || pathname === '/monitor/' ? '/monitor/index.html' : pathname;
     if (!publicFiles.has(file) && !vendorFiles.has(file)) {
       response.writeHead(404, { 'Content-Type': 'text/plain' });
       response.end(request.method === 'HEAD' ? undefined : 'Not found');
@@ -120,11 +122,19 @@ export function createStaticFileHandler({ publicRoot = root } = {}) {
 }
 
 export function createGameServer({
-  now = Date.now, roomOptions = {}, maxConnections = 128, heartbeatMs = 30000,
+  now = Date.now, roomOptions = {}, maxConnections = 128, heartbeatMs = 30000, monitorToken = process.env.MONITOR_TOKEN || '',
 } = {}) {
   const rooms = createRoomManager({ ...roomOptions, now });
-  const server = createServer(createStaticFileHandler());
   const sockets = new Map();
+  const monitor=createMonitoring({token:monitorToken,now,state:()=>{
+    const list=[...rooms.rooms.values()];
+    return {sockets:sockets.size,maxConnections,rooms:list.length,maxRooms:roomOptions.maxRooms??25,racingRooms:list.filter(r=>r.phase==='racing').length,
+      racingPlayers:list.reduce((sum,r)=>sum+[...r.players.values()].filter(p=>p.connected&&p.game.phase==='running').length,0),
+      bufferedBytes:[...sockets.values()].reduce((sum,s)=>sum+s.bufferedAmount,0),
+      simulationBacklogMs:Math.max(0,...list.filter(r=>r.phase==='racing').map(r=>now()-r.lastStepAt))};
+  }});
+  const serve=createStaticFileHandler();
+  const server=createServer((request,response)=>{if(monitor.handle(request,response))return;monitor.http(request,response);return serve(request,response);});
   const websocketServer = new WebSocketServer({ noServer: true, maxPayload: 4096, perMessageDeflate: false });
   let closing = false;
   let closePromise;
@@ -132,10 +142,11 @@ export function createGameServer({
   function send(socket, message) {
     if (socket.readyState !== WebSocket.OPEN) return;
     if (socket.bufferedAmount > 256 * 1024) {
-      socket.terminate();
+      monitor.count('slowClients');socket.terminate();
       return;
     }
-    socket.send(JSON.stringify(message), (error) => { if (error) socket.terminate(); });
+    const payload=JSON.stringify(message);monitor.count('messagesOut');monitor.count('bytesOut',Buffer.byteLength(payload));if(message.type==='snapshot')monitor.count('snapshots');
+    socket.send(payload, (error) => { if (error) socket.terminate(); });
   }
 
   function broadcast() {
@@ -169,7 +180,7 @@ export function createGameServer({
       }
     }
     if (closing || sockets.size >= maxConnections) {
-      rejectUpgrade(socket, 503, 'Service Unavailable');
+      monitor.count('connectionRejects');rejectUpgrade(socket, 503, 'Service Unavailable');
       return;
     }
     websocketServer.handleUpgrade(request, socket, head, (websocket) => {
@@ -182,12 +193,12 @@ export function createGameServer({
     const id = randomUUID();
     let alive = true;
     let messageTimes = [];
-    rooms.connect(id);
+    monitor.count('connections');rooms.connect(id);
     sockets.set(id, socket);
     socket.on('pong', () => { alive = true; });
     socket.on('error', () => socket.terminate());
     socket.on('close', () => {
-      sockets.delete(id);
+      monitor.count('disconnects');sockets.delete(id);
       rooms.disconnect(id);
       if (!closing) broadcast();
     });
@@ -197,24 +208,32 @@ export function createGameServer({
       if (socket.readyState === WebSocket.OPEN) socket.ping();
     };
     socket.on('message', (raw, binary) => {
+      monitor.count('messagesIn');monitor.count('bytesIn',raw.length);
       const time = now();
       messageTimes = messageTimes.filter((timestamp) => time - timestamp < 1000);
       if (messageTimes.length >= 60) {
+        monitor.count('rateLimits');
         socket.close(1008, 'Too many messages');
         return;
       }
       messageTimes.push(time);
       if (binary) {
+        monitor.count('invalidMessages');
         send(socket, { type: 'error', code: 'INVALID_MESSAGE', message: 'Send text JSON messages.' });
         return;
       }
       let message;
       try { message = JSON.parse(raw.toString()); } catch {
+        monitor.count('invalidMessages');
         send(socket, { type: 'error', code: 'INVALID_JSON', message: 'That message was not valid JSON.' });
         return;
       }
+      if(message?.type==='probe'&&Number.isFinite(message.at)){send(socket,{type:'probe',at:message.at});return;}
       const result = rooms.handle(id, message);
       if (!result.ok) {
+        if(result.code==='RATE_LIMIT')monitor.count('rateLimits');
+        if(result.code==='SERVER_FULL')monitor.count('roomRejects');
+        if(['INVALID_MESSAGE','INVALID_INPUT','INVALID_ACTION','INVALID_AVATAR','INVALID_MAP'].includes(result.code))monitor.count('invalidMessages');
         send(socket, { type: 'error', code: result.code, message: result.message });
       } else if (message.type === 'leave') {
         send(socket, { type: 'left' });
@@ -224,7 +243,7 @@ export function createGameServer({
         broadcast();
       }
     });
-    send(socket, { type: 'connected', version: 1 });
+    send(socket, { type: 'connected', version: 1, telemetry:monitor.enabled });
   });
 
   const simulationTimer = setInterval(() => {
@@ -243,7 +262,7 @@ export function createGameServer({
 
   function close() {
     if (closePromise) return closePromise;
-    closing = true;
+    closing = true;monitor.dispose();
     clearInterval(simulationTimer);
     clearInterval(snapshotTimer);
     clearInterval(heartbeatTimer);
@@ -261,5 +280,5 @@ export function createGameServer({
     return closePromise;
   }
 
-  return { server, close, rooms };
+  return { server, close, rooms, monitor };
 }

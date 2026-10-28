@@ -8,3 +8,6 @@ coverage
 unity
 
 backups/
+
+# Never include local monitoring credentials in a build context
+.local/

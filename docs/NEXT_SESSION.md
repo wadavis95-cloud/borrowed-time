@@ -20,3 +20,7 @@ Local measurements and the repeatable loopback-only tool are on `codex/capacity-
 Run the tool with `npm run test:capacity -- --profile=baseline --seconds=20`. No external target is accepted; it launches and removes its own loopback server. Raw JSON reports are in `artifacts/performance/`.
 
 The user asked whether a monitoring dashboard would help. Recommended adding lightweight server and client monitoring before optimizing, so changes can be evaluated against actual bottlenecks. No dashboard, paid monitoring, hosting upgrade or public load test has been set up. Remaining order: monitoring, selected-map loading/cache/CDN, demo admission/recovery, and measured room-aware scaling. Keep changes local unless deployment is explicitly requested.
+
+## Monitoring dashboard implemented locally
+
+Branch `codex/monitoring-dashboard` contains the separate protected `/monitor` dashboard. Start with `npm run monitor` (local-only binding); access key is `.local/monitor-key.txt`, ignored by Git and Docker. See `docs/MONITORING.md`. The running local server is monitored; no deployment, hosting upgrade, external telemetry service or public load test occurred. Server/browser observations and bandwidth are now available. Next work is selected-map loading, caching and download delivery, using this dashboard to measure changes. Durable hosted monitoring, external uptime alerts, billing integration and multi-instance aggregation remain future work.

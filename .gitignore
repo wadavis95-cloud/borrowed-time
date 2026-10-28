@@ -16,3 +16,6 @@ backups/
 
 # Original music downloads and source-page snapshots; edited playtest clips live in assets/music.
 artifacts/music-source/
+
+# Local monitoring access key (never publish)
+.local/

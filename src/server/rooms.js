@@ -287,7 +287,7 @@ export function createRoomManager({
         raceElapsed: room.raceElapsed,
         countdown: room.phase === 'countdown' ? Math.max(0, Math.ceil((room.countdownEnd - now()) / 1000)) : 0,
       },
-      you: { id, name: player.name, avatarChoices:{...player.avatarChoices}, game: structuredClone(ownGame) },
+      you: { id, inputSeq:player.lastSeq, name: player.name, avatarChoices:{...player.avatarChoices}, game: structuredClone(ownGame) },
       debris: player.game.debris.map(({ id, lane, z, warnAt, fallAt, impactAt }) => ({ id, lane, z, warnAt, fallAt, impactAt })),
       standings: ordered.map((other, index) => ({
         id: other.id,
