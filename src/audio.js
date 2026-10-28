@@ -1,3 +1,4 @@
+import { createAudioScene } from './audio-scene.js';
 // Optional local-runner feedback. AudioContext is created/resumed only by toggle(),
 // which the caller must invoke from a user gesture. No sounds or assets load on import.
 const STEP_DISTANCE = .36 / .058; // Half of the avatar's .72s run clip, in metres.
@@ -10,6 +11,8 @@ export function createGameAudio() {
   let context = null, master = null, noiseBuffer = null;
   let requested = false, disposed = false, toggleSequence = 0, previous = null;
   const voices = new Set();
+  const scene = createAudioScene();
+  let nextBeat=0,nextAir=0,noteIndex=0;
   const page = globalThis.document;
 
   function stopVoices() {
@@ -21,6 +24,7 @@ export function createGameAudio() {
 
   function reset() {
     previous = null;
+    scene.reset();nextBeat=nextAir=noteIndex=0;
     stopVoices();
   }
 
@@ -32,7 +36,7 @@ export function createGameAudio() {
       const nextMaster = nextContext.createGain();
       nextMaster.gain.value = .12;
       nextMaster.connect(nextContext.destination);
-      const nextNoise = nextContext.createBuffer(1, Math.ceil(nextContext.sampleRate * .3), nextContext.sampleRate);
+      const nextNoise = nextContext.createBuffer(1, Math.ceil(nextContext.sampleRate * 2), nextContext.sampleRate);
       const samples = nextNoise.getChannelData(0);
       for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1;
       context = nextContext;
@@ -46,7 +50,7 @@ export function createGameAudio() {
 
   // Every voice has a scheduled end and disconnects its entire graph afterward.
   // The hard cap also bounds resources if a browser delays its ended callbacks.
-  function play({ noise = false, frequency, endFrequency = frequency, duration, gain, delay = 0, filter = 'bandpass' }) {
+  function play({ noise = false, frequency, endFrequency = frequency, duration, gain, delay = 0, filter = 'bandpass', pan = 0, attack = .006 }) {
     if (voices.size >= MAX_VOICES) return;
     const source = noise ? context.createBufferSource() : context.createOscillator();
     const envelope = context.createGain();
@@ -70,9 +74,11 @@ export function createGameAudio() {
       source.connect(envelope);
     }
     envelope.gain.setValueAtTime(0, start);
-    envelope.gain.linearRampToValueAtTime(gain, start + .006);
+    envelope.gain.linearRampToValueAtTime(gain, start + Math.min(attack,duration*.4));
     envelope.gain.exponentialRampToValueAtTime(SILENCE, end);
-    envelope.connect(master);
+    if(context.createStereoPanner&&pan) {
+      const panner=context.createStereoPanner();panner.pan.value=pan;envelope.connect(panner);panner.connect(master);nodes.push(panner);
+    } else envelope.connect(master);
     const voice = {
       source,
       release() {
@@ -87,9 +93,9 @@ export function createGameAudio() {
     source.stop(end + .01);
   }
 
-  function footstep(step) {
-    play({ noise: true, frequency: step % 2 ? 580 : 460, endFrequency: 260, duration: .075, gain: .22 });
-    play({ frequency: 95, endFrequency: 54, duration: .065, gain: .075 });
+  function footstep(step, surface) {
+    play({ noise:true, frequency:surface.frequency*(step%2?1.08:.95), endFrequency:surface.frequency*.55, duration:surface.decay, gain:.19, pan:step%2?.12:-.12 });
+    play({ frequency:surface.body, endFrequency:surface.body*.55, duration:surface.decay, gain:.07 });
   }
 
   function launch(long) {
@@ -97,9 +103,9 @@ export function createGameAudio() {
     play({ frequency: long ? 180 : 210, endFrequency: long ? 350 : 290, duration: .13, gain: .09 });
   }
 
-  function land() {
-    play({ noise: true, frequency: 550, endFrequency: 240, duration: .12, gain: .29 });
-    play({ frequency: 110, endFrequency: 48, duration: .12, gain: .13 });
+  function land(surface) {
+    play({ noise: true, frequency: surface.frequency*.8, endFrequency: surface.frequency*.3, duration: .14, gain: .27 });
+    play({ frequency: surface.body, endFrequency: surface.body*.45, duration: .12, gain: .13 });
   }
 
   function boost() {
@@ -115,6 +121,32 @@ export function createGameAudio() {
   function escape() {
     for (const [index, frequency] of [392, 493.88, 587.33].entries()) {
       play({ frequency, duration: .26, gain: .12, delay: index * .075 });
+    }
+  }
+
+  function environment(direction) {
+    const {mapId,surface,warning,impact,urgency,beatSeconds}=direction;
+    const event=impact||warning;
+    if(event) {
+      const pan=(event.lane-1)*.7;
+      const warningFrequency={tunnel:320,pirate:170,jungle:250,frozen:1800,orbital:680,desert:480}[mapId];
+      play({noise:true,frequency:warningFrequency,endFrequency:warningFrequency*(impact ? .45 : 1.8),duration:impact ? .25 : .22,gain:impact ? .25 : .13,pan,filter:mapId==='pirate'?'lowpass':'bandpass'});
+      if(mapId==='pirate'||mapId==='orbital')play({frequency:mapId==='pirate'?65:440,endFrequency:impact?40:220,duration:.18,gain:.08,pan});
+    }
+    // Short scheduled voices, never a permanent loop. No catch-up bursts after
+    // tab switches, pauses or an interrupted AudioContext.
+    if(context.currentTime>=nextAir) {
+      play({noise:true,frequency:surface.air,endFrequency:surface.air*.8,duration:1.1,gain:.03,filter:'lowpass',attack:.24});
+      nextAir=context.currentTime+.85;
+    }
+    if(context.currentTime>=nextBeat) {
+      const notes=[146.83,220,174.61,261.63,146.83,196,174.61,220];
+      const transpose={tunnel:1,pirate:1,jungle:1.5,frozen:2,orbital:.75,desert:1.25}[mapId];
+      const frequency=notes[noteIndex++%notes.length]*transpose;
+      const duck=event ? .35 : 1;
+      play({frequency,duration:.52,gain:.027*duck,attack:.055});
+      if(urgency>.35)play({frequency:73.42,duration:.10,gain:(.025+urgency*.02)*duck});
+      nextBeat=context.currentTime+beatSeconds;
     }
   }
 
@@ -135,6 +167,7 @@ export function createGameAudio() {
     if (disposed) return;
     if (!state || page?.hidden) { reset(); return; }
     const now = clock();
+    const direction=scene.update(state);
     // Copy scalar fields: solo mutates the same state object between frames.
     const next = {
       phase: state.phase,
@@ -151,7 +184,7 @@ export function createGameAudio() {
     const discontinuity = next.elapsed < before.elapsed - .001
       || next.distance < before.distance - .01 || next.hits < before.hits
       || next.elapsed - before.elapsed > .5 || now - before.now > 500;
-    if (discontinuity) { stopVoices(); return; }
+    if (discontinuity) { stopVoices(); nextBeat=nextAir=0;return; }
     if (next.phase === 'won') {
       if (before.phase === 'running') { stopVoices(); escape(); }
       return;
@@ -166,7 +199,8 @@ export function createGameAudio() {
       if(before.phase!==next.phase||next.phase==='paused')stopVoices();
       return;
     }
-    if (before.phase !== 'running') return;
+    if (before.phase !== 'running') { nextBeat=nextAir=0;return; }
+    environment(direction);
 
     const hit = next.hits > before.hits;
     const launched = next.jump > 0 && (before.jump <= 0
@@ -174,11 +208,11 @@ export function createGameAudio() {
     const landed = next.jump <= 0 && before.jump > 0;
     if (hit) collision();
     if (launched) launch(next.jumpKind === 'long');
-    if (landed && !hit) land();
+    if (landed && !hit) land(direction.surface);
     if (next.boost > 0 && before.boost <= 0) boost();
     const step = Math.floor(next.distance / STEP_DISTANCE);
     if (!hit && !launched && !landed && next.jump <= 0
-      && step > Math.floor(before.distance / STEP_DISTANCE)) footstep(step);
+      && step > Math.floor(before.distance / STEP_DISTANCE)) footstep(step,direction.surface);
   }
 
   async function toggle() {

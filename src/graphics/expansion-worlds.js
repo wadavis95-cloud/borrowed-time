@@ -140,11 +140,6 @@ export function createExpansionWorld(scene, mapId, courseLength) {
     const dustMat=new THREE.SpriteMaterial({map:radialTexture(),color:'#c99361',transparent:true,opacity:.42,depthWrite:false,fog:false});
     for(let i=0;i<32;i++){const cloud=new THREE.Sprite(dustMat);landmark.add(cloud);moving.push(cloud);}
   }
-  // Small bounded ambient particles never add invisible collision hazards.
-  const positions=new Float32Array(96*3);
-  for(let j=0;j<96;j++){positions[j*3]=Math.sin(j*21.7)*10;positions[j*3+1]=.4+(j*1.19)%9;positions[j*3+2]=-(j*7.43)%80;}
-  const particlesGeometry=new THREE.BufferGeometry();particlesGeometry.setAttribute('position',new THREE.BufferAttribute(positions,3));
-  const particles=new THREE.Points(particlesGeometry,new THREE.PointsMaterial({color:frozen?'#f1f8fc':orbital?'#b8d9f4':'#f9d29a',size:frozen?.065:.04,transparent:true,opacity:.55,depthWrite:false}));root.add(particles);
   const exit=new THREE.Group();track.add(exit);
   for(const side of [-1,1])box(exit,edge,side*3.7,2.5,-length,.4,5,.6);
   box(exit,glow,0,5,-length,7.8,.25,.6);
@@ -156,8 +151,6 @@ export function createExpansionWorld(scene, mapId, courseLength) {
       track.position.z=distance*DISTANCE_SCALE;
       for(const section of sections){const relative=section.z+track.position.z;section.group.visible=relative>-175&&relative<45;}
       const time=reducedMotion?0:elapsed;
-      particles.visible=!reducedMotion;particles.position.z=(distance*DISTANCE_SCALE)%12;
-      particles.position.x=orbital?0:Math.sin(time*.4)*.4;
       for(let i=0;i<moving.length;i++) {
         const item=moving[i];
         if(frozen) {const t=(i/18+time*.035)%1;item.position.set(-32+t*29+Math.sin(i)*4,32-t*24,-165+t*35);item.scale.set(10+t*14,7+t*9,1);}

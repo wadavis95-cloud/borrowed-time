@@ -25,7 +25,7 @@ export function createWorld(scene, mapId, courseLength) {
   const sky=new THREE.Mesh(new THREE.PlaneGeometry(1600,800),new THREE.MeshBasicMaterial({map:skyMap,fog:false,depthWrite:false}));
   sky.position.set(0,120,-490);background.add(sky);
 
-  const sections = [], smoke = [], lava = [], waves = [];
+  const sections = [], smoke = [], lava = [], waves = [], windItems = [];
   const material = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: .88, ...extra });
   function surface(kind) {
     const image=document.createElement('canvas');image.width=image.height=256;
@@ -105,7 +105,7 @@ export function createWorld(scene, mapId, courseLength) {
             positions.setZ(v,Math.cos(xx/3.8*Math.PI)*Math.cos(yy/4.5*Math.PI)*.7);
             if(yy< -2)positions.setY(v,yy+Math.max(0,Math.sin(xx*8+i))*.25);
           }
-          sailGeo.computeVertexNormals();const sail=mesh(g,sailGeo,canvas,side*6.8,9.5,z-7);sail.rotation.y=side*.2;
+          sailGeo.computeVertexNormals();const sail=mesh(g,sailGeo,canvas,side*6.8,9.5,z-7);sail.rotation.y=side*.2;windItems.push({item:sail,base:side*.2,z,kind:"sail",rest:Float32Array.from(positions.array)});
           for(let rung=0;rung<10;rung++) cable(g,woodDark,[side*5.1-.3,2+rung*.8,z-6.9],[side*5.1+.3,2+rung*.8,z-6.9],.018);
         }
       }
@@ -121,7 +121,7 @@ export function createWorld(scene, mapId, courseLength) {
         for(let t=0;t<3;t++) {
           const xx=side*(9+(t*3+i%3)), zz=z-3-t*6;
           cylinder(g,bark,xx,4,zz,.38,8);
-          const crown=mesh(g,new THREE.IcosahedronGeometry(1,1),t%2?leaves:leavesLight,xx,8.5+(i%3),zz,2.8,2.2,3.6);crown.rotation.y=i+t;
+          const crown=mesh(g,new THREE.IcosahedronGeometry(1,1),t%2?leaves:leavesLight,xx,8.5+(i%3),zz,2.8,2.2,3.6);crown.rotation.y=i+t;windItems.push({item:crown,base:i+t,z,kind:"crown"});
         }
         for(let k=0;k<3;k++) {
           const x=side*(5.7+((i+k)%3)*1.8), zz=z-k*6;
@@ -134,7 +134,11 @@ export function createWorld(scene, mapId, courseLength) {
         }
       }
     }
-    batchWorldGeometry(g);track.add(g);sections.push({group:g,z});
+    const moving=windItems.filter(v=>v.item.parent===g);
+    for(const v of moving)v.item.removeFromParent();
+    batchWorldGeometry(g);track.add(g);
+    for(const v of moving)track.add(v.item);
+    sections.push({group:g,z});
   }
   const finish = new THREE.Group();track.add(finish);
   if(ship) {
@@ -185,6 +189,22 @@ export function createWorld(scene, mapId, courseLength) {
     update(distance,elapsed,reducedMotion) {
       track.position.z=distance*DISTANCE_SCALE;
       for(const section of sections) { const relative=section.z+track.position.z;section.group.visible=relative>-170&&relative<45; }
+      for(let i=0;i<windItems.length;i++) {
+        const {item,base,z,kind,rest}=windItems[i];
+        const relative=z+track.position.z;item.visible=relative> -170&&relative<45;
+        const sway=reducedMotion?0:Math.sin(elapsed*(kind==='sail'?1.15:.75)+i*.9);
+        item.rotation.y=base+sway*(kind==='sail'?.055:.025);
+        item.rotation.z=kind==='crown'?sway*.018:0;
+        if(kind==='sail'&&item.visible) {
+          const positions=item.geometry.attributes.position;
+          for(let v=0;v<positions.count;v++) {
+            const x=rest[v*3],y=rest[v*3+1];
+            const ripple=reducedMotion?0:Math.sin(elapsed*1.6+x*1.8+i)*.12*Math.max(0,1-Math.abs(y)/2.25);
+            positions.setZ(v,rest[v*3+2]+ripple);
+          }
+          positions.needsUpdate=true;item.geometry.computeVertexNormals();
+        }
+      }
       // Background never follows lane changes, matching the existing camera.
       for(let j=0;j<smoke.length;j++) {
         const t=(j/15+(reducedMotion?0:elapsed*.025))%1, cloud=smoke[j];

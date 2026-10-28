@@ -1,6 +1,7 @@
 // Visual state only: course rules and the shared hazard clock live in game.js.
 import * as THREE from 'three';
 import { getMap } from './maps.js';
+import { createAtmosphere } from './graphics/atmosphere.js';
 import { createWorld } from './graphics/worlds.js';
 import { createMapObstacle } from './graphics/map-obstacles.js';
 import { CONFIG, getJumpHeight } from './game.js';
@@ -116,6 +117,7 @@ export function createRenderer(canvas) {
   lampLeft.position.set(-4.05, 2.55, -3); lampRight.position.set(4.05, 2.55, -11); scene.add(lampLeft, lampRight);
   let currentMapId = 'tunnel';
   let world = createWorld(scene, currentMapId, CONFIG.courseLength);
+  let atmosphere = createAtmosphere(scene,currentMapId);
 
   const hazardSurface = masonrySurface();
   const stone = new THREE.MeshStandardMaterial({ color: '#b6b8a6', ...hazardSurface, bumpScale: .045, roughness: .9 });
@@ -269,8 +271,9 @@ export function createRenderer(canvas) {
     if (state.phase === 'paused' && hasDrawn) { renderer.render(scene, camera); return; }
     const mapId = getMap(state.mapId).id;
     if (mapId !== currentMapId) {
-      reset(); world.dispose(); currentMapId = mapId;
+      reset(); world.dispose(); atmosphere.dispose(); currentMapId = mapId;
       world = createWorld(scene, currentMapId, CONFIG.courseLength);
+      atmosphere = createAtmosphere(scene,currentMapId);
     }
     const distance = state.distance || 0;
     // Hazards, dust and actors freeze with solo pause. The online view provides
@@ -297,6 +300,7 @@ export function createRenderer(canvas) {
       lampLeft.intensity = lampRight.intensity = 0; renderer.toneMappingExposure = 1.02;
     } else scene.fog.near = 36;
     world.update(distance, elapsed, reducedMotion, state.debris || []);
+    atmosphere.update(distance,elapsed,reducedMotion);
 
     const avatarKey = `${state.avatarId || 'courier'}:${state.playerColor || ''}`;
     if (localAvatarKey !== avatarKey) {
@@ -454,7 +458,7 @@ export function createRenderer(canvas) {
   }
   function dispose() {
     if (disposed) return;
-    disposed = true; movementEffects.dispose(); world.dispose(); resizeObserver.disconnect(); canvas.removeEventListener('webglcontextlost', onContextLost);
+    disposed = true; movementEffects.dispose(); world.dispose(); atmosphere.dispose(); resizeObserver.disconnect(); canvas.removeEventListener('webglcontextlost', onContextLost);
     // GLB geometry belongs to the reusable preload cache. Detach avatar clones
     // before disposing scene-owned graphics; each clone disposes its own materials.
     if (localAvatar) { scene.remove(localAvatar.group); localAvatar.dispose(); localAvatar = null; }

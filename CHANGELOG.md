@@ -1,5 +1,13 @@
 # Changelog
 
+## 8.3.0-preview.1 — Local audio and atmosphere polish
+
+- Preserved V8.2 in a verified complete-history backup; no push or deployment.
+- Added six surface profiles for footsteps/landings, panned nearby warning and impact cues, restrained map ambience and an original sparse musical pattern that gains urgency as spendable time drops.
+- Kept sound opt-in and muted by default, with bounded scheduled voices and pause/hidden/mute/reset/disposal cleanup.
+- Added sparse edge particles across six maps and slow station warning lights; refined existing ship sails and jungle crowns with gentle motion. Replaced the old expansion particle layer rather than stacking it.
+- Preserved obstacle cues, camera, gameplay, course generation, multiplayer authority and 5s/4s prices. See [V8.3 notes](docs/versions/V8_3_AUDIO_ATMOSPHERE.md).
+
 ## 8.2.0-preview.1 — Local clock, countdown and finish polish
 
 - Preserved V8.1 in a verified complete-history backup; no push or deployment.
