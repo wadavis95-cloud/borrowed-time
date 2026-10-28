@@ -1555,3 +1555,6 @@ html[data-input="keyboard"] .arena .keyboard-hint kbd { display:grid;place-items
 #sound-button .speaker-slash { display:none; }
 #sound-button[aria-pressed="false"] .speaker-waves { display:none; }
 #sound-button[aria-pressed="false"] .speaker-slash { display:block; }
+
+/* The local showcase has no multiplayer lobby code. */
+.room-panel.local-demo.live-room .room-presence{display:block}

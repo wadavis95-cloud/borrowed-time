@@ -1,234 +1,40 @@
-import { ABILITIES, CONFIG, createGame, getJumpHeight, projectTravel } from './game.js';
-import { connectRace } from './network.js';
-
-// Solo CPU drivers retain their distinct spending plans. Watch demo adds a
-// separate pack-aware strategy below, using public positions and real purchases.
-const BOOST_PLANS = [
-  [10.5, 31, 42], // First: early burst, recover, then push for the exit.
-  [16, 34],       // Second: patient chaser with a longer recovery between bursts.
-  [20, 28, 36],   // Third: save for repeated mid-race sprints.
-  [24, 40],       // Fourth: conserve time, then make two late pushes.
-];
-const RECOVERABLE_ERRORS = new Set(['ACTION_UNAVAILABLE', 'NOT_RACING', 'STALE_INPUT', 'STALE_ROUND']);
-
-// Predict only the runner's own motion to time ordinary inputs. This does not
-// change or simulate any authoritative state, and never reads another balance.
-const travelDistance = projectTravel;
-
-// Every strategy uses the same rules and reacts to its own hazards first.
-// Different spending times create natural separation, catches and overtakes.
-export function chooseDemoAction(game, index, { showcase = false, pack = [] } = {}) {
-  if (game.phase !== 'running') return null;
-  // The server supplies the start grid; never shuffle racers on race start.
-  if (index === 3 && game.elapsed >= .3 && game.elapsed < .6 && !game.jumpRemaining) return 'jump';
-
-  const debris = game.debris ?? [];
-  const overhead = lane => debris.some(event => {
-    const until = event.impactAt - game.elapsed;
-    return event.lane === lane && until >= 0 && until <= 1.1
-      && Math.abs(game.distance + travelDistance(game, until) - event.z) < 6;
-  });
-  const obstacles = [...(game.obstacles ?? []), ...debris
-    .filter(event => event.impactAt <= game.elapsed)
-    .map(event => ({ ...event, type: 'rubble' }))]
-    .filter(obstacle => obstacle.z > game.distance + .05)
-    .sort((a, b) => a.z - b.z);
-  const dodge = () => {
-    const lanes = [0, 1, 2].filter(lane => lane !== game.lane && !overhead(lane)
-      && !obstacles.some(obstacle => obstacle.lane === lane && obstacle.type !== 'rubble'
-        && obstacle.z - game.distance < travelDistance(game, .25)));
-    lanes.sort((a, b) => Math.abs(a - game.lane) - Math.abs(b - game.lane)
-      || (index % 2 ? b - a : a - b));
-    return lanes.length ? (lanes[0] < game.lane ? 'left' : 'right') : null;
-  };
-  if (overhead(game.lane)) return dodge();
-  // Read one encounter at a time. Dense courses can occupy all three lanes;
-  // the low rubble in those rows is a free-hop route, not a dead end.
-  const first = obstacles[0];
-  const row = first ? obstacles.filter(obstacle => Math.abs(obstacle.z - first.z) < .01) : [];
-  const denseRow = row.length >= 2 && first.z - game.distance <= travelDistance(game, 1.05);
-  if (denseRow) {
-    const distance = first.z - game.distance;
-    const current = row.find(obstacle => obstacle.lane === game.lane);
-    // Check the future arc at crossing, including boost/stun boundaries.
-    let low = 0, high = 1.1;
-    for (let i = 0; i < 16; i += 1) {
-      const middle = (low + high) / 2;
-      if (travelDistance(game, middle) < distance) low = middle; else high = middle;
-    }
-    const remaining = game.jumpRemaining - high;
-    const clearsCurrent = !current || (remaining > .03 && (current.type === 'rubble'
-      || game.jumpKind === 'long' && (current.type === 'gap'
-        || getJumpHeight({ jumpDuration: game.jumpDuration, jumpRemaining: remaining }) >= CONFIG.barrierClearanceHeight)));
-    if (!clearsCurrent) {
-      // The first and third racers sometimes buy an alternative through a full-width row;
-      // conserving runners deliberately move to its free-hop route instead.
-      if (row.length === 3 && current.type !== 'rubble' && index % 2 === 0
-        && !game.jumpRemaining && game.timeSpent < 4 && game.timeLeft > ABILITIES.longJump.cost + 5) {
-        if (distance > travelDistance(game, .75,'longJump')) return null;
-        if (distance >= travelDistance(game, .4,'longJump')) return 'longJump';
-      }
-      const candidates = [0, 1, 2].filter(lane => !overhead(lane)
-        && (!row.some(obstacle => obstacle.lane === lane)
-          || row.some(obstacle => obstacle.lane === lane && obstacle.type === 'rubble')));
-      candidates.sort((a, b) => {
-        const cost = lane => (row.some(o => o.lane === lane) ? 1 : 0) + Math.abs(lane - game.lane) * .25;
-        return cost(a) - cost(b) || (index % 2 ? b - a : a - b);
-      });
-      const lane = candidates[0];
-      if (lane !== undefined && lane !== game.lane) return lane < game.lane ? 'left' : 'right';
-      if (current.type === 'rubble' && !game.jumpRemaining && distance <= travelDistance(game, .32)) return 'jump';
-      return null;
+// Frame-driven browser showcase. No server room, socket or background timer.
+import {freshCourseSeed} from './game.js';
+import {createSoloRace} from './solo-race.js';
+import {createSessionScores} from './session-scores.js';
+import {getMap} from './maps.js';
+export {chooseDemoAction} from './racer-ai.js';
+const STEP=1/60;
+export function createDemoRace({mapId='tunnel',seed=42,onSnapshot=()=>{},onStatus=()=>{},nextSeed=freshCourseSeed}={}) {
+  const map=getMap(mapId),scores=createSessionScores();
+  let closed=false,race,countdown=3,accumulator=0,sinceSnapshot=0;
+  function reset(){race=createSoloRace({seed,mapId:map.id,avatarId:map.avatars[0],scores,showcase:true});countdown=3;accumulator=0;sinceSnapshot=0;}
+  function snapshot(){
+    const value=race.snapshot();
+    return {...value,type:'snapshot',local:true,room:{...value.room,hostId:value.you.id,phase:countdown>0?'countdown':value.room.phase,countdown:Math.max(1,Math.ceil(countdown))},
+      you:{...value.you,game:{...value.you.game}}};
+  }
+  function emit(){if(!closed)onSnapshot(snapshot());}
+  function update(dt,{visible=true}={}){
+    if(closed||!visible||race.finished||!Number.isFinite(dt)||dt<=0)return;
+    accumulator+=Math.min(dt,.1);
+    while(!closed&&accumulator+1e-9>=STEP){
+      accumulator=Math.max(0,accumulator-STEP);
+      if(countdown>0){countdown=Math.max(0,countdown-STEP);if(countdown<1e-9){countdown=0;race.start();}}
+      else race.update(STEP);
+      sinceSnapshot+=STEP;
+      if(sinceSnapshot+1e-9>=.05||race.finished){sinceSnapshot=0;emit();}
+      if(race.finished)break;
     }
   }
-  const obstacle = obstacles.find(candidate => candidate.lane === game.lane);
-  if (obstacle && !denseRow) {
-    const distance = obstacle.z - game.distance;
-    if (obstacle.type === 'barrier' || obstacle.type === 'gap') {
-      if (distance <= travelDistance(game, .75,'longJump')) {
-        if (game.jumpKind === 'long' && game.jumpRemaining > 0) {
-          const clearance = obstacle.type === 'barrier' ? .4 : .05;
-          if (distance > travelDistance(game, Math.max(0, game.jumpRemaining - clearance))) return dodge();
-        } else if (game.timeLeft > ABILITIES.longJump.cost + 3 && game.timeSpent < 14
-          && (obstacle.type === 'gap' || distance >= travelDistance(game, .4,'longJump'))) {
-          return 'longJump';
-        } else return dodge();
-      }
-    } else if (distance <= travelDistance(game, .38)) {
-      if (!game.jumpRemaining) return 'jump';
-      if (distance > travelDistance(game, Math.max(0, game.jumpRemaining - .03))) return dodge();
-    }
-  }
-  // Only Watch demo gets this short opening showcase. Hazard reactions above
-  // take priority, and normal purchases enforce the same timer and cooldowns.
-  if (showcase && !game.stunRemaining) {
-    const openingLeap = index === 1 ? .9 : index === 0 ? 5.1 : null;
-    if (openingLeap !== null && game.elapsed >= openingLeap && game.elapsed < openingLeap + .6
-      && !game.jumpRemaining && game.timeLeft > ABILITIES.longJump.cost + 5) return 'longJump';
-    const openingBoost=[.6,2.1,1.05,1.65][index%4];
-    const rivals=pack.filter(r=>r.phase==='running'&&Number.isFinite(r.distance));
-    const gap=Math.max(0,...rivals.map(r=>r.distance-game.distance));
-    const contest=rivals.some(r=>Math.abs(r.distance-game.distance)<8);
-    const challenge=[10.5+index*.6,24+index*.7,37+index*.4]
-      .some(start=>game.elapsed>=start&&game.elapsed<start+.75);
-    const chaseWindow=game.elapsed>=8&&game.elapsed<14
-      ||game.elapsed>=23&&game.elapsed<31||game.elapsed>=37;
-    const wantsBoost=game.elapsed>=openingBoost&&game.elapsed<openingBoost+.6
-      || chaseWindow&&(gap>5+index*1.5||contest&&challenge);
-    if(wantsBoost&&!game.boostCooldown&&game.timeSpent<18
-      &&game.timeLeft>ABILITIES.boost.cost+5)return 'boost';
-  }
-  if (!showcase && !game.boostCooldown && !game.stunRemaining && game.timeLeft > ABILITIES.boost.cost + 5
-    && BOOST_PLANS[index % BOOST_PLANS.length].some(start => game.elapsed >= start
-      && game.elapsed < start + 1.35)) {
-    return 'boost';
-  }
-  // Cosmetic crowding is solved with real lane inputs, never actor offsets.
-  // Only the follower yields; hazard reactions above always take priority.
-  if(showcase&&game.elapsed>1.2&&!game.stunRemaining&&!game.jumpRemaining){
-    const nearby=pack.filter(r=>r.phase==='running'&&Math.abs(r.distance-game.distance)<5);
-    const following=nearby.some(r=>r.lane===game.lane&&r.distance>game.distance+.5);
-    if(following){
-      const clear=[game.lane-1,game.lane+1].filter(lane=>lane>=0&&lane<=2&&!overhead(lane)
-        &&!nearby.some(r=>r.lane===lane)
-        &&!(game.obstacles||[]).some(o=>o.lane===lane&&o.z+(o.length||0)>=game.distance-2
-          &&o.z-game.distance<travelDistance(game,1.4))
-        &&!obstacles.some(o=>o.lane===lane&&o.z-game.distance<travelDistance(game,1.4)));
-      if(clear.length)return clear[index%clear.length]<game.lane?'left':'right';
-    }
-  }
-  return null;
-}
-
-export function createDemoRace({ mapId = 'tunnel', onStatus, onError, onSnapshot, connect = connectRace }) {
-  const runners = Array.from({ length: 4 }, () => ({ connection: null, snapshot: null, roundId: null, course: null }));
-  let closed = false;
-  let timer = null;
-  let guestsStarted = false;
-  let startedRound = null;
-
-  function close() {
-    if (closed) return;
-    closed = true;
-    clearInterval(timer);
-    timer = null;
-    for (const runner of runners) {
-      // One damaged socket must not prevent the remaining clients from closing.
-      try { runner.connection?.close(); } catch { /* continue cleanup */ }
-      runner.snapshot = null;
-    }
-  }
-  function fail(message, code) {
-    if (closed) return;
-    close();
-    try { onError(message, code); } finally { onStatus('disconnected'); }
-  }
-  function open(index, initialMessage) {
-    if (closed) return;
-    const runner = runners[index];
-    try {
-      const connection = connect({
-        initialMessage,
-        onStatus(status) {
-          if (closed) return;
-          if (status === 'disconnected') fail('A demo runner disconnected. Start the demo again to reconnect.');
-          else if (index === 0) onStatus(status);
-        },
-        onError(message, code) {
-          if (closed || RECOVERABLE_ERRORS.has(code)) return;
-          fail(message, code);
-        },
-        onSnapshot(snapshot) {
-          if (closed) return;
-          runner.snapshot = snapshot;
-          if (runner.roundId !== snapshot.room.roundId || runner.course?.mapId !== snapshot.room.mapId) {
-            runner.roundId = snapshot.room.roundId;
-            runner.course = createGame({ seed: snapshot.room.seed, mapId: snapshot.room.mapId });
-          }
-          if (index !== 0) return;
-          onSnapshot(snapshot);
-          if (closed) return;
-          if (!guestsStarted) {
-            guestsStarted = true;
-            for (let guest = 1; guest < runners.length; guest += 1) {
-              open(guest, { type: 'join', code: snapshot.room.code });
-            }
-          }
-          if (snapshot.room.phase === 'lobby' && snapshot.players.length === 4
-            && snapshot.players.every(player => player.connected) && startedRound !== snapshot.room.roundId) {
-            startedRound = snapshot.room.roundId;
-            if (!runner.connection?.send({ type: 'start' })) fail('The demo could not start. Please try again.');
-          }
-        },
-      });
-      runner.connection = connection;
-      if (closed) connection.close();
-    } catch (error) {
-      fail(error.message || 'The demo could not connect. Please try again.');
-    }
-  }
-
-  open(0, { type: 'create', mapId });
-  if (!closed) timer = setInterval(() => {
-    if (closed) return;
-    for (const [index, runner] of runners.entries()) {
-      if (!runner.snapshot || runner.snapshot.room.phase !== 'racing') continue;
-      const game = { ...runner.snapshot.you.game, obstacles: runner.course.obstacles, debris: runner.snapshot.debris ?? runner.course.debris };
-      const pack=runner.snapshot.players.filter(player=>player.id!==runner.snapshot.you.id);
-      const action = chooseDemoAction(game, index, { showcase: true, pack });
-      if (action && !runner.connection.input(action)) {
-        fail('A demo runner could not send its move. Start the demo again to reconnect.');
-        break;
-      }
-    }
-  }, 150);
-
-  return {
-    close,
-    send(message) {
-      if (closed) return false;
-      if (message?.type === 'leave') { close(); return true; }
-      return runners[0].connection?.send(message) ?? false;
+  reset();queueMicrotask(()=>{if(!closed){onStatus('open');emit();}});
+  return {update,snapshot,view:()=>race.view(),opponents:()=>race.opponents(),
+    close(){closed=true;accumulator=0;},
+    send(message){
+      if(closed)return false;
+      if(message?.type==='leave'){closed=true;return true;}
+      if(message?.type==='rematch'&&race.finished){seed=nextSeed(seed);reset();emit();return true;}
+      return false;
     },
   };
 }

@@ -16,7 +16,7 @@ function render(data){
  const c=data.current,t=data.totals,u=data.client;if(!c){$('message').textContent='Connected. Waiting for the first server sample…';return;}$('message').textContent='';
  $('uptime').textContent=`Uptime ${format(data.uptimeSeconds/60)} min · history resets on restart`;
  cards('server-cards',[
- ['Connections',`${c.sockets} / ${c.maxConnections}`,'Includes demo bots and lobby guests'],['Lobbies',`${c.rooms} / ${c.maxRooms}`,`${c.racingRooms} racing · ${c.racingPlayers} running racers`],['CPU · one core',format(c.cpuPct)+'%','Process CPU sampled over the last second'],['Server memory',format(c.rssMB)+' MB',`${format(c.heapMB)} MB JavaScript heap`],
+ ['Connections',`${c.sockets} / ${c.maxConnections}`,'Online racers and lobby guests'],['Lobbies',`${c.rooms} / ${c.maxRooms}`,`${c.racingRooms} racing · ${c.racingPlayers} running racers`],['CPU · one core',format(c.cpuPct)+'%','Process CPU sampled over the last second'],['Server memory',format(c.rssMB)+' MB',`${format(c.heapMB)} MB JavaScript heap`],
  ['Event loop · p95',format(c.eventLoopP95Ms)+' ms',`Max ${format(c.eventLoopMaxMs)} ms this interval`],['Simulation backlog',format(c.simulationBacklogMs)+' ms','Sampled race-clock work awaiting processing'],['Send backlog',mb(c.bufferedBytes),'Queued WebSocket data across connections'],['HTTP response · p95',c.httpP95Ms===null?'—':format(c.httpP95Ms)+' ms','Completed responses in the last interval']]);
  const recent=data.history.filter(p=>p.at>=c.at-30000),duration=recent.reduce((s,p)=>s+(p.intervalSeconds||1),0),avg=field=>recent.reduce((s,p)=>s+(p[field]||0)*(p.intervalSeconds||1),0)/Math.max(.001,duration);
  const monitoring=avg('monitorBytesPerSec'),race=avg('bytesOutPerSec'),assets=avg('assetBytesPerSec')+avg('pageBytesPerSec')+avg('otherBytesPerSec');
@@ -36,7 +36,7 @@ function render(data){
  chart('lag-chart',data.history,[{value:p=>p.eventLoopP95Ms,color:'#72c9fc'},{value:p=>p.simulationBacklogMs,color:'#f2be70'}],50);
  chart('traffic-chart',data.history,[{value:p=>p.bytesOutPerSec/1e6,color:'#72c9fc'},{value:p=>(p.assetBytesPerSec+p.pageBytesPerSec+p.otherBytesPerSec)/1e6,color:'#f2be70'}],.1);
  const signals=[],sustained=(field,threshold)=>data.history.length>=10&&data.history.slice(-10).every(p=>p[field]>threshold);
- if(c.sockets/c.maxConnections>=.8||c.rooms/c.maxRooms>=.8)signals.push('Capacity is above 80%. New players or demo viewers may soon be refused.');
+ if(c.sockets/c.maxConnections>=.8||c.rooms/c.maxRooms>=.8)signals.push('Capacity is above 80%. New online players may soon be refused.');
  if(sustained('cpuPct',80))signals.push('CPU has exceeded 80% of one core for 10 samples. Check timing and traffic together.');
  if(sustained('eventLoopP95Ms',50)||sustained('simulationBacklogMs',100))signals.push('Processing delays have persisted for 10 samples. Race responsiveness may suffer.');
  if(u.telemetryRejected||t.telemetryRejected>0)signals.push('Some browser reports were rejected. Player-experience coverage may be incomplete.');

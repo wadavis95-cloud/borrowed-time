@@ -65,3 +65,7 @@ Raw reports: `artifacts/performance/capacity-baseline-1793190221947.json`, `arti
 ## Verification
 
 The final tooling passes its safety/percentile checks within the 176 passing unit tests (11 optional network skips), the syntax checks, and the existing 40 real-network regression checks. A final smoke run verifies the renamed benchmark command, worker lifecycle, capacity guards and room cleanup. The benchmark filename intentionally avoids Node's automatic `*-test.mjs` discovery pattern so normal unit tests do not launch a load test.
+
+## Later local optimization
+
+The historical server-backed demo findings above describe the measured baseline. Watch demo now runs in the browser with no server race room or sockets; see `docs/LOCAL_DEMO.md` for the before/after samples. Real multiplayer still uses the existing server and limits.

@@ -8,7 +8,7 @@ Open `http://localhost:4173/monitor`. Start the monitored game with `npm run mon
 
 | Area | Measurements | Interpretation |
 |---|---|---|
-| Capacity | Current sockets / 128, rooms / 25, racing rooms, running connected racers, admission rejections | Demo bots count as real connections. One demo viewer uses four sockets and a lobby. |
+| Capacity | Current sockets / 128, rooms / 25, racing rooms, running connected racers, admission rejections | Online racers and lobby guests count as connections. The browser-only showcase demo uses no race sockets or server lobby. The capacity baseline documents the earlier server-backed demo. |
 | Server | CPU relative to one core, process RSS, JS heap, event-loop p95/max, sampled simulation backlog, queued socket bytes | One-second samples; not total machine CPU or phone performance. Backlog is sampled, not an exhaustive trace. |
 | HTTP | Recent completed-response p95, request count, 4xx/5xx counts, incomplete-response count | HTTP timing includes server streaming, not browser decoding or rendered readiness. |
 | Bandwidth | Race JSON output/input; asset, code and page output; monitoring output separately; totals since boot; recent rates and per-current-connection estimate | Decimal MB/GB. Race bytes count queued JSON; successful HTTP bodies use declared Content-Length after response completion. No TLS, headers, WebSocket framing/control frames, failed sends or aborted partial bodies. These are not provider billing totals. |
@@ -45,4 +45,4 @@ There is no external uptime monitor, durable history, alert delivery or billing 
 - `monitor/`: responsive separate UI; no game HUD changes or external libraries.
 - `scripts/local-monitor.mjs`: local-only launcher and ignored key file.
 
-Gameplay, prices, map rules and movement are unchanged. Acknowledgment sequence and a lightweight probe are additive protocol diagnostics. The release checker now verifies all 82 public assets and that metrics are protected or disabled. Unit/network checks cover disabled/missing/wrong-key access, fixed-schema/size/origin rejection, rolling expiry, bandwidth classification, histogram overflow, private acknowledgment fields and multiplayer regression. Browser checks verified live downloads, race traffic, first-render/frame/network/input reports, map/control/mode segmentation and no console errors.
+Gameplay, prices, map rules and movement are unchanged. Acknowledgment sequence and a lightweight probe are additive protocol diagnostics. The release checker now verifies all 83 public assets and that metrics are protected or disabled. Unit/network checks cover disabled/missing/wrong-key access, fixed-schema/size/origin rejection, rolling expiry, bandwidth classification, histogram overflow, private acknowledgment fields and multiplayer regression. Browser checks verified live downloads, race traffic, first-render/frame/network/input reports, map/control/mode segmentation and no console errors.

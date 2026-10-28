@@ -2,14 +2,14 @@
 // No socket, opponent teleporting, hidden speed multiplier or shared ability budget.
 import {CONFIG,ABILITIES,createGame,startGame,updateGame,moveLane,jump,buyAbility} from './game.js';
 import {createSessionScores} from './session-scores.js';
-import {chooseDemoAction} from './demo.js';
+import {chooseDemoAction} from './racer-ai.js';
 import {getMap} from './maps.js';
 import {AVATARS} from './avatars.js';
 import {scheduleApproachingDebris} from './hazards.js';
 const COLORS=['#65ead3','#d4b3ff','#ffc482','#9ac9ff'];
 const LANES=[1,0,2,1];
 let nextRound=0;
-export function createSoloRace({seed=42,mapId='tunnel',avatarId,scores=createSessionScores()}={}) {
+export function createSoloRace({seed=42,mapId='tunnel',avatarId,scores=createSessionScores(),showcase=false}={}) {
   const map=getMap(mapId),roundId=`solo-${++nextRound}`;
   if(avatarId&&!map.avatars.includes(avatarId))avatarId=undefined;
   const player=createGame({seed,mapId:map.id,avatarId});
@@ -33,8 +33,9 @@ export function createSoloRace({seed=42,mapId='tunnel',avatarId,scores=createSes
     while(remaining>1e-9&&!finished()){
       const step=Math.min(1/60,remaining);
       if(elapsed+1e-9>=nextDecision){
-        for(let index=1;index<racers.length;index++){
-          const game=racers[index].game,action=chooseDemoAction(game,index);
+        const pack=showcase?racers.map(r=>({id:r.id,phase:r.game.phase,distance:r.game.distance,lane:r.game.lane})):[];
+        for(let index=showcase?0:1;index<racers.length;index++){
+          const racer=racers[index],game=racer.game,action=chooseDemoAction(game,index,showcase?{showcase:true,pack:pack.filter(p=>p.id!==racer.id)}:undefined);
           if(action)apply(game,action);
         }
         nextDecision=elapsed+.15;
@@ -57,9 +58,9 @@ export function createSoloRace({seed=42,mapId='tunnel',avatarId,scores=createSes
       return group(a)-group(b)||(a.game.phase==='won'?a.game.finishTime-b.game.finishTime:b.game.distance-a.game.distance);
     });
     const winner=ordered.find(r=>r.game.phase==='won');
-    return {room:{phase:finished()?'finished':started?'racing':'lobby',roundId,winnerId:winner?.id??null,mapId:map.id,raceElapsed:elapsed},
+    return {room:{phase:finished()?'finished':started?'racing':'lobby',roundId,seed,winnerId:winner?.id??null,mapId:map.id,raceElapsed:elapsed},
       you:{id:'you',name:racers[0].name,game:player},
-      players:racers.map(r=>({id:r.id,name:r.name,color:r.color,avatarId:r.avatarId,isComputer:r.isComputer,wins:scores.wins(r.id),connected:true,phase:r.game.phase,lane:r.game.lane,distance:r.game.distance})),
+      players:racers.map(r=>({id:r.id,name:r.name,color:r.color,avatarId:r.avatarId,isComputer:r.isComputer,wins:scores.wins(r.id),connected:true,phase:r.game.phase,lane:r.game.lane,distance:r.game.distance,jumpRemaining:r.game.jumpRemaining,jumpDuration:r.game.jumpDuration})),
       standings:ordered.map((r,i)=>({id:r.id,position:r.game.phase==='lost'?null:i+1,status:r.game.phase==='won'?'escaped':r.game.phase==='lost'?'dnf':started?'racing':'ready'})),
     };
   }

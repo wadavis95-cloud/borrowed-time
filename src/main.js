@@ -253,9 +253,9 @@ function joinRace(type) {
       const starting = next.room.phase === 'countdown' && snapshot?.room.phase !== 'countdown';
       if (next.room.roundId !== snapshot?.room.roundId || next.room.mapId !== snapshot?.room.mapId) resetVisuals();
       snapshot = next;
-      raceView.push(next, performance.now());
-      // HUD uses the newest authoritative values; drawing blends positions separately.
-      game = raceView.sample(performance.now() + 50).game;
+      // Local preview renders its simulation directly; online races retain interpolation.
+      if(mode==='demo')game=next.you.game;
+      else {raceView.push(next,performance.now());game=raceView.sample(performance.now()+50).game;}
       updateRoom();
       updateHUD();
       if (starting) showCourse();
@@ -269,9 +269,12 @@ function joinRace(type) {
 function updateRoom() {
   const demo = mode === 'demo';
   $('leave-room').textContent = demo ? 'Exit demo' : 'Leave lobby';
+  $('room-panel').classList.toggle('local-demo',demo);
+  $('room-panel').setAttribute('aria-label',demo?'Demo preview':'Multiplayer lobby');
+  $('room-code').parentElement.hidden=demo;
   $('room-code').textContent = snapshot?.room.code || '······';
   if (networkStatus === 'disconnected') $('room-status').textContent = 'Disconnected. Return to the menu to join a new race.';
-  else if (!snapshot) $('room-status').textContent = 'Connecting to the race server…';
+  else if (!snapshot) $('room-status').textContent = demo ? 'Preparing demo…' : 'Connecting to the race server…';
   else {
     const count = snapshot.players.filter(player => player.connected).length;
     $('room-status').textContent = demo
@@ -294,7 +297,7 @@ function updateRoom() {
       $('room-players').append(li);
     }
   }
-  $('room-players').hidden = ['racing', 'finished'].includes(snapshot?.room.phase);
+  $('room-players').hidden = demo || ['racing', 'finished'].includes(snapshot?.room.phase);
 }
 
 function currentRaceSnapshot(){return mode==='solo' ? soloRace?.snapshot() : snapshot;}
@@ -493,6 +496,7 @@ function updateHUD() {
     const hint = $(id).querySelector('.ability-hint');
     if (hint.textContent !== label) hint.textContent = label;
   }
+  $('pause-button').hidden=mode==='demo';
   $('pause-button').disabled = online || (!running && game.phase !== 'paused');
   $('pause-button').textContent = game.phase === 'paused' ? '▷' : 'Ⅱ';
   $('pause-button').setAttribute('aria-label', online ? 'Multiplayer cannot be paused' : game.phase === 'paused' ? 'Resume game' : 'Pause game');
@@ -598,8 +602,9 @@ function frame(now) {
     accumulator += dt;
     while (accumulator >= STEP) { if(soloRace)soloRace.update(STEP);else updateGame(game, STEP); accumulator -= STEP; }
   } else accumulator = 0;
+  if(!graphicsError&&mode==='demo'&&!document.hidden)connection?.update(dt);
   updateHUD();
-  const view = mode !== 'solo' && snapshot ? raceView.sample(now) : soloRace ? {game:soloRace.view(),opponents:soloRace.opponents()} : null;
+  const view = mode==='demo'&&connection?.view ? {game:connection.view(),opponents:connection.opponents()} : mode !== 'solo' && snapshot ? raceView.sample(now) : soloRace ? {game:soloRace.view(),opponents:soloRace.opponents()} : null;
   if (renderer && !graphicsError) {
     try {
       renderer.draw(view?.game || game, now / 1000, dt, view?.opponents || []);

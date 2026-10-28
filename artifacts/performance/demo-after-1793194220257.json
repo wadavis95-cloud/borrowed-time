@@ -1,0 +1,2190 @@
+{
+  "label": "after",
+  "durationSeconds": 30.035,
+  "samples": [
+    {
+      "at": 1793194190221,
+      "startedAt": 1793194134322,
+      "current": {
+        "at": 1793194189351,
+        "intervalSeconds": 1,
+        "sockets": 0,
+        "maxConnections": 128,
+        "rooms": 0,
+        "maxRooms": 25,
+        "racingRooms": 0,
+        "racingPlayers": 0,
+        "bufferedBytes": 0,
+        "simulationBacklogMs": 0,
+        "cpuPct": 0.5775368179721464,
+        "rssMB": 85.573632,
+        "heapMB": 9.596152,
+        "eventLoopP95Ms": 11.354111,
+        "eventLoopMaxMs": 11.378687,
+        "bytesOutPerSec": 0,
+        "bytesInPerSec": 0,
+        "monitorBytesPerSec": 0,
+        "assetBytesPerSec": 0,
+        "pageBytesPerSec": 0,
+        "otherBytesPerSec": 0,
+        "snapshotsPerSec": 0,
+        "httpRequestsPerSec": 0,
+        "httpErrorsPerSec": 0,
+        "connectionRejectsPerSec": 0,
+        "roomRejectsPerSec": 0,
+        "disconnectsPerSec": 0,
+        "slowClientsPerSec": 0,
+        "httpP95Ms": null
+      },
+      "totals": {
+        "connections": 0,
+        "connectionRejects": 0,
+        "roomRejects": 0,
+        "disconnects": 0,
+        "slowClients": 0,
+        "invalidMessages": 0,
+        "rateLimits": 0,
+        "messagesIn": 0,
+        "bytesIn": 0,
+        "messagesOut": 0,
+        "bytesOut": 0,
+        "snapshots": 0,
+        "httpRequests": 74,
+        "httpErrors": 0,
+        "http4xx": 0,
+        "http5xx": 0,
+        "monitorBytes": 511688,
+        "telemetryBytesIn": 564,
+        "assetBytes": 14687347,
+        "pageBytes": 11865,
+        "otherBytes": 2473731,
+        "httpAborts": 0,
+        "telemetryAccepted": 2,
+        "telemetryRejected": 0
+      },
+      "client": {
+        "reports": 2,
+        "windowSeconds": 120,
+        "frame": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "gap": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "rtt": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "input": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "longTasks": 1,
+        "errors": 0,
+        "graphicsErrors": 0,
+        "contextLosses": 0,
+        "disconnects": 0,
+        "slowFrames": 0,
+        "frames": 0,
+        "byMap": [
+          {
+            "name": "tunnel",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ],
+        "byInput": [
+          {
+            "name": "keyboard",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ],
+        "byMode": [
+          {
+            "name": "solo",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ]
+      }
+    },
+    {
+      "at": 1793194192223,
+      "startedAt": 1793194134322,
+      "current": {
+        "at": 1793194191352,
+        "intervalSeconds": 1.002,
+        "sockets": 0,
+        "maxConnections": 128,
+        "rooms": 0,
+        "maxRooms": 25,
+        "racingRooms": 0,
+        "racingPlayers": 0,
+        "bufferedBytes": 0,
+        "simulationBacklogMs": 0,
+        "cpuPct": 0.5218723218485724,
+        "rssMB": 85.622784,
+        "heapMB": 9.981736,
+        "eventLoopP95Ms": 11.354111,
+        "eventLoopMaxMs": 11.386879,
+        "bytesOutPerSec": 0,
+        "bytesInPerSec": 0,
+        "monitorBytesPerSec": 0,
+        "assetBytesPerSec": 0,
+        "pageBytesPerSec": 0,
+        "otherBytesPerSec": 0,
+        "snapshotsPerSec": 0,
+        "httpRequestsPerSec": 0,
+        "httpErrorsPerSec": 0,
+        "connectionRejectsPerSec": 0,
+        "roomRejectsPerSec": 0,
+        "disconnectsPerSec": 0,
+        "slowClientsPerSec": 0,
+        "httpP95Ms": null
+      },
+      "totals": {
+        "connections": 0,
+        "connectionRejects": 0,
+        "roomRejects": 0,
+        "disconnects": 0,
+        "slowClients": 0,
+        "invalidMessages": 0,
+        "rateLimits": 0,
+        "messagesIn": 0,
+        "bytesIn": 0,
+        "messagesOut": 0,
+        "bytesOut": 0,
+        "snapshots": 0,
+        "httpRequests": 74,
+        "httpErrors": 0,
+        "http4xx": 0,
+        "http5xx": 0,
+        "monitorBytes": 583088,
+        "telemetryBytesIn": 564,
+        "assetBytes": 14687347,
+        "pageBytes": 11865,
+        "otherBytes": 2473731,
+        "httpAborts": 0,
+        "telemetryAccepted": 2,
+        "telemetryRejected": 0
+      },
+      "client": {
+        "reports": 2,
+        "windowSeconds": 120,
+        "frame": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "gap": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "rtt": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "input": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "longTasks": 1,
+        "errors": 0,
+        "graphicsErrors": 0,
+        "contextLosses": 0,
+        "disconnects": 0,
+        "slowFrames": 0,
+        "frames": 0,
+        "byMap": [
+          {
+            "name": "tunnel",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ],
+        "byInput": [
+          {
+            "name": "keyboard",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ],
+        "byMode": [
+          {
+            "name": "solo",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ]
+      }
+    },
+    {
+      "at": 1793194194226,
+      "startedAt": 1793194134322,
+      "current": {
+        "at": 1793194193352,
+        "intervalSeconds": 1,
+        "sockets": 0,
+        "maxConnections": 128,
+        "rooms": 0,
+        "maxRooms": 25,
+        "racingRooms": 0,
+        "racingPlayers": 0,
+        "bufferedBytes": 0,
+        "simulationBacklogMs": 0,
+        "cpuPct": 0.5794809647586637,
+        "rssMB": 85.622784,
+        "heapMB": 9.556336,
+        "eventLoopP95Ms": 11.345919,
+        "eventLoopMaxMs": 11.386879,
+        "bytesOutPerSec": 0,
+        "bytesInPerSec": 0,
+        "monitorBytesPerSec": 0,
+        "assetBytesPerSec": 0,
+        "pageBytesPerSec": 0,
+        "otherBytesPerSec": 0,
+        "snapshotsPerSec": 0,
+        "httpRequestsPerSec": 0,
+        "httpErrorsPerSec": 0,
+        "connectionRejectsPerSec": 0,
+        "roomRejectsPerSec": 0,
+        "disconnectsPerSec": 0,
+        "slowClientsPerSec": 0,
+        "httpP95Ms": null
+      },
+      "totals": {
+        "connections": 0,
+        "connectionRejects": 0,
+        "roomRejects": 0,
+        "disconnects": 0,
+        "slowClients": 0,
+        "invalidMessages": 0,
+        "rateLimits": 0,
+        "messagesIn": 0,
+        "bytesIn": 0,
+        "messagesOut": 0,
+        "bytesOut": 0,
+        "snapshots": 0,
+        "httpRequests": 74,
+        "httpErrors": 0,
+        "http4xx": 0,
+        "http5xx": 0,
+        "monitorBytes": 656872,
+        "telemetryBytesIn": 564,
+        "assetBytes": 14687347,
+        "pageBytes": 11865,
+        "otherBytes": 2473731,
+        "httpAborts": 0,
+        "telemetryAccepted": 2,
+        "telemetryRejected": 0
+      },
+      "client": {
+        "reports": 2,
+        "windowSeconds": 120,
+        "frame": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "gap": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "rtt": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "input": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "longTasks": 1,
+        "errors": 0,
+        "graphicsErrors": 0,
+        "contextLosses": 0,
+        "disconnects": 0,
+        "slowFrames": 0,
+        "frames": 0,
+        "byMap": [
+          {
+            "name": "tunnel",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ],
+        "byInput": [
+          {
+            "name": "keyboard",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ],
+        "byMode": [
+          {
+            "name": "solo",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ]
+      }
+    },
+    {
+      "at": 1793194196228,
+      "startedAt": 1793194134322,
+      "current": {
+        "at": 1793194195355,
+        "intervalSeconds": 1.001,
+        "sockets": 0,
+        "maxConnections": 128,
+        "rooms": 0,
+        "maxRooms": 25,
+        "racingRooms": 0,
+        "racingPlayers": 0,
+        "bufferedBytes": 0,
+        "simulationBacklogMs": 0,
+        "cpuPct": 0.4715654216488822,
+        "rssMB": 85.622784,
+        "heapMB": 9.907816,
+        "eventLoopP95Ms": 11.345919,
+        "eventLoopMaxMs": 11.411455,
+        "bytesOutPerSec": 0,
+        "bytesInPerSec": 0,
+        "monitorBytesPerSec": 0,
+        "assetBytesPerSec": 0,
+        "pageBytesPerSec": 0,
+        "otherBytesPerSec": 0,
+        "snapshotsPerSec": 0,
+        "httpRequestsPerSec": 0,
+        "httpErrorsPerSec": 0,
+        "connectionRejectsPerSec": 0,
+        "roomRejectsPerSec": 0,
+        "disconnectsPerSec": 0,
+        "slowClientsPerSec": 0,
+        "httpP95Ms": null
+      },
+      "totals": {
+        "connections": 0,
+        "connectionRejects": 0,
+        "roomRejects": 0,
+        "disconnects": 0,
+        "slowClients": 0,
+        "invalidMessages": 0,
+        "rateLimits": 0,
+        "messagesIn": 0,
+        "bytesIn": 0,
+        "messagesOut": 0,
+        "bytesOut": 0,
+        "snapshots": 0,
+        "httpRequests": 74,
+        "httpErrors": 0,
+        "http4xx": 0,
+        "http5xx": 0,
+        "monitorBytes": 733038,
+        "telemetryBytesIn": 564,
+        "assetBytes": 14687347,
+        "pageBytes": 11865,
+        "otherBytes": 2473731,
+        "httpAborts": 0,
+        "telemetryAccepted": 2,
+        "telemetryRejected": 0
+      },
+      "client": {
+        "reports": 2,
+        "windowSeconds": 120,
+        "frame": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "gap": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "rtt": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "input": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "longTasks": 1,
+        "errors": 0,
+        "graphicsErrors": 0,
+        "contextLosses": 0,
+        "disconnects": 0,
+        "slowFrames": 0,
+        "frames": 0,
+        "byMap": [
+          {
+            "name": "tunnel",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ],
+        "byInput": [
+          {
+            "name": "keyboard",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ],
+        "byMode": [
+          {
+            "name": "solo",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ]
+      }
+    },
+    {
+      "at": 1793194198231,
+      "startedAt": 1793194134322,
+      "current": {
+        "at": 1793194197355,
+        "intervalSeconds": 1,
+        "sockets": 0,
+        "maxConnections": 128,
+        "rooms": 0,
+        "maxRooms": 25,
+        "racingRooms": 0,
+        "racingPlayers": 0,
+        "bufferedBytes": 0,
+        "simulationBacklogMs": 0,
+        "cpuPct": 0.5730206443394759,
+        "rssMB": 85.622784,
+        "heapMB": 9.431984,
+        "eventLoopP95Ms": 11.337727,
+        "eventLoopMaxMs": 11.395071,
+        "bytesOutPerSec": 0,
+        "bytesInPerSec": 0,
+        "monitorBytesPerSec": 0,
+        "assetBytesPerSec": 0,
+        "pageBytesPerSec": 0,
+        "otherBytesPerSec": 0,
+        "snapshotsPerSec": 0,
+        "httpRequestsPerSec": 0,
+        "httpErrorsPerSec": 0,
+        "connectionRejectsPerSec": 0,
+        "roomRejectsPerSec": 0,
+        "disconnectsPerSec": 0,
+        "slowClientsPerSec": 0,
+        "httpP95Ms": null
+      },
+      "totals": {
+        "connections": 0,
+        "connectionRejects": 0,
+        "roomRejects": 0,
+        "disconnects": 0,
+        "slowClients": 0,
+        "invalidMessages": 0,
+        "rateLimits": 0,
+        "messagesIn": 0,
+        "bytesIn": 0,
+        "messagesOut": 0,
+        "bytesOut": 0,
+        "snapshots": 0,
+        "httpRequests": 74,
+        "httpErrors": 0,
+        "http4xx": 0,
+        "http5xx": 0,
+        "monitorBytes": 811586,
+        "telemetryBytesIn": 564,
+        "assetBytes": 14687347,
+        "pageBytes": 11865,
+        "otherBytes": 2473731,
+        "httpAborts": 0,
+        "telemetryAccepted": 2,
+        "telemetryRejected": 0
+      },
+      "client": {
+        "reports": 2,
+        "windowSeconds": 120,
+        "frame": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "gap": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "rtt": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "input": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "longTasks": 1,
+        "errors": 0,
+        "graphicsErrors": 0,
+        "contextLosses": 0,
+        "disconnects": 0,
+        "slowFrames": 0,
+        "frames": 0,
+        "byMap": [
+          {
+            "name": "tunnel",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ],
+        "byInput": [
+          {
+            "name": "keyboard",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ],
+        "byMode": [
+          {
+            "name": "solo",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ]
+      }
+    },
+    {
+      "at": 1793194200233,
+      "startedAt": 1793194134322,
+      "current": {
+        "at": 1793194199356,
+        "intervalSeconds": 1,
+        "sockets": 0,
+        "maxConnections": 128,
+        "rooms": 0,
+        "maxRooms": 25,
+        "racingRooms": 0,
+        "racingPlayers": 0,
+        "bufferedBytes": 0,
+        "simulationBacklogMs": 0,
+        "cpuPct": 0.5326438060784598,
+        "rssMB": 85.622784,
+        "heapMB": 9.792424,
+        "eventLoopP95Ms": 11.337727,
+        "eventLoopMaxMs": 11.362303,
+        "bytesOutPerSec": 0,
+        "bytesInPerSec": 0,
+        "monitorBytesPerSec": 0,
+        "assetBytesPerSec": 0,
+        "pageBytesPerSec": 0,
+        "otherBytesPerSec": 0,
+        "snapshotsPerSec": 0,
+        "httpRequestsPerSec": 0,
+        "httpErrorsPerSec": 0,
+        "connectionRejectsPerSec": 0,
+        "roomRejectsPerSec": 0,
+        "disconnectsPerSec": 0,
+        "slowClientsPerSec": 0,
+        "httpP95Ms": null
+      },
+      "totals": {
+        "connections": 0,
+        "connectionRejects": 0,
+        "roomRejects": 0,
+        "disconnects": 0,
+        "slowClients": 0,
+        "invalidMessages": 0,
+        "rateLimits": 0,
+        "messagesIn": 0,
+        "bytesIn": 0,
+        "messagesOut": 0,
+        "bytesOut": 0,
+        "snapshots": 0,
+        "httpRequests": 74,
+        "httpErrors": 0,
+        "http4xx": 0,
+        "http5xx": 0,
+        "monitorBytes": 892510,
+        "telemetryBytesIn": 564,
+        "assetBytes": 14687347,
+        "pageBytes": 11865,
+        "otherBytes": 2473731,
+        "httpAborts": 0,
+        "telemetryAccepted": 2,
+        "telemetryRejected": 0
+      },
+      "client": {
+        "reports": 2,
+        "windowSeconds": 120,
+        "frame": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "gap": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "rtt": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "input": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "longTasks": 1,
+        "errors": 0,
+        "graphicsErrors": 0,
+        "contextLosses": 0,
+        "disconnects": 0,
+        "slowFrames": 0,
+        "frames": 0,
+        "byMap": [
+          {
+            "name": "tunnel",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ],
+        "byInput": [
+          {
+            "name": "keyboard",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ],
+        "byMode": [
+          {
+            "name": "solo",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ]
+      }
+    },
+    {
+      "at": 1793194202235,
+      "startedAt": 1793194134322,
+      "current": {
+        "at": 1793194201356,
+        "intervalSeconds": 1,
+        "sockets": 0,
+        "maxConnections": 128,
+        "rooms": 0,
+        "maxRooms": 25,
+        "racingRooms": 0,
+        "racingPlayers": 0,
+        "bufferedBytes": 0,
+        "simulationBacklogMs": 0,
+        "cpuPct": 0.48805852602620503,
+        "rssMB": 85.622784,
+        "heapMB": 10.164704,
+        "eventLoopP95Ms": 11.354111,
+        "eventLoopMaxMs": 11.411455,
+        "bytesOutPerSec": 0,
+        "bytesInPerSec": 0,
+        "monitorBytesPerSec": 0,
+        "assetBytesPerSec": 0,
+        "pageBytesPerSec": 0,
+        "otherBytesPerSec": 0,
+        "snapshotsPerSec": 0,
+        "httpRequestsPerSec": 0,
+        "httpErrorsPerSec": 0,
+        "connectionRejectsPerSec": 0,
+        "roomRejectsPerSec": 0,
+        "disconnectsPerSec": 0,
+        "slowClientsPerSec": 0,
+        "httpP95Ms": null
+      },
+      "totals": {
+        "connections": 0,
+        "connectionRejects": 0,
+        "roomRejects": 0,
+        "disconnects": 0,
+        "slowClients": 0,
+        "invalidMessages": 0,
+        "rateLimits": 0,
+        "messagesIn": 0,
+        "bytesIn": 0,
+        "messagesOut": 0,
+        "bytesOut": 0,
+        "snapshots": 0,
+        "httpRequests": 74,
+        "httpErrors": 0,
+        "http4xx": 0,
+        "http5xx": 0,
+        "monitorBytes": 975818,
+        "telemetryBytesIn": 564,
+        "assetBytes": 14687347,
+        "pageBytes": 11865,
+        "otherBytes": 2473731,
+        "httpAborts": 0,
+        "telemetryAccepted": 2,
+        "telemetryRejected": 0
+      },
+      "client": {
+        "reports": 2,
+        "windowSeconds": 120,
+        "frame": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "gap": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "rtt": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "input": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "longTasks": 1,
+        "errors": 0,
+        "graphicsErrors": 0,
+        "contextLosses": 0,
+        "disconnects": 0,
+        "slowFrames": 0,
+        "frames": 0,
+        "byMap": [
+          {
+            "name": "tunnel",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ],
+        "byInput": [
+          {
+            "name": "keyboard",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ],
+        "byMode": [
+          {
+            "name": "solo",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ]
+      }
+    },
+    {
+      "at": 1793194204237,
+      "startedAt": 1793194134322,
+      "current": {
+        "at": 1793194203357,
+        "intervalSeconds": 1,
+        "sockets": 0,
+        "maxConnections": 128,
+        "rooms": 0,
+        "maxRooms": 25,
+        "racingRooms": 0,
+        "racingPlayers": 0,
+        "bufferedBytes": 0,
+        "simulationBacklogMs": 0,
+        "cpuPct": 0.4882027461073508,
+        "rssMB": 85.622784,
+        "heapMB": 9.764312,
+        "eventLoopP95Ms": 11.337727,
+        "eventLoopMaxMs": 11.436031,
+        "bytesOutPerSec": 0,
+        "bytesInPerSec": 0,
+        "monitorBytesPerSec": 0,
+        "assetBytesPerSec": 0,
+        "pageBytesPerSec": 0,
+        "otherBytesPerSec": 0,
+        "snapshotsPerSec": 0,
+        "httpRequestsPerSec": 0,
+        "httpErrorsPerSec": 0,
+        "connectionRejectsPerSec": 0,
+        "roomRejectsPerSec": 0,
+        "disconnectsPerSec": 0,
+        "slowClientsPerSec": 0,
+        "httpP95Ms": null
+      },
+      "totals": {
+        "connections": 0,
+        "connectionRejects": 0,
+        "roomRejects": 0,
+        "disconnects": 0,
+        "slowClients": 0,
+        "invalidMessages": 0,
+        "rateLimits": 0,
+        "messagesIn": 0,
+        "bytesIn": 0,
+        "messagesOut": 0,
+        "bytesOut": 0,
+        "snapshots": 0,
+        "httpRequests": 74,
+        "httpErrors": 0,
+        "http4xx": 0,
+        "http5xx": 0,
+        "monitorBytes": 1061511,
+        "telemetryBytesIn": 564,
+        "assetBytes": 14687347,
+        "pageBytes": 11865,
+        "otherBytes": 2473731,
+        "httpAborts": 0,
+        "telemetryAccepted": 2,
+        "telemetryRejected": 0
+      },
+      "client": {
+        "reports": 2,
+        "windowSeconds": 120,
+        "frame": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "gap": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "rtt": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "input": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "longTasks": 1,
+        "errors": 0,
+        "graphicsErrors": 0,
+        "contextLosses": 0,
+        "disconnects": 0,
+        "slowFrames": 0,
+        "frames": 0,
+        "byMap": [
+          {
+            "name": "tunnel",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ],
+        "byInput": [
+          {
+            "name": "keyboard",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ],
+        "byMode": [
+          {
+            "name": "solo",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          }
+        ]
+      }
+    },
+    {
+      "at": 1793194206240,
+      "startedAt": 1793194134322,
+      "current": {
+        "at": 1793194205359,
+        "intervalSeconds": 1.001,
+        "sockets": 0,
+        "maxConnections": 128,
+        "rooms": 0,
+        "maxRooms": 25,
+        "racingRooms": 0,
+        "racingPlayers": 0,
+        "bufferedBytes": 0,
+        "simulationBacklogMs": 0,
+        "cpuPct": 0.5395146266301029,
+        "rssMB": 85.622784,
+        "heapMB": 10.173088,
+        "eventLoopP95Ms": 11.345919,
+        "eventLoopMaxMs": 11.370495,
+        "bytesOutPerSec": 0,
+        "bytesInPerSec": 0,
+        "monitorBytesPerSec": 0,
+        "assetBytesPerSec": 0,
+        "pageBytesPerSec": 0,
+        "otherBytesPerSec": 0,
+        "snapshotsPerSec": 0,
+        "httpRequestsPerSec": 0,
+        "httpErrorsPerSec": 0,
+        "connectionRejectsPerSec": 0,
+        "roomRejectsPerSec": 0,
+        "disconnectsPerSec": 0,
+        "slowClientsPerSec": 0,
+        "httpP95Ms": null
+      },
+      "totals": {
+        "connections": 0,
+        "connectionRejects": 0,
+        "roomRejects": 0,
+        "disconnects": 0,
+        "slowClients": 0,
+        "invalidMessages": 0,
+        "rateLimits": 0,
+        "messagesIn": 0,
+        "bytesIn": 0,
+        "messagesOut": 0,
+        "bytesOut": 0,
+        "snapshots": 0,
+        "httpRequests": 74,
+        "httpErrors": 0,
+        "http4xx": 0,
+        "http5xx": 0,
+        "monitorBytes": 1104956,
+        "telemetryBytesIn": 854,
+        "assetBytes": 14687347,
+        "pageBytes": 11865,
+        "otherBytes": 2473731,
+        "httpAborts": 0,
+        "telemetryAccepted": 3,
+        "telemetryRejected": 0
+      },
+      "client": {
+        "reports": 3,
+        "windowSeconds": 120,
+        "frame": {
+          "count": 3191,
+          "p95UpperMs": 16.8,
+          "p95OverMs": null
+        },
+        "gap": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "rtt": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "input": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "longTasks": 2,
+        "errors": 0,
+        "graphicsErrors": 0,
+        "contextLosses": 0,
+        "disconnects": 0,
+        "slowFrames": 0,
+        "frames": 3191,
+        "byMap": [
+          {
+            "name": "tunnel",
+            "reports": 3,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ],
+        "byInput": [
+          {
+            "name": "keyboard",
+            "reports": 3,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ],
+        "byMode": [
+          {
+            "name": "solo",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          },
+          {
+            "name": "demo",
+            "reports": 1,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ]
+      }
+    },
+    {
+      "at": 1793194208242,
+      "startedAt": 1793194134322,
+      "current": {
+        "at": 1793194207361,
+        "intervalSeconds": 1.002,
+        "sockets": 0,
+        "maxConnections": 128,
+        "rooms": 0,
+        "maxRooms": 25,
+        "racingRooms": 0,
+        "racingPlayers": 0,
+        "bufferedBytes": 0,
+        "simulationBacklogMs": 0,
+        "cpuPct": 0.5301493319767032,
+        "rssMB": 85.622784,
+        "heapMB": 9.608568,
+        "eventLoopP95Ms": 11.345919,
+        "eventLoopMaxMs": 11.378687,
+        "bytesOutPerSec": 0,
+        "bytesInPerSec": 0,
+        "monitorBytesPerSec": 0,
+        "assetBytesPerSec": 0,
+        "pageBytesPerSec": 0,
+        "otherBytesPerSec": 0,
+        "snapshotsPerSec": 0,
+        "httpRequestsPerSec": 0,
+        "httpErrorsPerSec": 0,
+        "connectionRejectsPerSec": 0,
+        "roomRejectsPerSec": 0,
+        "disconnectsPerSec": 0,
+        "slowClientsPerSec": 0,
+        "httpP95Ms": null
+      },
+      "totals": {
+        "connections": 0,
+        "connectionRejects": 0,
+        "roomRejects": 0,
+        "disconnects": 0,
+        "slowClients": 0,
+        "invalidMessages": 0,
+        "rateLimits": 0,
+        "messagesIn": 0,
+        "bytesIn": 0,
+        "messagesOut": 0,
+        "bytesOut": 0,
+        "snapshots": 0,
+        "httpRequests": 74,
+        "httpErrors": 0,
+        "http4xx": 0,
+        "http5xx": 0,
+        "monitorBytes": 1194462,
+        "telemetryBytesIn": 854,
+        "assetBytes": 14687347,
+        "pageBytes": 11865,
+        "otherBytes": 2473731,
+        "httpAborts": 0,
+        "telemetryAccepted": 3,
+        "telemetryRejected": 0
+      },
+      "client": {
+        "reports": 3,
+        "windowSeconds": 120,
+        "frame": {
+          "count": 3191,
+          "p95UpperMs": 16.8,
+          "p95OverMs": null
+        },
+        "gap": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "rtt": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "input": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "longTasks": 2,
+        "errors": 0,
+        "graphicsErrors": 0,
+        "contextLosses": 0,
+        "disconnects": 0,
+        "slowFrames": 0,
+        "frames": 3191,
+        "byMap": [
+          {
+            "name": "tunnel",
+            "reports": 3,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ],
+        "byInput": [
+          {
+            "name": "keyboard",
+            "reports": 3,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ],
+        "byMode": [
+          {
+            "name": "solo",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          },
+          {
+            "name": "demo",
+            "reports": 1,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ]
+      }
+    },
+    {
+      "at": 1793194210245,
+      "startedAt": 1793194134322,
+      "current": {
+        "at": 1793194209362,
+        "intervalSeconds": 1.001,
+        "sockets": 0,
+        "maxConnections": 128,
+        "rooms": 0,
+        "maxRooms": 25,
+        "racingRooms": 0,
+        "racingPlayers": 0,
+        "bufferedBytes": 0,
+        "simulationBacklogMs": 0,
+        "cpuPct": 0.6106100111116999,
+        "rssMB": 85.671936,
+        "heapMB": 10.04688,
+        "eventLoopP95Ms": 11.354111,
+        "eventLoopMaxMs": 11.378687,
+        "bytesOutPerSec": 0,
+        "bytesInPerSec": 0,
+        "monitorBytesPerSec": 46484.51548451549,
+        "assetBytesPerSec": 0,
+        "pageBytesPerSec": 0,
+        "otherBytesPerSec": 0,
+        "snapshotsPerSec": 0,
+        "httpRequestsPerSec": 0,
+        "httpErrorsPerSec": 0,
+        "connectionRejectsPerSec": 0,
+        "roomRejectsPerSec": 0,
+        "disconnectsPerSec": 0,
+        "slowClientsPerSec": 0,
+        "httpP95Ms": null
+      },
+      "totals": {
+        "connections": 0,
+        "connectionRejects": 0,
+        "roomRejects": 0,
+        "disconnects": 0,
+        "slowClients": 0,
+        "invalidMessages": 0,
+        "rateLimits": 0,
+        "messagesIn": 0,
+        "bytesIn": 0,
+        "messagesOut": 0,
+        "bytesOut": 0,
+        "snapshots": 0,
+        "httpRequests": 74,
+        "httpErrors": 0,
+        "http4xx": 0,
+        "http5xx": 0,
+        "monitorBytes": 1286931,
+        "telemetryBytesIn": 854,
+        "assetBytes": 14687347,
+        "pageBytes": 11865,
+        "otherBytes": 2473731,
+        "httpAborts": 0,
+        "telemetryAccepted": 3,
+        "telemetryRejected": 0
+      },
+      "client": {
+        "reports": 3,
+        "windowSeconds": 120,
+        "frame": {
+          "count": 3191,
+          "p95UpperMs": 16.8,
+          "p95OverMs": null
+        },
+        "gap": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "rtt": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "input": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "longTasks": 2,
+        "errors": 0,
+        "graphicsErrors": 0,
+        "contextLosses": 0,
+        "disconnects": 0,
+        "slowFrames": 0,
+        "frames": 3191,
+        "byMap": [
+          {
+            "name": "tunnel",
+            "reports": 3,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ],
+        "byInput": [
+          {
+            "name": "keyboard",
+            "reports": 3,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ],
+        "byMode": [
+          {
+            "name": "solo",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          },
+          {
+            "name": "demo",
+            "reports": 1,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ]
+      }
+    },
+    {
+      "at": 1793194212247,
+      "startedAt": 1793194134322,
+      "current": {
+        "at": 1793194211363,
+        "intervalSeconds": 1.001,
+        "sockets": 0,
+        "maxConnections": 128,
+        "rooms": 0,
+        "maxRooms": 25,
+        "racingRooms": 0,
+        "racingPlayers": 0,
+        "bufferedBytes": 0,
+        "simulationBacklogMs": 0,
+        "cpuPct": 0.5713436420994967,
+        "rssMB": 85.671936,
+        "heapMB": 9.627472,
+        "eventLoopP95Ms": 11.345919,
+        "eventLoopMaxMs": 11.419647,
+        "bytesOutPerSec": 0,
+        "bytesInPerSec": 0,
+        "monitorBytesPerSec": 47683.31668331669,
+        "assetBytesPerSec": 0,
+        "pageBytesPerSec": 0,
+        "otherBytesPerSec": 0,
+        "snapshotsPerSec": 0,
+        "httpRequestsPerSec": 0,
+        "httpErrorsPerSec": 0,
+        "connectionRejectsPerSec": 0,
+        "roomRejectsPerSec": 0,
+        "disconnectsPerSec": 0,
+        "slowClientsPerSec": 0,
+        "httpP95Ms": null
+      },
+      "totals": {
+        "connections": 0,
+        "connectionRejects": 0,
+        "roomRejects": 0,
+        "disconnects": 0,
+        "slowClients": 0,
+        "invalidMessages": 0,
+        "rateLimits": 0,
+        "messagesIn": 0,
+        "bytesIn": 0,
+        "messagesOut": 0,
+        "bytesOut": 0,
+        "snapshots": 0,
+        "httpRequests": 74,
+        "httpErrors": 0,
+        "http4xx": 0,
+        "http5xx": 0,
+        "monitorBytes": 1381818,
+        "telemetryBytesIn": 854,
+        "assetBytes": 14687347,
+        "pageBytes": 11865,
+        "otherBytes": 2473731,
+        "httpAborts": 0,
+        "telemetryAccepted": 3,
+        "telemetryRejected": 0
+      },
+      "client": {
+        "reports": 3,
+        "windowSeconds": 120,
+        "frame": {
+          "count": 3191,
+          "p95UpperMs": 16.8,
+          "p95OverMs": null
+        },
+        "gap": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "rtt": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "input": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "longTasks": 2,
+        "errors": 0,
+        "graphicsErrors": 0,
+        "contextLosses": 0,
+        "disconnects": 0,
+        "slowFrames": 0,
+        "frames": 3191,
+        "byMap": [
+          {
+            "name": "tunnel",
+            "reports": 3,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ],
+        "byInput": [
+          {
+            "name": "keyboard",
+            "reports": 3,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ],
+        "byMode": [
+          {
+            "name": "solo",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          },
+          {
+            "name": "demo",
+            "reports": 1,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ]
+      }
+    },
+    {
+      "at": 1793194214249,
+      "startedAt": 1793194134322,
+      "current": {
+        "at": 1793194213363,
+        "intervalSeconds": 1,
+        "sockets": 0,
+        "maxConnections": 128,
+        "rooms": 0,
+        "maxRooms": 25,
+        "racingRooms": 0,
+        "racingPlayers": 0,
+        "bufferedBytes": 0,
+        "simulationBacklogMs": 0,
+        "cpuPct": 0.582459455177718,
+        "rssMB": 85.671936,
+        "heapMB": 10.05936,
+        "eventLoopP95Ms": 11.354111,
+        "eventLoopMaxMs": 11.395071,
+        "bytesOutPerSec": 0,
+        "bytesInPerSec": 0,
+        "monitorBytesPerSec": 48934,
+        "assetBytesPerSec": 0,
+        "pageBytesPerSec": 0,
+        "otherBytesPerSec": 0,
+        "snapshotsPerSec": 0,
+        "httpRequestsPerSec": 0,
+        "httpErrorsPerSec": 0,
+        "connectionRejectsPerSec": 0,
+        "roomRejectsPerSec": 0,
+        "disconnectsPerSec": 0,
+        "slowClientsPerSec": 0,
+        "httpP95Ms": null
+      },
+      "totals": {
+        "connections": 0,
+        "connectionRejects": 0,
+        "roomRejects": 0,
+        "disconnects": 0,
+        "slowClients": 0,
+        "invalidMessages": 0,
+        "rateLimits": 0,
+        "messagesIn": 0,
+        "bytesIn": 0,
+        "messagesOut": 0,
+        "bytesOut": 0,
+        "snapshots": 0,
+        "httpRequests": 74,
+        "httpErrors": 0,
+        "http4xx": 0,
+        "http5xx": 0,
+        "monitorBytes": 1479109,
+        "telemetryBytesIn": 854,
+        "assetBytes": 14687347,
+        "pageBytes": 11865,
+        "otherBytes": 2473731,
+        "httpAborts": 0,
+        "telemetryAccepted": 3,
+        "telemetryRejected": 0
+      },
+      "client": {
+        "reports": 3,
+        "windowSeconds": 120,
+        "frame": {
+          "count": 3191,
+          "p95UpperMs": 16.8,
+          "p95OverMs": null
+        },
+        "gap": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "rtt": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "input": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "longTasks": 2,
+        "errors": 0,
+        "graphicsErrors": 0,
+        "contextLosses": 0,
+        "disconnects": 0,
+        "slowFrames": 0,
+        "frames": 3191,
+        "byMap": [
+          {
+            "name": "tunnel",
+            "reports": 3,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ],
+        "byInput": [
+          {
+            "name": "keyboard",
+            "reports": 3,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ],
+        "byMode": [
+          {
+            "name": "solo",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          },
+          {
+            "name": "demo",
+            "reports": 1,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ]
+      }
+    },
+    {
+      "at": 1793194216251,
+      "startedAt": 1793194134322,
+      "current": {
+        "at": 1793194215365,
+        "intervalSeconds": 1.001,
+        "sockets": 0,
+        "maxConnections": 128,
+        "rooms": 0,
+        "maxRooms": 25,
+        "racingRooms": 0,
+        "racingPlayers": 0,
+        "bufferedBytes": 0,
+        "simulationBacklogMs": 0,
+        "cpuPct": 0.5994058131426531,
+        "rssMB": 85.671936,
+        "heapMB": 9.629696,
+        "eventLoopP95Ms": 11.337727,
+        "eventLoopMaxMs": 11.378687,
+        "bytesOutPerSec": 0,
+        "bytesInPerSec": 0,
+        "monitorBytesPerSec": 50100.89910089911,
+        "assetBytesPerSec": 0,
+        "pageBytesPerSec": 0,
+        "otherBytesPerSec": 0,
+        "snapshotsPerSec": 0,
+        "httpRequestsPerSec": 0,
+        "httpErrorsPerSec": 0,
+        "connectionRejectsPerSec": 0,
+        "roomRejectsPerSec": 0,
+        "disconnectsPerSec": 0,
+        "slowClientsPerSec": 0,
+        "httpP95Ms": null
+      },
+      "totals": {
+        "connections": 0,
+        "connectionRejects": 0,
+        "roomRejects": 0,
+        "disconnects": 0,
+        "slowClients": 0,
+        "invalidMessages": 0,
+        "rateLimits": 0,
+        "messagesIn": 0,
+        "bytesIn": 0,
+        "messagesOut": 0,
+        "bytesOut": 0,
+        "snapshots": 0,
+        "httpRequests": 74,
+        "httpErrors": 0,
+        "http4xx": 0,
+        "http5xx": 0,
+        "monitorBytes": 1578785,
+        "telemetryBytesIn": 854,
+        "assetBytes": 14687347,
+        "pageBytes": 11865,
+        "otherBytes": 2473731,
+        "httpAborts": 0,
+        "telemetryAccepted": 3,
+        "telemetryRejected": 0
+      },
+      "client": {
+        "reports": 3,
+        "windowSeconds": 120,
+        "frame": {
+          "count": 3191,
+          "p95UpperMs": 16.8,
+          "p95OverMs": null
+        },
+        "gap": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "rtt": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "input": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "longTasks": 2,
+        "errors": 0,
+        "graphicsErrors": 0,
+        "contextLosses": 0,
+        "disconnects": 0,
+        "slowFrames": 0,
+        "frames": 3191,
+        "byMap": [
+          {
+            "name": "tunnel",
+            "reports": 3,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ],
+        "byInput": [
+          {
+            "name": "keyboard",
+            "reports": 3,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ],
+        "byMode": [
+          {
+            "name": "solo",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          },
+          {
+            "name": "demo",
+            "reports": 1,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ]
+      }
+    },
+    {
+      "at": 1793194218253,
+      "startedAt": 1793194134322,
+      "current": {
+        "at": 1793194217367,
+        "intervalSeconds": 1.001,
+        "sockets": 0,
+        "maxConnections": 128,
+        "rooms": 0,
+        "maxRooms": 25,
+        "racingRooms": 0,
+        "racingPlayers": 0,
+        "bufferedBytes": 0,
+        "simulationBacklogMs": 0,
+        "cpuPct": 0.5865941702337371,
+        "rssMB": 85.671936,
+        "heapMB": 10.071984,
+        "eventLoopP95Ms": 11.354111,
+        "eventLoopMaxMs": 11.378687,
+        "bytesOutPerSec": 0,
+        "bytesInPerSec": 0,
+        "monitorBytesPerSec": 51316.683316683324,
+        "assetBytesPerSec": 0,
+        "pageBytesPerSec": 0,
+        "otherBytesPerSec": 0,
+        "snapshotsPerSec": 0,
+        "httpRequestsPerSec": 0,
+        "httpErrorsPerSec": 0,
+        "connectionRejectsPerSec": 0,
+        "roomRejectsPerSec": 0,
+        "disconnectsPerSec": 0,
+        "slowClientsPerSec": 0,
+        "httpP95Ms": null
+      },
+      "totals": {
+        "connections": 0,
+        "connectionRejects": 0,
+        "roomRejects": 0,
+        "disconnects": 0,
+        "slowClients": 0,
+        "invalidMessages": 0,
+        "rateLimits": 0,
+        "messagesIn": 0,
+        "bytesIn": 0,
+        "messagesOut": 0,
+        "bytesOut": 0,
+        "snapshots": 0,
+        "httpRequests": 74,
+        "httpErrors": 0,
+        "http4xx": 0,
+        "http5xx": 0,
+        "monitorBytes": 1680913,
+        "telemetryBytesIn": 854,
+        "assetBytes": 14687347,
+        "pageBytes": 11865,
+        "otherBytes": 2473731,
+        "httpAborts": 0,
+        "telemetryAccepted": 3,
+        "telemetryRejected": 0
+      },
+      "client": {
+        "reports": 3,
+        "windowSeconds": 120,
+        "frame": {
+          "count": 3191,
+          "p95UpperMs": 16.8,
+          "p95OverMs": null
+        },
+        "gap": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "rtt": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "input": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "longTasks": 2,
+        "errors": 0,
+        "graphicsErrors": 0,
+        "contextLosses": 0,
+        "disconnects": 0,
+        "slowFrames": 0,
+        "frames": 3191,
+        "byMap": [
+          {
+            "name": "tunnel",
+            "reports": 3,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ],
+        "byInput": [
+          {
+            "name": "keyboard",
+            "reports": 3,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ],
+        "byMode": [
+          {
+            "name": "solo",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          },
+          {
+            "name": "demo",
+            "reports": 1,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ]
+      }
+    },
+    {
+      "at": 1793194220256,
+      "startedAt": 1793194134322,
+      "current": {
+        "at": 1793194219367,
+        "intervalSeconds": 1,
+        "sockets": 0,
+        "maxConnections": 128,
+        "rooms": 0,
+        "maxRooms": 25,
+        "racingRooms": 0,
+        "racingPlayers": 0,
+        "bufferedBytes": 0,
+        "simulationBacklogMs": 0,
+        "cpuPct": 0.6595442103811529,
+        "rssMB": 85.671936,
+        "heapMB": 9.645376,
+        "eventLoopP95Ms": 11.362303,
+        "eventLoopMaxMs": 11.427839,
+        "bytesOutPerSec": 0,
+        "bytesInPerSec": 0,
+        "monitorBytesPerSec": 52557,
+        "assetBytesPerSec": 0,
+        "pageBytesPerSec": 0,
+        "otherBytesPerSec": 0,
+        "snapshotsPerSec": 0,
+        "httpRequestsPerSec": 0,
+        "httpErrorsPerSec": 0,
+        "connectionRejectsPerSec": 0,
+        "roomRejectsPerSec": 0,
+        "disconnectsPerSec": 0,
+        "slowClientsPerSec": 0,
+        "httpP95Ms": null
+      },
+      "totals": {
+        "connections": 0,
+        "connectionRejects": 0,
+        "roomRejects": 0,
+        "disconnects": 0,
+        "slowClients": 0,
+        "invalidMessages": 0,
+        "rateLimits": 0,
+        "messagesIn": 0,
+        "bytesIn": 0,
+        "messagesOut": 0,
+        "bytesOut": 0,
+        "snapshots": 0,
+        "httpRequests": 74,
+        "httpErrors": 0,
+        "http4xx": 0,
+        "http5xx": 0,
+        "monitorBytes": 1785451,
+        "telemetryBytesIn": 854,
+        "assetBytes": 14687347,
+        "pageBytes": 11865,
+        "otherBytes": 2473731,
+        "httpAborts": 0,
+        "telemetryAccepted": 3,
+        "telemetryRejected": 0
+      },
+      "client": {
+        "reports": 3,
+        "windowSeconds": 120,
+        "frame": {
+          "count": 3191,
+          "p95UpperMs": 16.8,
+          "p95OverMs": null
+        },
+        "gap": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "rtt": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "input": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "longTasks": 2,
+        "errors": 0,
+        "graphicsErrors": 0,
+        "contextLosses": 0,
+        "disconnects": 0,
+        "slowFrames": 0,
+        "frames": 3191,
+        "byMap": [
+          {
+            "name": "tunnel",
+            "reports": 3,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ],
+        "byInput": [
+          {
+            "name": "keyboard",
+            "reports": 3,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ],
+        "byMode": [
+          {
+            "name": "solo",
+            "reports": 2,
+            "frames": 0,
+            "frameP95UpperMs": null,
+            "frameP95OverMs": null
+          },
+          {
+            "name": "demo",
+            "reports": 1,
+            "frames": 3191,
+            "frameP95UpperMs": 16.8,
+            "frameP95OverMs": null
+          }
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "sockets": [
+      0
+    ],
+    "rooms": [
+      0
+    ],
+    "raceJSONBytes": 0,
+    "raceJSONBytesPerSecond": 0,
+    "serverCPUAverage": 0.5570001568458137,
+    "clientAtStart": {
+      "reports": 2,
+      "windowSeconds": 120,
+      "frame": {
+        "count": 0,
+        "p95UpperMs": null,
+        "p95OverMs": null
+      },
+      "gap": {
+        "count": 0,
+        "p95UpperMs": null,
+        "p95OverMs": null
+      },
+      "rtt": {
+        "count": 0,
+        "p95UpperMs": null,
+        "p95OverMs": null
+      },
+      "input": {
+        "count": 0,
+        "p95UpperMs": null,
+        "p95OverMs": null
+      },
+      "load": {
+        "count": 1,
+        "p95UpperMs": 500,
+        "p95OverMs": null
+      },
+      "longTasks": 1,
+      "errors": 0,
+      "graphicsErrors": 0,
+      "contextLosses": 0,
+      "disconnects": 0,
+      "slowFrames": 0,
+      "frames": 0,
+      "byMap": [
+        {
+          "name": "tunnel",
+          "reports": 2,
+          "frames": 0,
+          "frameP95UpperMs": null,
+          "frameP95OverMs": null
+        }
+      ],
+      "byInput": [
+        {
+          "name": "keyboard",
+          "reports": 2,
+          "frames": 0,
+          "frameP95UpperMs": null,
+          "frameP95OverMs": null
+        }
+      ],
+      "byMode": [
+        {
+          "name": "solo",
+          "reports": 2,
+          "frames": 0,
+          "frameP95UpperMs": null,
+          "frameP95OverMs": null
+        }
+      ]
+    },
+    "clientAtEnd": {
+      "reports": 3,
+      "windowSeconds": 120,
+      "frame": {
+        "count": 3191,
+        "p95UpperMs": 16.8,
+        "p95OverMs": null
+      },
+      "gap": {
+        "count": 0,
+        "p95UpperMs": null,
+        "p95OverMs": null
+      },
+      "rtt": {
+        "count": 0,
+        "p95UpperMs": null,
+        "p95OverMs": null
+      },
+      "input": {
+        "count": 0,
+        "p95UpperMs": null,
+        "p95OverMs": null
+      },
+      "load": {
+        "count": 1,
+        "p95UpperMs": 500,
+        "p95OverMs": null
+      },
+      "longTasks": 2,
+      "errors": 0,
+      "graphicsErrors": 0,
+      "contextLosses": 0,
+      "disconnects": 0,
+      "slowFrames": 0,
+      "frames": 3191,
+      "byMap": [
+        {
+          "name": "tunnel",
+          "reports": 3,
+          "frames": 3191,
+          "frameP95UpperMs": 16.8,
+          "frameP95OverMs": null
+        }
+      ],
+      "byInput": [
+        {
+          "name": "keyboard",
+          "reports": 3,
+          "frames": 3191,
+          "frameP95UpperMs": 16.8,
+          "frameP95OverMs": null
+        }
+      ],
+      "byMode": [
+        {
+          "name": "solo",
+          "reports": 2,
+          "frames": 0,
+          "frameP95UpperMs": null,
+          "frameP95OverMs": null
+        },
+        {
+          "name": "demo",
+          "reports": 1,
+          "frames": 3191,
+          "frameP95UpperMs": 16.8,
+          "frameP95OverMs": null
+        }
+      ]
+    }
+  }
+}
