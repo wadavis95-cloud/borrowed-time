@@ -1,5 +1,14 @@
 # Changelog
 
+## 8.2.0-preview.1 — Local clock, countdown and finish polish
+
+- Preserved V8.1 in a verified complete-history backup; no push or deployment.
+- Confirmed purchases show a brief debit in the existing clock status slot, a cost segment, and purchased-button confirmation. Rapid purchases combine without changing the actual timer.
+- Added server-driven countdown lights, a nonblocking GO cue and optional opt-in start tones. Solo still starts immediately.
+- Distinguished winner, escaped and time-out results; kept replay visible on phone layouts and added a return-to-map action for solo.
+- Filled scenery behind outdoor start lines exposed by the clearer countdown view.
+- Preserved physics, course generation, multiplayer authority, controls and 5s/4s prices. See [V8.2 local notes](docs/versions/V8_2_CLOCK_START_FINISH.md).
+
 ## 8.1.0-preview.1 — Local readability and movement polish
 
 - Preserved V8 in a verified full-history backup; no push or deployment.

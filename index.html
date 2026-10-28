@@ -14,7 +14,7 @@
   <div class="app">
     <header class="site-header">
       <a class="brand" href="/" aria-label="Borrowed Time home"><img src="/favicon.svg" alt="" width="30" height="30"><span>BORROWED <span class="brand-light">TIME</span></span></a>
-      <div class="header-actions"><span class="version">V8.1 · LOCAL</span><button id="sound-button" class="quiet-button" aria-pressed="false">Sound off</button><button id="guide-button" class="quiet-button">How to play ↗</button></div>
+      <div class="header-actions"><span class="version">V8.2 · LOCAL</span><button id="sound-button" class="quiet-button" aria-pressed="false">Sound off</button><button id="guide-button" class="quiet-button">How to play ↗</button></div>
     </header>
     <main>
       <div class="page-heading" id="page-heading"><div><h1>Race the clock.</h1></div><button id="demo-button" class="demo-button" disabled><span aria-hidden="true">▷</span> Watch demo</button></div>
@@ -43,27 +43,32 @@
         <ol id="leaderboard-rows" aria-label="Player positions and escape results"></ol>
       </section>
           <div id="event-toast" class="event-toast" role="status" aria-live="polite"></div>
+          <div id="race-go" class="race-go" role="status" aria-live="polite" hidden>GO</div>
           <div id="screen-overlay" class="screen-overlay">
             <div class="intro-card">
+              <div id="finish-mark" class="finish-mark" aria-hidden="true" hidden></div>
               <span id="overlay-kicker" class="eyebrow">INTO THE LIGHT</span>
-              <h2 id="overlay-title">Preparing your escape.</h2>
+              <div id="start-lights" class="start-lights" aria-hidden="true" hidden><i></i><i></i><i></i></div>
+              <h2 id="overlay-title" aria-live="polite" aria-atomic="true">Preparing your escape.</h2>
               <p id="overlay-description">Loading the runners and tunnel…</p>
+              <p id="finish-badge" class="finish-badge" hidden></p>
               <div id="results-standings-slot"></div>
               <div id="ability-brief" class="ability-brief" hidden>
                 <div class="brief-power"><span class="brief-icon" aria-hidden="true">ϟ</span><strong>Speed boost</strong><span class="brief-price">SPEND <b id="brief-boost-cost">5s</b></span><small>4-second sprint.</small></div>
                 <div class="brief-power leap"><span class="brief-icon" aria-hidden="true">↗</span><strong>Long jump</strong><span class="brief-price">SPEND <b id="brief-jump-cost">4s</b></span><small>Clear barriers &amp; gaps.</small></div>
               </div>
               <button id="start-button" class="primary-button" disabled>Loading…</button>
+              <button id="choose-map" class="quiet-button choose-map" hidden>Choose another map</button>
               <p id="overlay-hint" class="overlay-hint"></p>
             </div>
           </div>
         </section>
         <aside class="dashboard" aria-label="Race controls and status">
           <section class="clock-panel">
-            <div class="panel-label"><span>TIME LEFT</span><span id="status-label" class="status-label">READY</span></div>
+            <div class="panel-label"><span>TIME LEFT</span><span id="status-label" class="status-label">READY</span><span id="clock-debit" class="clock-debit" aria-hidden="true" hidden></span></div>
             <div class="clock"><span id="time-value">60.0</span><span class="unit">SEC</span></div>
-            <p id="clock-feedback" class="clock-note" hidden></p>
-            <div class="time-track"><div id="time-fill"></div></div>
+            <p id="clock-feedback" class="clock-note sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+            <div class="time-track"><div id="time-fill"></div><span id="time-debit" class="time-debit" aria-hidden="true" hidden></span></div>
           </section>
           <section class="abilities-panel" aria-label="Spend time on abilities">
             <div class="ability-heading"><strong>Spend time</strong></div>

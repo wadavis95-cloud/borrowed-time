@@ -81,6 +81,7 @@ export function createWorld(scene, mapId, courseLength) {
     const z=-i*20;
     if (ship) {
       for(let p=0;p<10;p++) box(g,p%3?wood:woodLight,0,-.19,z-p*2,8.9,.36,1.96);
+      if(i===0)for(let p=1;p<=6;p++)box(g,p%3?wood:woodLight,0,-.19,p*2,8.9,.36,1.96);
       for(const side of [-1,1]) {
         box(g,woodDark,side*4.65,.6,z-10,.4,1.5,20);
         box(g,woodLight,side*4.65,1.4,z-10,.52,.15,20);
@@ -112,6 +113,7 @@ export function createWorld(scene, mapId, courseLength) {
       for(const x of [-1.2,1.2]) box(g,woodDark,x,.005,z-10,.025,.012,20);
     } else {
       box(g,soil,0,-.23,z-10,8.8,.45,20);
+      if(i===0)box(g,soil,0,-.23,6,8.8,.45,12);
       for(const x of [-1.2,1.2]) box(g,woodDark,x,-.005,z-10,.035,.014,20);
       for(const side of [-1,1]) {
         box(g,leaves,side*13,-.9,z-10,18,1.7,20);

@@ -35,6 +35,7 @@ export function createExpansionWorld(scene, mapId, courseLength) {
   for(let i=0;i<=Math.ceil(length/20);i++) {
     const g=new THREE.Group(),z=-i*20;
     if(orbital) {
+      if(i===0)box(g,ground,0,-.19,7,8.9,.36,10);
       for(let j=0;j<5;j++) {
         box(g,ground,0,-.19,z-j*4,8.9,.36,3.94);
         for(const x of [-3.7,3.7])box(g,light,x,.015,z-j*4,.55,.035,3.65);
@@ -62,6 +63,7 @@ export function createExpansionWorld(scene, mapId, courseLength) {
       }
     } else {
       box(g,ground,0,-.24,z-10,8.9,.46,20);
+      if(i===0)box(g,ground,0,-.24,6,8.9,.46,12);
       // Thin paths leave all three lanes readable without road markings.
       for(const x of [-1.2,1.2])box(g,edge,x,-.002,z-10,.025,.012,20);
       for(const side of [-1,1]) {

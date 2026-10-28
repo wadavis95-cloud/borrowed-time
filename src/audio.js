@@ -118,6 +118,19 @@ export function createGameAudio() {
     }
   }
 
+  function cue(kind,value) {
+    if(disposed||!requested||context?.state!=='running'||page?.hidden)return false;
+    if(kind==='countdown') {
+      const frequency=({3:330,2:392,1:440})[value];if(!frequency)return false;
+      play({frequency,endFrequency:frequency,duration:.10,gain:.10});return true;
+    }
+    if(kind==='go') {
+      play({frequency:660,endFrequency:880,duration:.16,gain:.10});
+      play({frequency:880,duration:.12,gain:.07,delay:.06});return true;
+    }
+    return false;
+  }
+
   function update(state) {
     if (disposed) return;
     if (!state || page?.hidden) { reset(); return; }
@@ -143,7 +156,16 @@ export function createGameAudio() {
       if (before.phase === 'running') { stopVoices(); escape(); }
       return;
     }
-    if (next.phase !== 'running') { stopVoices(); return; }
+    if (next.phase === 'lost') {
+      if(before.phase==='running') {stopVoices();play({frequency:170,endFrequency:85,duration:.22,gain:.10});}
+      return;
+    }
+    if (next.phase !== 'running') {
+      // Countdown cues run while the racer is ready. Let scheduled cue voices
+      // finish; pause and actual phase transitions still silence ongoing sound.
+      if(before.phase!==next.phase||next.phase==='paused')stopVoices();
+      return;
+    }
     if (before.phase !== 'running') return;
 
     const hit = next.hits > before.hits;
@@ -202,5 +224,5 @@ export function createGameAudio() {
     if (context && context.state !== 'closed') void context.close().catch(() => {});
   }
 
-  return { toggle, update, reset, dispose, get enabled() { return requested && context?.state === 'running'; } };
+  return { toggle, update, cue, reset, dispose, get enabled() { return requested && context?.state === 'running'; } };
 }

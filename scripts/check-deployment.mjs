@@ -9,7 +9,7 @@ import { ABILITIES } from '../src/game.js';
 const USAGE = 'Usage: node scripts/check-deployment.mjs https://your-game.onrender.com';
 const ASSETS = [
   '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js', '/src/maps.js',
-  '/src/graphics/worlds.js', '/src/graphics/map-obstacles.js', '/src/movement-feedback.js', '/src/graphics/readability.js', '/src/graphics/motion-effects.js',
+  '/src/graphics/worlds.js', '/src/graphics/map-obstacles.js', '/src/movement-feedback.js', '/src/race-presentation.js', '/src/race-ui.js', '/src/graphics/readability.js', '/src/graphics/motion-effects.js',
   ...MAP_IDS.map(id => `/assets/maps/${id}.svg`),
   '/src/graphics/expansion-worlds.js', '/src/graphics/world-utils.js',
   '/src/renderer.js', '/src/unity-renderer.js', '/src/unity-protocol.js', '/src/network.js', '/src/avatars.js', '/src/hazards.js',

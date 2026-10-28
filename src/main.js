@@ -7,12 +7,18 @@ import { MAPS, MAP_IDS, getMap } from './maps.js';
 import { createDemoRace } from './demo.js';
 import { createGameAudio } from './audio.js';
 import { createInputMode } from './input.js';
+import { createRaceUI } from './race-ui.js';
+import { finishPresentation } from './race-presentation.js';
 import { createAbilityCoach } from './ability-coach.js';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('game-canvas');
 const audio = createGameAudio();
 const abilityCoach = createAbilityCoach();
+const raceUI=createRaceUI({reducedMotion:window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  onCue:cue=>audio.cue(cue.kind,cue.value),
+  elements:{clock:$('time-value').closest('.clock-panel'),debit:$('clock-debit'),status:$('status-label'),trail:$('time-debit'),note:$('clock-feedback'),
+    boost:$('boost-button'),jump:$('long-jump-button'),go:$('race-go'),title:$('overlay-title'),overlay:$('screen-overlay'),finishMark:$('finish-mark'),finishBadge:$('finish-badge')}});
 let renderer = null, graphicsError = '', graphicsLoading = true;
 let graphicsProgress = 0;
 const graphicsMessage = '3D graphics are unavailable. Try an up-to-date browser with graphics acceleration enabled, then reload.';
@@ -24,7 +30,6 @@ let mode = 'solo';
 let connection = null, snapshot = null, raceView = createRaceView();
 let networkStatus = '', connectionGeneration = 0, rosterKey = '';
 let lastOverlay = '', lastEvent = 0, toastUntil = 0;
-let purchaseUntil = 0, purchaseFeedback = '';
 let standingsKey = '';
 let lastFrame = performance.now(), accumulator = 0;
 const STEP = 1 / 60;
@@ -62,7 +67,7 @@ for (const id of MAP_IDS) {
 }
 function updateMapPicker() {
   const lobby = mode !== 'solo' && snapshot?.room.phase === 'lobby';
-  $('map-picker').hidden = mode === 'solo' ? ['running', 'paused'].includes(game.phase) : !lobby || mode === 'demo';
+  $('map-picker').hidden = mode === 'solo' ? game.phase !== 'ready' : !lobby || mode === 'demo';
   const votes = snapshot?.room.votes || {};
   const ownVote = mode === 'solo' ? selectedMapId : votes[snapshot?.you.id];
   const key = JSON.stringify([mode, lobby, ownVote, votes, graphicsLoading, graphicsError, networkStatus]);
@@ -116,10 +121,6 @@ function showCourse() {
 function notify(text, kind = 'info') {
   const message = text;
   $('event-toast').textContent = message;
-  if (kind === 'ability') {
-    purchaseUntil = performance.now() + 2600;
-    purchaseFeedback = message;
-  }
   $('event-toast').dataset.kind = kind;
   $('event-toast').classList.toggle('visible', kind !== 'ability');
   toastUntil = performance.now() + 1800;
@@ -130,6 +131,7 @@ function showNetworkError(message = '') {
 }
 function resetVisuals() {
   abilityCoach.reset();
+  raceUI.reset();
   renderer?.reset();
   audio.reset();
   lastEvent = 0;
@@ -138,8 +140,6 @@ function resetVisuals() {
   lastFrame = performance.now();
   $('event-toast').classList.remove('visible');
   $('event-toast').textContent = '';
-  purchaseUntil = 0;
-  purchaseFeedback = '';
 }
 function returnToMenu() {
   connectionGeneration++;
@@ -159,6 +159,7 @@ function beginRun() {
   game = createGame({ seed: soloSeed, mapId: selectedMapId });
   startGame(game);
   resetVisuals();
+  raceUI.startSolo();
   showNetworkError();
   updateHUD();
   showCourse();
@@ -320,8 +321,14 @@ function overlay(kicker, title, description, button, disabled = false, hint = ''
   $('overlay-kicker').hidden = !kicker;
 }
 function updateOverlay() {
+  const countdown=mode!=='solo'&&snapshot?.room.phase==='countdown'&&networkStatus==='open'&&!graphicsLoading&&!graphicsError;
+  $('screen-overlay').dataset.stage=countdown?'countdown':['won','lost'].includes(game.phase)?'finish':'menu';
+  $('screen-overlay').dataset.countdown=String(Math.max(1,Math.min(3,snapshot?.room.countdown||1)));
+  $('start-lights').hidden=!countdown;
+  $('choose-map').hidden=mode!=='solo'||!['won','lost'].includes(game.phase)||Boolean(graphicsError);
+  raceUI.result(graphicsLoading||graphicsError||networkStatus==='disconnected'?null:finishPresentation(game,snapshot,mode));
   const brief = !graphicsLoading && !graphicsError && (mode === 'solo' ? game.phase === 'ready'
-    : ['lobby', 'countdown'].includes(snapshot?.room.phase));
+    : snapshot?.room.phase === 'lobby');
   $('ability-brief').hidden = !brief;
   canvas.closest('.arena').classList.toggle('briefing', brief);
   if (graphicsLoading) {
@@ -351,23 +358,18 @@ function updateOverlay() {
       }
       overlay('MAP VOTE OPEN', 'First to escape wins.', 'Abilities cost seconds from your clock.', host ? 'Start race →' : 'Waiting for host…', !host || count < 2, count < 2 ? 'Invite a friend with the room code.' : controlHint());
     } else if (room.phase === 'countdown') {
-      overlay(getMap(room.mapId).name.toUpperCase(), `${room.countdown}`, '', 'Starting…', true, controlHint());
+      overlay(getMap(room.mapId).name.toUpperCase(), `${Math.max(1,Math.min(3,room.countdown||1))}`, '', 'Starting…', true, controlHint());
     } else if (ended) {
-      const winner = snapshot.players.find(player => player.id === room.winnerId);
-      const title = mode === 'demo'
-        ? room.phase !== 'finished' ? 'The others are still racing.' : winner ? `${winner.name} wins.` : 'Nobody escaped this round.'
-        : room.phase !== 'finished' ? (game.phase === 'won' ? 'You escaped.' : 'Time ran out.')
-        : winner ? (winner.id === snapshot.you.id ? 'You won the race.' : `${winner.name} won the race.`) : 'Nobody escaped this round.';
-      overlay(room.phase === 'finished' ? 'RACE COMPLETE' : 'WAITING FOR RUNNERS', title,
-        room.phase === 'finished' ? '' : 'Waiting for the remaining racers.',
-        room.phase !== 'finished' ? 'Race still in progress…' : mode === 'demo' ? 'Watch again →' : host ? 'Set up rematch →' : 'Waiting for host…', room.phase !== 'finished' || !host);
+      const result=finishPresentation(game,snapshot,mode);
+      overlay(room.phase === 'finished' ? result.kind==='winner'?'RACE WON':'RACE COMPLETE' : 'RUN COMPLETE',result.title,result.detail,
+        result.waiting ? 'Racers still finishing…' : mode === 'demo' ? 'Watch again →' : host ? 'Back to voting →' : 'Waiting for host…',result.waiting||!host);
     }
     return;
   }
   $('screen-overlay').hidden = game.phase === 'running';
   if (game.phase === 'ready') overlay(getMap(selectedMapId).name.toUpperCase(), 'Escape before zero.', 'Abilities cost seconds from your clock.', 'Play solo →', false, controlHint());
   else if (game.phase === 'paused') overlay('TAKE A BREATH', 'Time stands still.', '', 'Resume run →', false, 'Press P or ESC to resume');
-  else if (ended) overlay(game.phase === 'won' ? 'ESCAPE COMPLETE' : 'THE CLOCK RAN OUT', game.phase === 'won' ? 'You escaped.' : 'Time ran out.', '', 'New run →');
+  else if (ended) { const result=finishPresentation(game,null,'solo');overlay(game.phase==='won'?'ESCAPE COMPLETE':'THE CLOCK RAN OUT',result.title,'','Race again →'); }
 }
 function updateHUD() {
   updateMapPicker();
@@ -376,8 +378,8 @@ function updateHUD() {
   updateLeaderboard();
   const online = mode !== 'solo';
   const running = Boolean(renderer) && !graphicsError && mode !== 'demo' && game.phase === 'running' && (!online || networkStatus === 'open');
-  $('race-menu').hidden = online || ['running', 'paused'].includes(game.phase);
-  $('page-heading').hidden = online || ['running', 'paused'].includes(game.phase);
+  $('race-menu').hidden = online || game.phase !== 'ready';
+  $('page-heading').hidden = online || game.phase !== 'ready';
   $('room-panel').hidden = !online;
   $('room-panel').classList.toggle('live-room', online && ['racing', 'finished'].includes(snapshot?.room.phase));
   $('restart-button').hidden = online;
@@ -407,11 +409,6 @@ function updateHUD() {
     const hint = $(id).querySelector('.ability-hint');
     if (hint.textContent !== label) hint.textContent = label;
   }
-  const spent = performance.now() < purchaseUntil;
-  $('time-value').closest('.clock-panel').classList.toggle('spent', spent);
-  const clockNote = spent ? purchaseFeedback : '';
-  $('clock-feedback').hidden = !spent;
-  if ($('clock-feedback').textContent !== clockNote) $('clock-feedback').textContent = clockNote;
   $('pause-button').disabled = online || (!running && game.phase !== 'paused');
   $('pause-button').textContent = game.phase === 'paused' ? '▷' : 'Ⅱ';
   $('pause-button').setAttribute('aria-label', online ? 'Multiplayer cannot be paused' : game.phase === 'paused' ? 'Resume game' : 'Pause game');
@@ -422,6 +419,7 @@ function updateHUD() {
   }
   const key = [graphicsLoading, graphicsError, mode, networkStatus, game.phase, snapshot?.room.phase, snapshot?.room.countdown, snapshot?.room.hostId, snapshot?.room.winnerId, rosterKey].join(':');
   if (key !== lastOverlay) { updateOverlay(); lastOverlay = key; }
+  raceUI.update(game,{mode,room:networkStatus==='disconnected'?undefined:snapshot?.room},performance.now());
 }
 
 $('start-button').addEventListener('click', () => {
@@ -436,6 +434,7 @@ $('join-room').addEventListener('click', () => joinRace('join'));
 $('demo-button').addEventListener('click', () => joinRace('demo'));
 $('join-code').addEventListener('keydown', event => { if (event.key === 'Enter') joinRace('join'); });
 $('leave-room').addEventListener('click', returnToMenu);
+$('choose-map').addEventListener('click',()=>{returnToMenu();$('map-picker').scrollIntoView({block:'start',behavior:'auto'});});
 $('restart-button').addEventListener('click', beginRun);
 $('pause-button').addEventListener('click', togglePause);
 $('sound-button').addEventListener('click', async () => {
