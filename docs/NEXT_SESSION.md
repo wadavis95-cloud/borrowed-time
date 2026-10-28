@@ -119,3 +119,21 @@ current two-snapshot 50 ms interpolation/hold can reveal late updates as skips.
 Do not call online smoothness fully cleared. Network/phone details unspecified.
 Test sampler completed, lobby and sockets cleaned up; no code change or submission.
 User now discussing anti-stutter strategies; keep changes pending their instruction.
+
+## Latest local spike and movement buffer update
+
+Branch codex/spike-movement-buffer, based on 0785696. See docs/SPIKE_BUFFER.md.
+Pre-change bundle backups/pre-spike-buffer-20261028.bundle verified. Adaptive queue
+of real server snapshots, 75–150ms target delay (initial 100ms), no extrapolation;
+HUD/rules/prices/20Hz broadcast unchanged. Local HTTP starts muted per user request;
+public HTTPS remains default-on. Measurements add p99/exact maxima/coarse peak times,
+device/mode network summaries, buffer holds and server-pause samples. Strict schema,
+2048B ingress/private keys/30min retention unchanged. Two review findings fixed with
+regressions: jump arc rewind, hidden-tab false holds. Minor deferred: per-device
+p99/max in API but dashboard breakdown rows remain p95. 213 regular and 57 network
+checks pass. Controlled replay improves short hitch behavior but adds visual delay;
+not a phone/WAN claim. Real local browser race/monitor worked; artifacts/performance
+contains both replay and local smoke evidence. User must judge smoothness versus
+added lag in a local two-device lobby. Final server runs on 0.0.0.0:4173; phone same
+Wi-Fi uses http://192.168.0.104:4173/ (Mac awake). Source-only development requires
+rebuild and restart, as before. Public runtime stays 926fb6d. No deploy or submission.

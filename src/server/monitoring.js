@@ -1,14 +1,22 @@
 import {timingSafeEqual} from 'node:crypto';
 import {monitorEventLoopDelay,performance} from 'node:perf_hooks';
-export const BINS=Object.freeze({frame:[8.4,16.8,25,33.4,50,100,250,1000],gap:[20,40,50,60,100,200,500,10000],rtt:[10,25,50,100,200,500,1000,10000],input:[10,25,50,100,150,250,500,5000],load:[500,1000,2000,5000,10000,20000,45000,120000],mapFirst:[50,100,200,500,1000,2000,5000,45000],mapRepeat:[50,100,200,500,1000,2000,5000,45000]});
+import {METRIC_BINS as BINS,PEAK_METRICS,SPIKE_THRESHOLDS} from '../metric-schema.js';
+export {BINS};
 const RETENTION_MS=30*60*1000,MAX_HISTORY=1800,MAX_REPORTS=6000;
 const META_KEYS=['map','inputMode','mode','device'];
-const CLIENT_KEYS=new Set([...META_KEYS,'frame','gap','rtt','input','load','mapFirst','mapRepeat','longTasks','errors','graphicsErrors','contextLosses','disconnects','slowFrames','frames']);
+const CLIENT_KEYS=new Set([...META_KEYS,'peaks','bufferUnderruns','bufferDelay','bufferHold','frame','gap','rtt','input','load','mapFirst','mapRepeat','longTasks','errors','graphicsErrors','contextLosses','disconnects','slowFrames','frames']);
 const COUNTERS=['connections','connectionRejects','roomRejects','disconnects','slowClients','invalidMessages','rateLimits','messagesIn','bytesIn','messagesOut','bytesOut','snapshots','httpRequests','httpErrors','http4xx','http5xx','monitorBytes','telemetryBytesIn','assetBytes','pageBytes','otherBytes','httpAborts','telemetryAccepted','telemetryRejected'];
 export function validReport(report){
  if(!report||typeof report!=='object'||Array.isArray(report))return false;
  for(const [key,value]of Object.entries(report)){
   if(!CLIENT_KEYS.has(key))return false;
+  if(key==='peaks'){
+   if(!value||typeof value!=='object'||Array.isArray(value))return false;
+   for(const [metric,peak]of Object.entries(value)){
+    if(!PEAK_METRICS.includes(metric)||!peak||typeof peak!=='object'||Array.isArray(peak)||Object.keys(peak).length!==2||!Object.hasOwn(peak,'ms')||!Object.hasOwn(peak,'at')||!Number.isFinite(peak.ms)||peak.ms<0||peak.ms>1e9||!Number.isSafeInteger(peak.at)||peak.at<0)return false;
+   }
+   continue;
+  }
   if(META_KEYS.includes(key)){const allowed=key==='map'?['tunnel','pirate','jungle','frozen','orbital','desert']:key==='inputMode'?['touch','keyboard','unknown']:key==='device'?['mobile','desktop','unknown']:['solo','online','demo'];if(!allowed.includes(value))return false;continue;}
   if(BINS[key]){if(!Array.isArray(value)||value.length!==8||!value.every(v=>Number.isInteger(v)&&v>=0&&v<=100000))return false;}
   else if(!Number.isInteger(value)||value<0||value>100000)return false;
@@ -48,18 +56,30 @@ export function createMonitoring({token='',state=()=>({}),now=Date.now,autoStart
  }
  function snapshot(){
   prune();const client={reports:reports.length,windowSeconds:RETENTION_MS/1000,retainedReportLimit:MAX_REPORTS,reportLimitReached:lastCapAt!==null&&lastCapAt>=now()-RETENTION_MS};
-  for(const [key,bins]of Object.entries(BINS)){
-   const values=Array(8).fill(0);for(const r of reports)r.report[key]?.forEach((v,i)=>values[i]+=v);
-   const index=quantile(values);client[key]={count:values.reduce((a,b)=>a+b,0),p95UpperMs:index===null||index===bins.length-1?null:bins[index],p95OverMs:index===bins.length-1?bins[index-1]:null};
+  function summary(selected,key){
+   const hist=Array(8).fill(0);let peak=null,peakReports=0;
+   for(const r of selected){r.report[key]?.forEach((v,i)=>hist[i]+=v);const p=r.report.peaks?.[key];if(p){peakReports++;if(!peak||p.ms>peak.ms)peak=p;}}
+   const bound=p=>{const i=quantile(hist,p);return {upper:i===null||i===7?null:BINS[key][i],over:i===7?BINS[key][6]:null};};
+   const p95=bound(.95),p99=bound(.99),threshold=SPIKE_THRESHOLDS[key];
+   const thresholdIndex=threshold===undefined?-1:BINS[key].indexOf(threshold);
+   return {count:hist.reduce((a,b)=>a+b,0),p95UpperMs:p95.upper,p95OverMs:p95.over,p99UpperMs:p99.upper,p99OverMs:p99.over,
+    maxMs:peak?.ms??null,maxAt:peak?.at??null,peakReports,overThreshold:thresholdIndex<0?null:hist.slice(thresholdIndex+1).reduce((a,b)=>a+b,0)};
   }
-  for(const key of [...CLIENT_KEYS].filter(k=>!BINS[k]&&!META_KEYS.includes(k)))client[key]=reports.reduce((sum,r)=>sum+(r.report[key]||0),0);
-  function summary(selected,key){const hist=Array(8).fill(0);for(const r of selected)r.report[key]?.forEach((v,i)=>hist[i]+=v);const index=quantile(hist);return {count:hist.reduce((a,b)=>a+b,0),p95UpperMs:index===null||index===7?null:BINS[key][index],p95OverMs:index===7?BINS[key][6]:null};}
+  for(const key of Object.keys(BINS))client[key]=summary(reports,key);
+  for(const key of [...CLIENT_KEYS].filter(k=>k!=='peaks'&&!BINS[k]&&!META_KEYS.includes(k)))client[key]=reports.reduce((sum,r)=>sum+(r.report[key]||0),0);
+  client.recentSpikes=[];
+  for(let i=reports.length-1;i>=0&&client.recentSpikes.length<24;i--){
+   const r=reports[i];
+   for(const [metric,threshold]of Object.entries(SPIKE_THRESHOLDS)){
+    const peak=r.report.peaks?.[metric];if(peak&&peak.ms>threshold&&client.recentSpikes.length<24)client.recentSpikes.push({metric,ms:peak.ms,at:peak.at,receivedAt:r.at,map:r.report.map??'unknown',device:r.report.device??'unknown',mode:r.report.mode??'unknown'});
+   }
+  }
   const group=field=>[...new Set(reports.map(r=>r.report[field]).filter(Boolean))].map(value=>{
    const selected=reports.filter(r=>r.report[field]===value),frame=summary(selected,'frame');
-   return {name:value,reports:selected.length,frames:frame.count,frameP95UpperMs:frame.p95UpperMs,frameP95OverMs:frame.p95OverMs,load:summary(selected,'load'),mapFirst:summary(selected,'mapFirst'),mapRepeat:summary(selected,'mapRepeat')};
+   return {name:value,reports:selected.length,frames:frame.count,frameP95UpperMs:frame.p95UpperMs,frameP95OverMs:frame.p95OverMs,load:summary(selected,'load'),mapFirst:summary(selected,'mapFirst'),mapRepeat:summary(selected,'mapRepeat'),gap:summary(selected,'gap'),rtt:summary(selected,'rtt'),input:summary(selected,'input'),bufferHold:summary(selected,'bufferHold'),bufferDelay:summary(selected,'bufferDelay')};
   });
   client.byMap=group('map');client.byInput=group('inputMode');client.byMode=group('mode');client.byDevice=group('device');
-  return {enabled,startedAt:started,uptimeSeconds:(now()-started)/1000,totals:{...totals},current:history.at(-1)||null,history:chartHistory(),client,notes:['Application JSON and declared completed HTTP body bytes; excludes TLS/WS/HTTP headers, aborted partial bodies and provider accounting.','Browser metrics are untrusted aggregate samples from up to the last thirty minutes (report-count cap can shorten coverage), not unique people. Histogram p95 values are bucket upper bounds; the last bucket includes overflow.','History and totals reset on process restart. No persistence, external alerts, billing integration or cold-start measurement.']};
+  return {enabled,startedAt:started,uptimeSeconds:(now()-started)/1000,totals:{...totals},current:history.at(-1)||null,history:chartHistory(),serverSpikes:history.filter(p=>p.eventLoopMaxMs>50||p.simulationBacklogMs>100).slice(-24).map(({at,eventLoopMaxMs,simulationBacklogMs,cpuPct})=>({at,eventLoopMaxMs,simulationBacklogMs,cpuPct})),client,notes:['Application JSON and declared completed HTTP body bytes; excludes TLS/WS/HTTP headers, aborted partial bodies and provider accounting.','Browser metrics are untrusted aggregate samples from up to the last thirty minutes (report-count cap can shorten coverage), not unique people. Histogram p95 values are bucket upper bounds; the last bucket includes overflow.','History and totals reset on process restart. No persistence, external alerts, billing integration or cold-start measurement.']};
  }
  function response(res,status,body){const text=body===undefined?'':JSON.stringify(body);count('monitorBytes',Buffer.byteLength(text));res.writeHead(status,{'Content-Length':Buffer.byteLength(text),'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'});res.end(text);}
  function handle(req,res){

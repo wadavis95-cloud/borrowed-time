@@ -1,4 +1,5 @@
 // Transport sends intentions; it never decides whether an ability or movement succeeds.
+import {createMovementBuffer} from './movement-buffer.js';
 import {createSnapshotDecoder} from './race-protocol.js';
 import {telemetry} from './telemetry.js';
 import { createGame } from './game.js';
@@ -12,7 +13,10 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
   let sequence = 0;
   let roundId = null;
   let lastMessage = performance.now(),lastSnapshotAt=null,probeAt=null;
+  let wasVisible=!document.hidden;
   let probing=false;const pendingInputs=new Map();
+  const resetTiming=()=>{lastSnapshotAt=null;probeAt=null;pendingInputs.clear();wasVisible=!document.hidden;};
+  document.addEventListener('visibilitychange',resetTiming);
   const probeTimer=setInterval(()=>{if(probing&&socket.readyState===WebSocket.OPEN&&(probeAt===null||performance.now()-probeAt>10000)){probeAt=performance.now();send({type:'probe',at:probeAt});}},5000);
   const watchdog = setInterval(() => {
     if (performance.now() - lastMessage > 10000) {
@@ -40,6 +44,7 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
     if(message.type==='probe'&&message.at===probeAt){telemetry.observe('rtt',performance.now()-probeAt);probeAt=null;}
     if (message.type === 'snapshot') {
       try{message=decode(message);}catch(error){onError(error.message);socket.close();return;}
+      const visible=!document.hidden;if(!visible||!wasVisible){lastSnapshotAt=null;pendingInputs.clear();}wasVisible=visible;
       const at=performance.now();if(lastSnapshotAt!==null)telemetry.observe('gap',at-lastSnapshotAt);lastSnapshotAt=at;
       if (roundId !== message.room.roundId) { roundId = message.room.roundId; sequence = 0;pendingInputs.clear(); }
       for(const [seq,sentAt]of pendingInputs){if(seq<=message.you.inputSeq){telemetry.observe('input',performance.now()-sentAt);pendingInputs.delete(seq);}}
@@ -56,7 +61,7 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
     if (!closed) onError('Could not reach the race server. Check your connection and try again.');
   });
   socket.addEventListener('close', () => {
-    clearInterval(watchdog);clearInterval(probeTimer);
+    clearInterval(watchdog);clearInterval(probeTimer);document.removeEventListener('visibilitychange',resetTiming);
     if (!closed){telemetry.count('disconnects');onStatus('disconnected');}
   });
   return {
@@ -68,55 +73,58 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
     },
     close() {
       clearInterval(probeTimer);send({ type: 'leave' });
-      closed = true;
+      closed = true;document.removeEventListener('visibilitychange',resetTiming);
       clearInterval(watchdog);clearInterval(probeTimer);
       socket.close();
     },
   };
 }
 
-// Draw 50ms behind receipt time so two actual snapshots can be blended smoothly.
-// No extrapolation: a broken connection must never invent another player's progress.
-export function createRaceView() {
-  let previous = null, latest = null, course = [], debris = [];
-  const blend = (a, b, t) => a + (b - a) * t;
-  function motion(before, after, t) {
-    if (!before || before.phase !== after.phase) return { ...after };
-    const result = { ...after, distance: blend(before.distance, after.distance, t), lane: blend(before.lane, after.lane, t) };
-    if (Number.isFinite(before.elapsed) && Number.isFinite(after.elapsed)) result.elapsed = blend(before.elapsed, after.elapsed, t);
-    // A purchase starts a new jump arc; don't blend it with an unrelated old jump.
-    if (before.jumpRemaining > 0 && before.jumpRemaining >= after.jumpRemaining && before.jumpDuration === after.jumpDuration) {
-      result.jumpRemaining = blend(before.jumpRemaining, after.jumpRemaining, t);
+// Buffer real snapshots on a server-time timeline; rules remain authoritative.
+export function createRaceView(options={}) {
+  const buffer=createMovementBuffer({onMetric:(key,ms)=>telemetry.observe(key,ms),onUnderrun:()=>telemetry.count('bufferUnderruns'),...options});
+  let latest=null,course=[],debris=[];
+  const blend=(a,b,t)=>a+(b-a)*t;
+  function motion(before,after,current,t,intervalMs){
+    if(!before||before.phase!==after.phase||current.phase!==after.phase)return {...current};
+    const result={...current,distance:blend(before.distance,after.distance,t),lane:blend(before.lane,after.lane,t)};
+    if(Number.isFinite(before.elapsed)&&Number.isFinite(after.elapsed))result.elapsed=blend(before.elapsed,after.elapsed,t);
+    // Jump poses follow the same buffered timeline as the course. Switching to
+    // a newer countdown mid-arc would reverse the pose as older frames catch up.
+    result.jumpKind=after.jumpKind;result.jumpDuration=after.jumpDuration;
+    result.jumpRemaining=after.jumpRemaining;
+    const sameArc=before.jumpRemaining>0&&before.jumpRemaining>=after.jumpRemaining&&before.jumpDuration===after.jumpDuration&&(after.jumpRemaining===0||before.jumpKind===after.jumpKind);
+    if(sameArc){result.jumpRemaining=blend(before.jumpRemaining,after.jumpRemaining,t);if(result.jumpRemaining>0)result.jumpKind=before.jumpKind;}
+    else if(after.jumpRemaining>0&&intervalMs>0){
+      const interval=intervalMs/1000;
+      const start=interval-(after.jumpDuration-after.jumpRemaining);
+      const along=interval*t;
+      result.jumpRemaining=along<start?0:Math.max(0,after.jumpDuration-(along-start));
     }
     return result;
   }
   return {
-    push(snapshot, receivedAt) {
-      const newRound = !latest || latest.snapshot.room.roundId !== snapshot.room.roundId || latest.snapshot.room.mapId !== snapshot.room.mapId;
-      if (newRound) {
-        const generated = createGame({ seed: snapshot.room.seed, mapId: snapshot.room.mapId });
-        course = generated.obstacles;
-        debris = generated.debris;
-      }
-      previous = newRound ? null : latest;
-      if (snapshot.debris) debris = snapshot.debris;
-      latest = { snapshot, receivedAt };
+    push(snapshot,receivedAt){
+      const newRound=!latest||latest.room.roundId!==snapshot.room.roundId||latest.room.mapId!==snapshot.room.mapId||latest.room.seed!==snapshot.room.seed||latest.you.id!==snapshot.you.id;
+      if(newRound){const generated=createGame({seed:snapshot.room.seed,mapId:snapshot.room.mapId});course=generated.obstacles;debris=generated.debris;buffer.reset();}
+      if(snapshot.debris)debris=snapshot.debris;
+      if(!newRound&&latest.you.game.phase==='ready'&&snapshot.you.game.phase==='running')buffer.reset();
+      latest=snapshot;buffer.push(snapshot,receivedAt);
     },
-    sample(now) {
-      if (!latest) return null;
-      const after = latest.snapshot;
-      const before = previous?.snapshot;
-      const duration = previous ? latest.receivedAt - previous.receivedAt : 0;
-      const t = duration > 0 ? Math.max(0, Math.min(1, (now - 50 - previous.receivedAt) / duration)) : 1;
-      const game = motion(before?.you.game, after.you.game, t);
-      game.obstacles = course;
-      game.debris = debris;
-      // Room time continues for spectators after their own run has ended.
-      // Like motion, hazards stop at the newest real snapshot during a stall.
-      game.raceElapsed = before ? blend(before.room.raceElapsed, after.room.raceElapsed, t) : after.room.raceElapsed;
-      const opponents = after.players.filter(player => player.id !== after.you.id && player.connected && !['won', 'lost'].includes(player.phase))
-        .map(player => motion(before?.players.find(old => old.id === player.id), player, t));
-      return { game, opponents };
+    sample(now){
+      const pair=buffer.sample(now);if(!pair)return null;
+      const {before,after,latest:current,t,intervalMs}=pair;
+      const game=motion(before.you.game,after.you.game,current.you.game,t,intervalMs);
+      game.obstacles=course;game.debris=debris;
+      game.raceElapsed=Number.isFinite(before.room.raceElapsed)&&Number.isFinite(after.room.raceElapsed)?blend(before.room.raceElapsed,after.room.raceElapsed,t):current.room.raceElapsed;
+      const opponents=current.players.filter(p=>p.id!==current.you.id&&p.connected&&!['won','lost'].includes(p.phase)).map(player=>{
+        const old=before.players.find(p=>p.id===player.id),next=after.players.find(p=>p.id===player.id);
+        return next?motion(old,next,player,t,intervalMs):{...player};
+      });
+      return {game,opponents};
     },
+    current:()=>latest?{...latest.you.game,obstacles:course,debris,raceElapsed:latest.room.raceElapsed}:null,
+    suspend:buffer.suspend,
+    diagnostics:buffer.diagnostics,
   };
 }

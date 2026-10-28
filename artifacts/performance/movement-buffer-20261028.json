@@ -1,0 +1,162 @@
+{
+  "at": "2026-10-28T21:42:12.138Z",
+  "baseline": "078569683962e20112566914f95dbd153e794664",
+  "description": "30m/s constant motion,20Hz authored snapshots,60Hz renderer,30ms nominal one-way delay. Bursts delay150ms every2s, server pauses omit100ms snapshots every2s; long outage500ms once.",
+  "limitations": [
+    "Synthetic timing replay, not a phone or Render benchmark.",
+    "Buffering deliberately adds visual delay; no local prediction.",
+    "No extrapolation: long outages remain visible holds."
+  ],
+  "profiles": [
+    {
+      "profile": "steady",
+      "before": {
+        "heldFrames": 0,
+        "maxForwardStepMeters": 0.5000000000000284,
+        "reversals": 0,
+        "visualBufferDelayMs": {
+          "p50": 50,
+          "p95": 50,
+          "max": 50
+        },
+        "diagnostics": null
+      },
+      "after": {
+        "heldFrames": 0,
+        "maxForwardStepMeters": 0.5000000000001705,
+        "reversals": 0,
+        "visualBufferDelayMs": {
+          "p50": 74.99999999993724,
+          "p95": 74.9999999999618,
+          "max": 74.99999999996362
+        },
+        "diagnostics": {
+          "bufferedSnapshots": 32,
+          "targetDelayMs": 75,
+          "underruns": 0,
+          "worstHoldMs": 0
+        }
+      }
+    },
+    {
+      "profile": "jitter",
+      "before": {
+        "heldFrames": 55,
+        "maxForwardStepMeters": 0.7857142857173756,
+        "reversals": 0,
+        "visualBufferDelayMs": {
+          "p50": 55.83333333331848,
+          "p95": 69.99999999999864,
+          "max": 70.00000000006003
+        },
+        "diagnostics": null
+      },
+      "after": {
+        "heldFrames": 0,
+        "maxForwardStepMeters": 0.4999999999997158,
+        "reversals": 0,
+        "visualBufferDelayMs": {
+          "p50": 94.99997823801732,
+          "p95": 94.99999999909778,
+          "max": 94.99999999965985
+        },
+        "diagnostics": {
+          "bufferedSnapshots": 32,
+          "targetDelayMs": 95,
+          "underruns": 0,
+          "worstHoldMs": 0
+        }
+      }
+    },
+    {
+      "profile": "network-bursts",
+      "before": {
+        "heldFrames": 50,
+        "maxForwardStepMeters": 6,
+        "reversals": 0,
+        "visualBufferDelayMs": {
+          "p50": 50,
+          "p95": 86.66666666665878,
+          "max": 186.6666666667261
+        },
+        "diagnostics": null
+      },
+      "after": {
+        "heldFrames": 14,
+        "maxForwardStepMeters": 0.5366666666667186,
+        "reversals": 0,
+        "visualBufferDelayMs": {
+          "p50": 154.04817927459226,
+          "p95": 179.91795395975169,
+          "max": 186.6666666667261
+        },
+        "diagnostics": {
+          "bufferedSnapshots": 32,
+          "targetDelayMs": 150,
+          "underruns": 5,
+          "worstHoldMs": 116.6666666666656
+        }
+      }
+    },
+    {
+      "profile": "server-pauses",
+      "before": {
+        "heldFrames": 25,
+        "maxForwardStepMeters": 3.1000000000017565,
+        "reversals": 0,
+        "visualBufferDelayMs": {
+          "p50": 50,
+          "p95": 50,
+          "max": 136.66666666672518
+        },
+        "diagnostics": null
+      },
+      "after": {
+        "heldFrames": 3,
+        "maxForwardStepMeters": 0.5000000000001492,
+        "reversals": 0,
+        "visualBufferDelayMs": {
+          "p50": 149.99821053918276,
+          "p95": 149.99999992413905,
+          "max": 149.99999997521263
+        },
+        "diagnostics": {
+          "bufferedSnapshots": 32,
+          "targetDelayMs": 150,
+          "underruns": 1,
+          "worstHoldMs": 66.66666666666606
+        }
+      }
+    },
+    {
+      "profile": "long-stall",
+      "before": {
+        "heldFrames": 31,
+        "maxForwardStepMeters": 16.5,
+        "reversals": 0,
+        "visualBufferDelayMs": {
+          "p50": 50,
+          "p95": 50,
+          "max": 536.6666666666779
+        },
+        "diagnostics": null
+      },
+      "after": {
+        "heldFrames": 27,
+        "maxForwardStepMeters": 0.5499999999998977,
+        "reversals": 0,
+        "visualBufferDelayMs": {
+          "p50": 82.48975518654152,
+          "p95": 486.666666666677,
+          "max": 536.6666666666779
+        },
+        "diagnostics": {
+          "bufferedSnapshots": 32,
+          "targetDelayMs": 75,
+          "underruns": 1,
+          "worstHoldMs": 466.66666666667516
+        }
+      }
+    }
+  ]
+}

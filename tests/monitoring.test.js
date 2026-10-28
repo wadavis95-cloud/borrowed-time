@@ -100,3 +100,12 @@ test('hashed dashboard bundles remain monitoring traffic, while game bundles cou
  }
  const totals=m.snapshot().totals;assert.equal(totals.monitorBytes,200);assert.equal(totals.otherBytes,100);assert.equal(totals.httpRequests,1);m.dispose();
 });
+net('real HTTP reports retain rare device-specific timing peaks with existing protection',async t=>{
+ const {origin}=await start(t);const report={...makeReport(),device:'mobile',mode:'online',map:'tunnel',inputMode:'touch'};
+ for(let i=0;i<99;i++)addObservation(report,'gap',50,Date.now());addObservation(report,'gap',237,Date.now());addObservation(report,'input',181,Date.now());
+ assert.ok(Buffer.byteLength(JSON.stringify(report))<2048);
+ const r=await fetch(origin+'/ops/client',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(report)});assert.equal(r.status,204);
+ assert.equal((await fetch(origin+'/ops/metrics')).status,401);
+ const m=await (await fetch(origin+'/ops/metrics',{headers:{Authorization:'Bearer '+key}})).json();
+ assert.equal(m.client.gap.p95UpperMs,50);assert.equal(m.client.gap.maxMs,237);assert.equal(m.client.byDevice[0].input.maxMs,181);assert.ok(m.client.recentSpikes.some(e=>e.metric==='input'&&e.device==='mobile'));
+});

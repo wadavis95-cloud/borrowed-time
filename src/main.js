@@ -19,7 +19,8 @@ import { createAbilityCoach } from './ability-coach.js';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('game-canvas');
-const audio = createGameAudio({enabledByDefault:true});
+// Local HTTP playtests start muted; the public HTTPS game keeps sound on.
+const audio = createGameAudio({enabledByDefault:location.protocol==='https:'});
 const abilityCoach = createAbilityCoach();
 const raceUI=createRaceUI({reducedMotion:window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   onCue:cue=>audio.cue(cue.kind,cue.value),
@@ -265,7 +266,7 @@ function joinRace(type) {
       snapshot = next;
       // Local preview renders its simulation directly; online races retain interpolation.
       if(mode==='demo')game=next.you.game;
-      else {raceView.push(next,performance.now());game=raceView.sample(performance.now()+50).game;}
+      else {raceView.push(next,performance.now());game=raceView.current();}
       updateRoom();
       updateHUD();
       if (starting) showCourse();
@@ -592,6 +593,7 @@ canvas.addEventListener('webglcontextlost',()=>telemetry.count('contextLosses'))
 canvas.addEventListener('pointercancel', () => { touchStart = null; });
 // Solo pauses on tab switches. A multiplayer clock belongs to the server and keeps running.
 document.addEventListener('visibilitychange', () => {
+  raceView.suspend();
   if (mode === 'solo' && document.hidden && game.phase === 'running') { pauseGame(game); updateHUD(); }
   if(document.hidden)mapLoader?.cancelMeasurement();
   accumulator = 0;

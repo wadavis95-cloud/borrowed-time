@@ -1,0 +1,4 @@
+// Shared fixed schema: no identifiers or free-form event data.
+export const METRIC_BINS={frame:[8.4,16.8,25,33.4,50,100,250,1000],gap:[20,40,50,60,100,200,500,10000],rtt:[10,25,50,100,200,500,1000,10000],input:[10,25,50,100,150,250,500,5000],load:[500,1000,2000,5000,10000,20000,45000,120000],mapFirst:[50,100,200,500,1000,2000,5000,45000],mapRepeat:[50,100,200,500,1000,2000,5000,45000],bufferDelay:[50,75,100,125,150,200,250,500],bufferHold:[16.8,33.4,50,100,200,500,1000,10000]};
+export const SPIKE_THRESHOLDS=Object.freeze({frame:50,gap:100,rtt:200,input:150,bufferHold:50});
+export const PEAK_METRICS=Object.freeze([...Object.keys(SPIKE_THRESHOLDS),'bufferDelay']);
