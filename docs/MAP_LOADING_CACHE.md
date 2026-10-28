@@ -71,3 +71,16 @@ The dashboard retains only the last two minutes. Running-frame samples from this
 ### Acceptance correction from user observation
 
 The user reports Orbital Escape took approximately 5–7 seconds on the first visit, after selecting the map and before it appeared. Treat that as a failed first-map latency target. The recommendation above to keep the trial is not acceptance of loading performance; the trial remains local pending diagnosis. The retained Orbital <=200 ms preparation sample cannot be confidently correlated with this earliest slow event. The two-minute window can expire earlier data, and the current end marker is draw submission rather than confirmed visible presentation. Neither is a proven root cause. Next diagnostic work should measure from the selection input through a subsequent visible rendering opportunity, separate download/decode/scene preparation, and retain bounded per-map worst-case/session summaries long enough for a complete six-map test. Do not replace the user-observed 5–7 second wait with the faster retained aggregate or claim the issue fixed.
+
+## Phone retest with extended retention — 2026-10-28
+
+User completed another run after retention was extended. Capture at 14:48:47 UTC: `artifacts/performance/phone-wifi-retest-20261028.json`. The 30-minute window retained 21 mobile/touch/solo reports and running-frame samples for all six maps. Report-cap eviction flag was false.
+
+- 13,595 running-frame samples, aggregate and every-map p95 bucket ceiling <=25 ms. Two reported frames exceeded 50 ms (~0.015%).
+- Initial page readiness: one sample >1000 to <=2000 ms.
+- First-in-tab map preparation: pirate/frozen/orbital/desert >100 to <=200 ms each; jungle >200 to <=500 ms. Tunnel initial readiness is separate.
+- In-memory revisits: Orbital >50 to <=100 ms; pirate/jungle/frozen/desert >100 to <=200 ms; tunnel >200 to <=500 ms.
+- Zero reported browser errors, graphics errors, context losses, disconnects or rejected telemetry. All races in the report were solo, so no multiplayer RTT/input-ack measurements were expected.
+- Server asset-body output was zero since the monitoring restart; the test reused cached asset bytes. Code/pages still transferred (~2.49 MB). This is a cached retest, not reproduction of the earlier cold first-Orbital delay.
+
+These observations demonstrate the longer retention keeping all-map coverage and useful cached performance. No loading fix was made between tests, and draw-submission remains the timing endpoint. Do not claim the user-reported 5–7 second first load was fixed or disproved; confirmation of the latest perceived delay and a controlled cold-load/presentation measurement remain necessary.

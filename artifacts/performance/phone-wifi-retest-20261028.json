@@ -1,0 +1,315 @@
+{
+  "capturedAt": "2026-10-28T14:48:47.939Z",
+  "startedAt": 1793198116580,
+  "client": {
+    "reports": 21,
+    "windowSeconds": 1800,
+    "retainedReportLimit": 6000,
+    "reportLimitReached": false,
+    "frame": {
+      "count": 13595,
+      "p95UpperMs": 25,
+      "p95OverMs": null
+    },
+    "gap": {
+      "count": 0,
+      "p95UpperMs": null,
+      "p95OverMs": null
+    },
+    "rtt": {
+      "count": 0,
+      "p95UpperMs": null,
+      "p95OverMs": null
+    },
+    "input": {
+      "count": 0,
+      "p95UpperMs": null,
+      "p95OverMs": null
+    },
+    "load": {
+      "count": 1,
+      "p95UpperMs": 2000,
+      "p95OverMs": null
+    },
+    "mapFirst": {
+      "count": 5,
+      "p95UpperMs": 500,
+      "p95OverMs": null
+    },
+    "mapRepeat": {
+      "count": 6,
+      "p95UpperMs": 500,
+      "p95OverMs": null
+    },
+    "longTasks": 0,
+    "errors": 0,
+    "graphicsErrors": 0,
+    "contextLosses": 0,
+    "disconnects": 0,
+    "slowFrames": 2,
+    "frames": 13595,
+    "byMap": [
+      {
+        "name": "tunnel",
+        "reports": 4,
+        "frames": 2318,
+        "frameP95UpperMs": 25,
+        "frameP95OverMs": null,
+        "load": {
+          "count": 1,
+          "p95UpperMs": 2000,
+          "p95OverMs": null
+        },
+        "mapFirst": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "mapRepeat": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        }
+      },
+      {
+        "name": "pirate",
+        "reports": 3,
+        "frames": 2329,
+        "frameP95UpperMs": 25,
+        "frameP95OverMs": null,
+        "load": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "mapFirst": {
+          "count": 1,
+          "p95UpperMs": 200,
+          "p95OverMs": null
+        },
+        "mapRepeat": {
+          "count": 1,
+          "p95UpperMs": 200,
+          "p95OverMs": null
+        }
+      },
+      {
+        "name": "jungle",
+        "reports": 4,
+        "frames": 2257,
+        "frameP95UpperMs": 25,
+        "frameP95OverMs": null,
+        "load": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "mapFirst": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "mapRepeat": {
+          "count": 1,
+          "p95UpperMs": 200,
+          "p95OverMs": null
+        }
+      },
+      {
+        "name": "frozen",
+        "reports": 3,
+        "frames": 2305,
+        "frameP95UpperMs": 25,
+        "frameP95OverMs": null,
+        "load": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "mapFirst": {
+          "count": 1,
+          "p95UpperMs": 200,
+          "p95OverMs": null
+        },
+        "mapRepeat": {
+          "count": 1,
+          "p95UpperMs": 200,
+          "p95OverMs": null
+        }
+      },
+      {
+        "name": "orbital",
+        "reports": 4,
+        "frames": 2252,
+        "frameP95UpperMs": 25,
+        "frameP95OverMs": null,
+        "load": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "mapFirst": {
+          "count": 1,
+          "p95UpperMs": 200,
+          "p95OverMs": null
+        },
+        "mapRepeat": {
+          "count": 1,
+          "p95UpperMs": 100,
+          "p95OverMs": null
+        }
+      },
+      {
+        "name": "desert",
+        "reports": 3,
+        "frames": 2134,
+        "frameP95UpperMs": 25,
+        "frameP95OverMs": null,
+        "load": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "mapFirst": {
+          "count": 1,
+          "p95UpperMs": 200,
+          "p95OverMs": null
+        },
+        "mapRepeat": {
+          "count": 1,
+          "p95UpperMs": 200,
+          "p95OverMs": null
+        }
+      }
+    ],
+    "byInput": [
+      {
+        "name": "touch",
+        "reports": 21,
+        "frames": 13595,
+        "frameP95UpperMs": 25,
+        "frameP95OverMs": null,
+        "load": {
+          "count": 1,
+          "p95UpperMs": 2000,
+          "p95OverMs": null
+        },
+        "mapFirst": {
+          "count": 5,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "mapRepeat": {
+          "count": 6,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        }
+      }
+    ],
+    "byMode": [
+      {
+        "name": "solo",
+        "reports": 21,
+        "frames": 13595,
+        "frameP95UpperMs": 25,
+        "frameP95OverMs": null,
+        "load": {
+          "count": 1,
+          "p95UpperMs": 2000,
+          "p95OverMs": null
+        },
+        "mapFirst": {
+          "count": 5,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "mapRepeat": {
+          "count": 6,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        }
+      }
+    ],
+    "byDevice": [
+      {
+        "name": "mobile",
+        "reports": 21,
+        "frames": 13595,
+        "frameP95UpperMs": 25,
+        "frameP95OverMs": null,
+        "load": {
+          "count": 1,
+          "p95UpperMs": 2000,
+          "p95OverMs": null
+        },
+        "mapFirst": {
+          "count": 5,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "mapRepeat": {
+          "count": 6,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        }
+      }
+    ]
+  },
+  "totals": {
+    "connections": 0,
+    "connectionRejects": 0,
+    "roomRejects": 0,
+    "disconnects": 0,
+    "slowClients": 0,
+    "invalidMessages": 0,
+    "rateLimits": 0,
+    "messagesIn": 0,
+    "bytesIn": 0,
+    "messagesOut": 0,
+    "bytesOut": 0,
+    "snapshots": 0,
+    "httpRequests": 45,
+    "httpErrors": 0,
+    "http4xx": 0,
+    "http5xx": 0,
+    "monitorBytes": 24389186,
+    "telemetryBytesIn": 7563,
+    "assetBytes": 0,
+    "pageBytes": 11865,
+    "otherBytes": 2481476,
+    "httpAborts": 0,
+    "telemetryAccepted": 21,
+    "telemetryRejected": 0
+  },
+  "current": {
+    "at": 1793198927639,
+    "intervalSeconds": 1.001,
+    "sockets": 0,
+    "maxConnections": 128,
+    "rooms": 0,
+    "maxRooms": 25,
+    "racingRooms": 0,
+    "racingPlayers": 0,
+    "bufferedBytes": 0,
+    "simulationBacklogMs": 0,
+    "cpuPct": 0.693451883842281,
+    "rssMB": 80.658432,
+    "heapMB": 10.502224,
+    "eventLoopP95Ms": 11.337727,
+    "eventLoopMaxMs": 11.395071,
+    "bytesOutPerSec": 0,
+    "bytesInPerSec": 0,
+    "monitorBytesPerSec": 69274.72527472528,
+    "assetBytesPerSec": 0,
+    "pageBytesPerSec": 0,
+    "otherBytesPerSec": 0,
+    "snapshotsPerSec": 0,
+    "httpRequestsPerSec": 0,
+    "httpErrorsPerSec": 0,
+    "connectionRejectsPerSec": 0,
+    "roomRejectsPerSec": 0,
+    "disconnectsPerSec": 0,
+    "slowClientsPerSec": 0,
+    "httpP95Ms": null
+  }
+}

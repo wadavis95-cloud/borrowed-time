@@ -44,3 +44,7 @@ User reports first Orbital selection waited 5–7 seconds before the map appeare
 ### Monitoring retention extended
 
 Browser reports and server charts now cover up to 30 minutes (6,000 report / 1,800 one-second server-sample caps). Older server-chart points compact into ten-sample peak/average buckets; latest minute stays at one-second resolution. The dashboard warns on report-cap eviction. No gameplay timer, loading deadline or polling interval was changed. Restart clears memory; historical phone evidence remains in saved artifacts. The slow first Orbital load remains unresolved; extending retention alone does not close the end-to-end presentation measurement gap. LAN test setup remains temporary and local, no deployment.
+
+### Latest phone retest saved
+
+`artifacts/performance/phone-wifi-retest-20261028.json` captures all six maps under the extended 30-minute window, 21 mobile/touch/solo reports, 13,595 frames, p95 <=25 ms, two >50 ms frames and no reported errors. Asset-body output since restart was zero: this was a cached retest. Orbital preparation <=200 ms / revisit <=100 ms cannot establish that its earlier cold 5–7 second visible delay is fixed. Asked user whether that delay recurred; no loading optimization or presentation-timing fix has been implemented yet.
