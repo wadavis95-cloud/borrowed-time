@@ -1,18 +1,17 @@
 import { createAudioScene } from './audio-scene.js';
-// Optional local-runner feedback. AudioContext is created/resumed only by toggle(),
+// Local-runner feedback. AudioContext is created/resumed only by unlock()/toggle(),
 // which the caller must invoke from a user gesture. No sounds or assets load on import.
-const STEP_DISTANCE = .36 / .058; // Half of the avatar's .72s run clip, in metres.
 const MAX_VOICES = 24;
 const SILENCE = .0001;
 const finite = (value) => Number.isFinite(value) ? value : 0;
 const clock = () => globalThis.performance?.now() ?? Date.now();
 
-export function createGameAudio() {
+export function createGameAudio({enabledByDefault=false}={}) {
   let context = null, master = null, noiseBuffer = null;
-  let requested = false, disposed = false, toggleSequence = 0, previous = null;
+  let requested = enabledByDefault, disposed = false, toggleSequence = 0, previous = null;
   const voices = new Set();
   const scene = createAudioScene();
-  let nextBeat=0,nextAir=0,noteIndex=0;
+  let nextBeat=0,tickIndex=0;
   const page = globalThis.document;
 
   function stopVoices() {
@@ -24,7 +23,7 @@ export function createGameAudio() {
 
   function reset() {
     previous = null;
-    scene.reset();nextBeat=nextAir=noteIndex=0;
+    scene.reset();nextBeat=tickIndex=0;
     stopVoices();
   }
 
@@ -93,14 +92,11 @@ export function createGameAudio() {
     source.stop(end + .01);
   }
 
-  function footstep(step, surface) {
-    play({ noise:true, frequency:surface.frequency*(step%2?1.08:.95), endFrequency:surface.frequency*.55, duration:surface.decay, gain:.19, pan:step%2?.12:-.12 });
-    play({ frequency:surface.body, endFrequency:surface.body*.55, duration:surface.decay, gain:.07 });
-  }
-
   function launch(long) {
-    play({ noise: true, frequency: 500, endFrequency: long ? 1900 : 1250, duration: long ? .17 : .11, gain: long ? .17 : .12 });
-    play({ frequency: long ? 180 : 210, endFrequency: long ? 350 : 290, duration: .13, gain: .09 });
+    // Paid leap: a sharp rising zip with a short airy tail; free hop is softer.
+    play({noise:true,frequency:long?900:500,endFrequency:long?2800:1250,duration:long?.16:.11,gain:long?.20:.12});
+    play({frequency:long?320:210,endFrequency:long?700:290,duration:.13,gain:.10});
+    if(long)play({frequency:540,endFrequency:380,duration:.09,gain:.05,delay:.10});
   }
 
   function land(surface) {
@@ -109,8 +105,8 @@ export function createGameAudio() {
   }
 
   function boost() {
-    play({ noise: true, frequency: 350, endFrequency: 1800, duration: .25, gain: .2 });
-    play({ frequency: 130, endFrequency: 230, duration: .19, gain: .1 });
+    play({ noise: true, frequency: 350, endFrequency: 2400, duration: .48, gain: .22 });
+    play({ frequency: 100, endFrequency: 260, duration: .22, gain: .12 });
   }
 
   function collision() {
@@ -124,30 +120,16 @@ export function createGameAudio() {
     }
   }
 
-  function environment(direction) {
-    const {mapId,surface,warning,impact,urgency,beatSeconds}=direction;
-    const event=impact||warning;
-    if(event) {
-      const pan=(event.lane-1)*.7;
-      const warningFrequency={tunnel:320,pirate:170,jungle:250,frozen:1800,orbital:680,desert:480}[mapId];
-      play({noise:true,frequency:warningFrequency,endFrequency:warningFrequency*(impact ? .45 : 1.8),duration:impact ? .25 : .22,gain:impact ? .25 : .13,pan,filter:mapId==='pirate'?'lowpass':'bandpass'});
-      if(mapId==='pirate'||mapId==='orbital')play({frequency:mapId==='pirate'?65:440,endFrequency:impact?40:220,duration:.18,gain:.08,pan});
-    }
-    // Short scheduled voices, never a permanent loop. No catch-up bursts after
-    // tab switches, pauses or an interrupted AudioContext.
-    if(context.currentTime>=nextAir) {
-      play({noise:true,frequency:surface.air,endFrequency:surface.air*.8,duration:1.1,gain:.03,filter:'lowpass',attack:.24});
-      nextAir=context.currentTime+.85;
-    }
-    if(context.currentTime>=nextBeat) {
-      const notes=[146.83,220,174.61,261.63,146.83,196,174.61,220];
-      const transpose={tunnel:1,pirate:1,jungle:1.5,frozen:2,orbital:.75,desert:1.25}[mapId];
-      const frequency=notes[noteIndex++%notes.length]*transpose;
-      const duck=event ? .35 : 1;
-      play({frequency,duration:.52,gain:.027*duck,attack:.055});
-      if(urgency>.35)play({frequency:73.42,duration:.10,gain:(.025+urgency*.02)*duck});
-      nextBeat=context.currentTime+beatSeconds;
-    }
+  function clockTick(direction) {
+    // Mechanical tick/tock, tied only to this runner's remaining seconds.
+    // One tick per update at most: never replay missed ticks after a pause.
+    const now=context.currentTime;
+    nextBeat=Math.min(nextBeat,now+direction.beatSeconds);
+    if(now<nextBeat)return;
+    const frequency=tickIndex++%2?1000:1400;
+    play({noise:true,frequency:3400,endFrequency:1400,duration:.025,gain:.13,filter:'highpass',attack:.002});
+    play({frequency,endFrequency:frequency*.68,duration:.025,gain:.075,attack:.002});
+    nextBeat=now+direction.beatSeconds;
   }
 
   function cue(kind,value) {
@@ -184,7 +166,7 @@ export function createGameAudio() {
     const discontinuity = next.elapsed < before.elapsed - .001
       || next.distance < before.distance - .01 || next.hits < before.hits
       || next.elapsed - before.elapsed > .5 || now - before.now > 500;
-    if (discontinuity) { stopVoices(); nextBeat=nextAir=0;return; }
+    if (discontinuity) { stopVoices(); nextBeat=0;return; }
     if (next.phase === 'won') {
       if (before.phase === 'running') { stopVoices(); escape(); }
       return;
@@ -199,8 +181,8 @@ export function createGameAudio() {
       if(before.phase!==next.phase||next.phase==='paused')stopVoices();
       return;
     }
-    if (before.phase !== 'running') { nextBeat=nextAir=0;return; }
-    environment(direction);
+    if (before.phase !== 'running') { nextBeat=0;return; }
+    clockTick(direction);
 
     const hit = next.hits > before.hits;
     const launched = next.jump > 0 && (before.jump <= 0
@@ -210,9 +192,24 @@ export function createGameAudio() {
     if (launched) launch(next.jumpKind === 'long');
     if (landed && !hit) land(direction.surface);
     if (next.boost > 0 && before.boost <= 0) boost();
-    const step = Math.floor(next.distance / STEP_DISTANCE);
-    if (!hit && !launched && !landed && next.jump <= 0
-      && step > Math.floor(before.distance / STEP_DISTANCE)) footstep(step,direction.surface);
+
+  }
+
+  async function unlock() {
+    if(disposed||!requested)return false;
+    if(context?.state==='running')return true;
+    const sequence=toggleSequence;
+    try {
+      // Called directly from a click/tap/key gesture, never during page loading.
+      if(!context||context.state==='closed')initialize();
+      await context.resume();
+      if(!requested||disposed){if(context.state!=='closed')await context.suspend();return false;}
+      if(context.state!=='running')throw new Error('Sound could not start.');
+      return true;
+    } catch(error) {
+      if(sequence===toggleSequence){requested=false;reset();}
+      throw error;
+    }
   }
 
   async function toggle() {
@@ -258,5 +255,5 @@ export function createGameAudio() {
     if (context && context.state !== 'closed') void context.close().catch(() => {});
   }
 
-  return { toggle, update, cue, reset, dispose, get enabled() { return requested && context?.state === 'running'; } };
+  return { toggle, unlock, update, cue, reset, dispose, get enabled() { return requested; } };
 }

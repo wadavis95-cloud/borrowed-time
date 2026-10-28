@@ -1548,3 +1548,10 @@ html[data-input="keyboard"] .arena .keyboard-hint { display:grid;grid-template-c
 .arena .keyboard-hint .key-hop { grid-column:1/-1; }
 html[data-input="keyboard"] .arena .keyboard-hint kbd { display:grid;place-items:center;width:24px;height:24px;padding:0;font-size:11px; }
 .arena .keyboard-hint small { font-size:8px;color:#c9d7dd; }
+
+/* Speaker toggle keeps an accessible action label without a text-heavy header. */
+#sound-button { display:grid;place-items:center;min-width:44px;width:44px;height:44px;padding:10px; }
+#sound-button svg { width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round; }
+#sound-button .speaker-slash { display:none; }
+#sound-button[aria-pressed="false"] .speaker-waves { display:none; }
+#sound-button[aria-pressed="false"] .speaker-slash { display:block; }

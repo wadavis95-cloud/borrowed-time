@@ -20,7 +20,7 @@ export function createAudioScene() {
     previous={mapId,elapsed,distance:state.distance,phase:state.phase};
     const active=state.phase==='running';
     const urgency=Math.max(0,Math.min(1,(30-(state.timeLeft??60))/25));
-    const result={active,mapId,surface:AUDIO_SURFACES[mapId],urgency,beatSeconds:1.05-urgency*.35,warning:null,impact:null};
+    const result={active,mapId,surface:AUDIO_SURFACES[mapId],urgency,beatSeconds:1-.78*Math.pow(Math.max(0,Math.min(1,(30-(state.timeLeft??60))/30)),1.35),warning:null,impact:null};
     if(!active)return result;
     const baseline=restart||before.phase!=='running'||elapsed-before.elapsed>.5;
     for(const event of state.debris||[]) {

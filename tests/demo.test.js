@@ -1,9 +1,10 @@
+import {scheduleApproachingDebris} from '../src/hazards.js';
 import { AVATARS } from '../src/avatars.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createDemoRace, chooseDemoAction } from '../src/demo.js';
 import { createRoomManager } from '../src/server/rooms.js';
-import { createGame, startGame, updateGame, moveLane, jump, buyAbility } from '../src/game.js';
+import { createGame, startGame, updateGame, moveLane, jump, buyAbility, CONFIG, ABILITIES } from '../src/game.js';
 
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
@@ -260,4 +261,41 @@ test('showcase spends time immediately on boost and a nearby leap without changi
   assert.notEqual(chooseDemoAction(rival,1,{showcase:true}),'longJump');
   updateGame(camera,4.5);
   assert.equal(chooseDemoAction(camera,0,{showcase:true}),'longJump');
+});
+
+test('showcase rivals answer the opening burst and chase visible leaders without free speed',()=>{
+ const racer=()=>{const g=createGame({course:[]});startGame(g);return g;};
+ const rival=racer();updateGame(rival,1.05);
+ assert.equal(chooseDemoAction(rival,2,{showcase:true}),'boost');
+ const trailing=racer();updateGame(trailing,12);
+ const options={showcase:true,pack:[{distance:trailing.distance+14,phase:'running'}]};
+ assert.equal(chooseDemoAction(trailing,0,options),'boost');
+ assert.equal(applyAction(trailing,'boost'),true);
+ assert.equal(trailing.timeSpent,5);
+ const leader=racer();updateGame(leader,12);
+ assert.equal(chooseDemoAction(leader,0,{showcase:true,pack:[{distance:leader.distance-25,phase:'running'}]}),null);
+});
+
+test('showcase pack stays close and trades places on all six maps with ordinary purchases',()=>{
+ for(const mapId of ['tunnel','pirate','jungle','frozen','orbital','desert']){
+  const games=Array.from({length:4},(_,i)=>{const g=createGame({seed:42,mapId});g.lane=[1,0,2,1][i];startGame(g);return g;});
+  games.forEach(g=>g.debris=games[0].debris);
+  let close=0,total=0,passes=0;const sides=[0,0,0];
+  for(let tick=0;tick<4200;tick++){
+   if(tick%9===0){
+    const pack=games.map(g=>({phase:g.phase,distance:g.distance}));
+    games.forEach((g,i)=>assert.equal(applyAction(g,chooseDemoAction(g,i,{showcase:true,pack:pack.filter((_,j)=>i!==j)})),true));
+   }
+   scheduleApproachingDebris(games[0].debris,games,CONFIG,ABILITIES.boost.multiplier);
+   games.forEach(g=>updateGame(g,1/60,true));
+   if(tick>180&&games[0].phase==='running'){
+    total++;
+    if(games.slice(1).some(g=>g.phase==='running'&&g.distance-games[0].distance>=-18&&g.distance-games[0].distance<45))close++;
+    games.slice(1).forEach((g,i)=>{const d=g.distance-games[0].distance,side=d>2?1:d< -2?-1:sides[i];if(sides[i]&&side!==sides[i])passes++;sides[i]=side;});
+   }
+  }
+  assert.ok(close/total>.85,`${mapId}: a nearby rival should stay visible most of the race`);
+  assert.ok(passes>=2,`${mapId}: racers should trade places`);
+  assert.ok(games.every(g=>g.phase==='won'),`${mapId}: racers still need to escape within their own budgets`);
+ }
 });

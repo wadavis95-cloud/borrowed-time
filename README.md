@@ -68,7 +68,7 @@ Fresh solo runs and restarts randomize obstacle and roof-debris placements. Mult
 
 Controls adapt to keyboard/mouse or touch input, including hybrid devices. Keyboard uses A/D, W, Q and E; Space does not hop. The HUD emphasizes remaining time, ability prices and availability, movement controls, and hazard feedback. Gameplay and results omit distance, sectors, hit counts, spending totals, and elapsed-run statistics. The simulation keeps those measurements internally.
 
-Sound starts muted. Use **Sound off / Sound on** in the header to toggle subtle procedural footsteps, jumps, landings, boosts, collisions, and an escape chime. Audio starts only after that click and stays silent in hidden tabs; no audio assets or service are downloaded.
+Sound is enabled by default and starts after the first click, tap or key press. Use the speaker icon in the header to mute or enable it. Only your runner’s hops, landings, Boost, Long jump, collisions and finish cues are audible; footsteps and shared environment sounds are removed. A mechanical clock tick speeds up as your remaining time drops. Hidden tabs stay silent; no audio assets or service are downloaded.
 
 Amber markers warn of roof collapses, cannon strikes or volcanic rocks, depending on the map. Change lanes before impact: even a paid jump cannot protect you underneath a falling chunk. After landing, its rubble can be hopped. A chunk can penalize each runner only once; a hit also briefly slows you down.
 

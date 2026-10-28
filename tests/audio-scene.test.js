@@ -17,10 +17,18 @@ test('six surfaces differ and scene cues use nearby authoritative race time, onc
   assert.equal(scene.update({...state,raceElapsed:8}).warning,null,'resume does not replay old warnings');
   scene.reset();assert.equal(scene.update(state).warning,null,'new session baselines silently');
 });
-test('music urgency follows actual remaining budget without mutating state or changing hazard time',()=>{
+test('clock urgency follows actual remaining budget without mutating state or changing hazard time',()=>{
   const scene=createAudioScene();const state={mapId:'frozen',phase:'running',elapsed:2,distance:50,timeLeft:60,debris:[]};
   const copy=structuredClone(state);scene.update(state);assert.deepEqual(state,copy);
   const relaxed=scene.update({...state,elapsed:3});
   const urgent=scene.update({...state,elapsed:4,timeLeft:8});
   assert.ok(urgent.urgency>relaxed.urgency);assert.ok(urgent.beatSeconds<relaxed.beatSeconds);
+});
+
+test('clock ticks accelerate from one second toward a quarter second using only the local budget',()=>{
+ const scene=createAudioScene();
+ const interval=timeLeft=>scene.update({phase:'running',mapId:'tunnel',distance:100,elapsed:4,timeLeft,debris:[]}).beatSeconds;
+ assert.equal(interval(60),1);
+ assert.ok(interval(15)<interval(30));assert.ok(interval(5)<interval(15));
+ assert.ok(interval(0)>=.2&&interval(0)<.3);
 });

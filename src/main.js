@@ -16,7 +16,7 @@ import { createAbilityCoach } from './ability-coach.js';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('game-canvas');
-const audio = createGameAudio();
+const audio = createGameAudio({enabledByDefault:true});
 const abilityCoach = createAbilityCoach();
 const raceUI=createRaceUI({reducedMotion:window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   onCue:cue=>audio.cue(cue.kind,cue.value),
@@ -507,13 +507,25 @@ $('leave-room').addEventListener('click', returnToMenu);
 $('choose-map').addEventListener('click',()=>{returnToMenu();$('map-picker').scrollIntoView({block:'start',behavior:'auto'});});
 $('restart-button').addEventListener('click', beginRun);
 $('pause-button').addEventListener('click', togglePause);
+function updateSoundButton() {
+  const button=$('sound-button');
+  button.setAttribute('aria-pressed',String(audio.enabled));
+  button.setAttribute('aria-label',audio.enabled?'Mute sound':'Enable sound');
+  button.title=audio.enabled?'Sound on — mute':'Sound muted — enable';
+}
+async function unlockSound(event) {
+  if(event.target.closest?.('#sound-button'))return;
+  try{await audio.unlock();}catch{/* Audio remains optional if the device rejects it. */}
+  updateSoundButton();
+}
+document.addEventListener('pointerdown',unlockSound,{passive:true});
+document.addEventListener('keydown',unlockSound);
 $('sound-button').addEventListener('click', async () => {
   const button = $('sound-button');
   button.disabled = true;
   try { await audio.toggle(); }
   catch (error) { notify(error.message, 'warning'); }
-  button.textContent = audio.enabled ? 'Sound on' : 'Sound off';
-  button.setAttribute('aria-pressed', String(audio.enabled));
+  updateSoundButton();
   button.disabled = false;
 });
 for (const [id, action] of [['boost-button','boost'], ['long-jump-button','longJump'], ['left-button','left'], ['right-button','right'], ['hop-button','jump']]) {

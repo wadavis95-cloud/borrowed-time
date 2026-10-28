@@ -1,9 +1,8 @@
 import { ABILITIES, CONFIG, createGame, getJumpHeight, projectTravel } from './game.js';
 import { connectRace } from './network.js';
 
-// Each runner spends its own clock on a different plan. The first runner is the camera's
-// viewpoint: an early breakaway lets rivals fall behind before their later
-// purchases bring them back. These are inputs, never forced race positions.
+// Solo CPU drivers retain their distinct spending plans. Watch demo adds a
+// separate pack-aware strategy below, using public positions and real purchases.
 const BOOST_PLANS = [
   [10.5, 31, 42], // First: early burst, recover, then push for the exit.
   [16, 34],       // Second: patient chaser with a longer recovery between bursts.
@@ -18,7 +17,7 @@ const travelDistance = projectTravel;
 
 // Every strategy uses the same rules and reacts to its own hazards first.
 // Different spending times create natural separation, catches and overtakes.
-export function chooseDemoAction(game, index, { showcase = false } = {}) {
+export function chooseDemoAction(game, index, { showcase = false, pack = [] } = {}) {
   if (game.phase !== 'running') return null;
   // The server supplies the start grid; never shuffle racers on race start.
   if (index === 3 && game.elapsed >= .3 && game.elapsed < .6 && !game.jumpRemaining) return 'jump';
@@ -106,10 +105,20 @@ export function chooseDemoAction(game, index, { showcase = false } = {}) {
     const openingLeap = index === 1 ? .9 : index === 0 ? 5.1 : null;
     if (openingLeap !== null && game.elapsed >= openingLeap && game.elapsed < openingLeap + .6
       && !game.jumpRemaining && game.timeLeft > ABILITIES.longJump.cost + 5) return 'longJump';
-    if (index === 0 && game.elapsed >= .6 && game.elapsed < 1.2
-      && !game.boostCooldown && game.timeLeft > ABILITIES.boost.cost + 5) return 'boost';
+    const openingBoost=[.6,2.1,1.05,1.65][index%4];
+    const rivals=pack.filter(r=>r.phase==='running'&&Number.isFinite(r.distance));
+    const gap=Math.max(0,...rivals.map(r=>r.distance-game.distance));
+    const contest=rivals.some(r=>Math.abs(r.distance-game.distance)<8);
+    const challenge=[10.5+index*.6,24+index*.7,37+index*.4]
+      .some(start=>game.elapsed>=start&&game.elapsed<start+.75);
+    const chaseWindow=game.elapsed>=8&&game.elapsed<14
+      ||game.elapsed>=23&&game.elapsed<31||game.elapsed>=37;
+    const wantsBoost=game.elapsed>=openingBoost&&game.elapsed<openingBoost+.6
+      || chaseWindow&&(gap>5+index*1.5||contest&&challenge);
+    if(wantsBoost&&!game.boostCooldown&&game.timeSpent<18
+      &&game.timeLeft>ABILITIES.boost.cost+5)return 'boost';
   }
-  if (!game.boostCooldown && !game.stunRemaining && game.timeLeft > ABILITIES.boost.cost + 5
+  if (!showcase && !game.boostCooldown && !game.stunRemaining && game.timeLeft > ABILITIES.boost.cost + 5
     && BOOST_PLANS[index % BOOST_PLANS.length].some(start => game.elapsed >= start
       && game.elapsed < start + 1.35)) {
     return 'boost';
@@ -191,7 +200,8 @@ export function createDemoRace({ mapId = 'tunnel', onStatus, onError, onSnapshot
     for (const [index, runner] of runners.entries()) {
       if (!runner.snapshot || runner.snapshot.room.phase !== 'racing') continue;
       const game = { ...runner.snapshot.you.game, obstacles: runner.course.obstacles, debris: runner.snapshot.debris ?? runner.course.debris };
-      const action = chooseDemoAction(game, index, { showcase: true });
+      const pack=runner.snapshot.players.filter(player=>player.id!==runner.snapshot.you.id);
+      const action = chooseDemoAction(game, index, { showcase: true, pack });
       if (action && !runner.connection.input(action)) {
         fail('A demo runner could not send its move. Start the demo again to reconnect.');
         break;

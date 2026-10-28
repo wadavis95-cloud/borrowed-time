@@ -20,7 +20,7 @@ test('countdown and GO sound only after opt-in and are silent while hidden or di
   } finally {if(oldAudio===undefined)delete globalThis.AudioContext;else globalThis.AudioContext=oldAudio;if(oldDocument===undefined)delete globalThis.document;else globalThis.document=oldDocument;}
 });
 
-test('race soundtrack and surface voices stay bounded and stop on pause, hide, mute and disposal',async()=>{
+test('local feedback and clock voices stay bounded and stop on pause, hide, mute and disposal',async()=>{
   const oldAudio=globalThis.AudioContext,oldDocument=globalThis.document;
   const sources=[],active=new Set(),listeners={};let ctx,disconnections=0;
   const param=()=>({value:0,setValueAtTime(){},exponentialRampToValueAtTime(){},linearRampToValueAtTime(){}});
@@ -38,13 +38,23 @@ test('race soundtrack and surface voices stay bounded and stop on pause, hide, m
     const audio=createGameAudio(),state={phase:'running',mapId:'pirate',elapsed:0,distance:0,timeLeft:60,debris:[]};
     audio.update(state);assert.equal(sources.length,0);
     await audio.toggle();audio.update(state);
+    audio.update({...state,elapsed:.01,distance:1}); // establishes the first clock tick
+    const ticking=sources.length;
+    const debris=[{id:'other-lane',lane:0,z:40,warnAt:.015,impactAt:.025}];
+    audio.update({...state,elapsed:.02,distance:2,debris});
+    audio.update({...state,elapsed:.03,distance:3,debris});
+    assert.equal(sources.length,ticking,'walking and shared hazard events add no sound');
+    audio.update({...state,elapsed:.04,distance:4,boostRemaining:4});
+    const boosted=sources.length;assert.ok(boosted>ticking,'the local Boost has a sound');
+    audio.update({...state,elapsed:.05,distance:5,boostRemaining:4,jumpKind:'long',jumpRemaining:1.2});
+    assert.ok(sources.length>boosted,'the local Long jump has a sound');
     for(let i=1;i<=600;i++) {
       ctx.currentTime=i/60;
       for(const s of [...active])if(s.end<=ctx.currentTime){active.delete(s);s.onended?.();}
       audio.update({...state,elapsed:i/60,distance:i*.5,timeLeft:60-i/60});
       assert.ok(active.size<=24);
     }
-    assert.ok(sources.length>30,'footsteps, air and music are scheduled during a run');
+    assert.ok(sources.length>10,'mechanical clock ticks are scheduled during a run');
     audio.update({...state,phase:'paused',elapsed:10,distance:300});assert.equal(active.size,0);
     audio.update({...state,elapsed:10,distance:300});ctx.currentTime+=.1;audio.update({...state,elapsed:10.1,distance:303});assert.ok(active.size>0);
     globalThis.document.hidden=true;listeners.visibilitychange();assert.equal(active.size,0);
@@ -52,4 +62,25 @@ test('race soundtrack and surface voices stay bounded and stop on pause, hide, m
     globalThis.document.hidden=false;await audio.toggle();assert.equal(active.size,0);assert.equal(audio.enabled,false);
     audio.dispose();assert.equal(active.size,0);assert.ok(disconnections>0);assert.equal(listeners.visibilitychange,undefined);
   } finally {if(oldAudio===undefined)delete globalThis.AudioContext;else globalThis.AudioContext=oldAudio;if(oldDocument===undefined)delete globalThis.document;else globalThis.document=oldDocument;}
+});
+
+test('default-on sound waits for a gesture, and muting before unlock stays muted',async()=>{
+ const oldAudio=globalThis.AudioContext;let created=0;
+ const param=()=>({value:0});
+ globalThis.AudioContext=class {
+  constructor(){created++;this.state='suspended';this.sampleRate=1000;this.destination={};}
+  createGain(){return {gain:param(),connect(){},disconnect(){}};}
+  createBuffer(){return {getChannelData:()=>new Float32Array(2000)};}
+  async resume(){this.state='running';}async suspend(){this.state='suspended';}async close(){this.state='closed';}
+ };
+ try{
+  const audio=createGameAudio({enabledByDefault:true});
+  assert.equal(audio.enabled,true);assert.equal(created,0);
+  await audio.unlock();assert.equal(created,1);assert.equal(audio.enabled,true);
+  await audio.unlock();assert.equal(created,1);
+  await audio.toggle();await audio.unlock();assert.equal(audio.enabled,false);
+  audio.dispose();
+  const muted=createGameAudio({enabledByDefault:true});await muted.toggle();await muted.unlock();
+  assert.equal(created,1);assert.equal(muted.enabled,false);muted.dispose();
+ }finally{if(oldAudio===undefined)delete globalThis.AudioContext;else globalThis.AudioContext=oldAudio;}
 });
