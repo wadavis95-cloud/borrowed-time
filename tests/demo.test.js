@@ -283,7 +283,7 @@ test('showcase pack stays close and trades places on all six maps with ordinary 
   let close=0,total=0,passes=0;const sides=[0,0,0];
   for(let tick=0;tick<4200;tick++){
    if(tick%9===0){
-    const pack=games.map(g=>({phase:g.phase,distance:g.distance}));
+    const pack=games.map(g=>({phase:g.phase,distance:g.distance,lane:g.lane}));
     games.forEach((g,i)=>assert.equal(applyAction(g,chooseDemoAction(g,i,{showcase:true,pack:pack.filter((_,j)=>i!==j)})),true));
    }
    scheduleApproachingDebris(games[0].debris,games,CONFIG,ABILITIES.boost.multiplier);
@@ -298,4 +298,13 @@ test('showcase pack stays close and trades places on all six maps with ordinary 
   assert.ok(passes>=2,`${mapId}: racers should trade places`);
   assert.ok(games.every(g=>g.phase==='won'),`${mapId}: racers still need to escape within their own budgets`);
  }
+});
+
+test('showcase followers give nearby racers a clear lane without stepping into hazards',()=>{
+ const game=createGame({course:[]});startGame(game);updateGame(game,2);
+ const pack=[{lane:1,distance:game.distance+3,phase:'running'}];
+ assert.ok(['left','right'].includes(chooseDemoAction(game,0,{showcase:true,pack})));
+ assert.equal(chooseDemoAction(game,0),null,'solo driving is unchanged');
+ game.obstacles=[{lane:0,z:game.distance+10,type:'barrier'}];
+ assert.equal(chooseDemoAction(game,0,{showcase:true,pack:[...pack,{lane:2,distance:game.distance+4,phase:'running'}]}),null,'hold position if the only free side is unsafe');
 });

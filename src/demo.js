@@ -123,6 +123,20 @@ export function chooseDemoAction(game, index, { showcase = false, pack = [] } = 
       && game.elapsed < start + 1.35)) {
     return 'boost';
   }
+  // Cosmetic crowding is solved with real lane inputs, never actor offsets.
+  // Only the follower yields; hazard reactions above always take priority.
+  if(showcase&&game.elapsed>1.2&&!game.stunRemaining&&!game.jumpRemaining){
+    const nearby=pack.filter(r=>r.phase==='running'&&Math.abs(r.distance-game.distance)<5);
+    const following=nearby.some(r=>r.lane===game.lane&&r.distance>game.distance+.5);
+    if(following){
+      const clear=[game.lane-1,game.lane+1].filter(lane=>lane>=0&&lane<=2&&!overhead(lane)
+        &&!nearby.some(r=>r.lane===lane)
+        &&!(game.obstacles||[]).some(o=>o.lane===lane&&o.z+(o.length||0)>=game.distance-2
+          &&o.z-game.distance<travelDistance(game,1.4))
+        &&!obstacles.some(o=>o.lane===lane&&o.z-game.distance<travelDistance(game,1.4)));
+      if(clear.length)return clear[index%clear.length]<game.lane?'left':'right';
+    }
+  }
   return null;
 }
 

@@ -25,3 +25,9 @@ Final verification: 168 unit tests passed (11 network tests skipped), syntax/whi
 Added six original procedural ambience/motif palettes: low tunnel echoes, ship waves/wood creaks with a light melody, jungle rumble/percussive notes, summit wind/chimes, station hum/synth notes, and canyon wind/plucked tones. No music files or external services are downloaded. Fixed background ambience is separate from opponent activity; footsteps and shared hazard-event audio remain absent.
 
 Backgrounds play only during the local run, below clock/action feedback, and soften during Boost/jumps or low remaining time. All share the speaker toggle and 24-voice ceiling, stop on pause/hide/finish/mute, reset on replay/map changes, and dispose normally. Syntax checks and 169 unit tests passed (11 network skips).
+
+## Demo spacing
+
+Demo followers now choose a clear adjacent lane when another racer is within five metres ahead in their lane. Hazard reactions and ability timing take priority. A candidate lane must have no nearby racer, no approaching overhead impact, and no ground obstacle within the next 1.4 seconds of projected travel. The initial grid stays stable; this begins after the opening 1.2 seconds. Narrow safe routes can still bunch racers briefly.
+
+Only demo inputs change; no fake avatar offsets, extra lanes, collisions, prices or solo AI changes. The all-six-map close-race regression now includes public lane data, verifying proximity, overtakes, legal actions and all four racers escaping. All 170 unit tests passed (11 network skips).
