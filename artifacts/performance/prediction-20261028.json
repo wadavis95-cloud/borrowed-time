@@ -1,0 +1,123 @@
+{
+  "at": "2026-10-28T22:11:13.637Z",
+  "baseline": "ee90384481bbcc1585ce490733261ac72e049dba",
+  "scope": "Synthetic 20Hz snapshots and 60Hz render; gaps batch every 2s; not physical phone/WAN improvement evidence.",
+  "results": [
+    {
+      "gapMs": 0,
+      "before": {
+        "heldFrames": 0,
+        "maxStepMeters": 0.5000000000001705,
+        "minStepMeters": 0,
+        "diagnostics": {
+          "bufferedSnapshots": 32,
+          "targetDelayMs": 75,
+          "underruns": 0,
+          "worstHoldMs": 0
+        }
+      },
+      "after": {
+        "heldFrames": 0,
+        "maxStepMeters": 0.5000000000001705,
+        "minStepMeters": 0,
+        "diagnostics": {
+          "bufferedSnapshots": 32,
+          "targetDelayMs": 75,
+          "underruns": 0,
+          "worstHoldMs": 0,
+          "predictedSamples": 0,
+          "maxPredictionMs": 0,
+          "correctionCount": 0,
+          "maxCorrectionMeters": 0
+        }
+      }
+    },
+    {
+      "gapMs": 150,
+      "before": {
+        "heldFrames": 14,
+        "maxStepMeters": 0.5366666666667186,
+        "minStepMeters": 0,
+        "diagnostics": {
+          "bufferedSnapshots": 32,
+          "targetDelayMs": 150,
+          "underruns": 5,
+          "worstHoldMs": 116.6666666666656
+        }
+      },
+      "after": {
+        "heldFrames": 0,
+        "maxStepMeters": 0.5000000000001492,
+        "minStepMeters": 0,
+        "diagnostics": {
+          "bufferedSnapshots": 32,
+          "targetDelayMs": 150,
+          "underruns": 0,
+          "worstHoldMs": 0,
+          "predictedSamples": 19,
+          "maxPredictionMs": 111.66666666672972,
+          "correctionCount": 1,
+          "maxCorrectionMeters": 0.07499999999999574
+        }
+      }
+    },
+    {
+      "gapMs": 250,
+      "before": {
+        "heldFrames": 40,
+        "maxStepMeters": 0.5499999999998977,
+        "minStepMeters": 0,
+        "diagnostics": {
+          "bufferedSnapshots": 32,
+          "targetDelayMs": 150,
+          "underruns": 5,
+          "worstHoldMs": 216.6666666666647
+        }
+      },
+      "after": {
+        "heldFrames": 6,
+        "maxStepMeters": 0.5551623617469374,
+        "minStepMeters": 0,
+        "diagnostics": {
+          "bufferedSnapshots": 32,
+          "targetDelayMs": 150,
+          "underruns": 5,
+          "worstHoldMs": 99.99999999999909,
+          "predictedSamples": 49,
+          "maxPredictionMs": 120,
+          "correctionCount": 5,
+          "maxCorrectionMeters": 0.5166666666665662
+        }
+      }
+    },
+    {
+      "gapMs": 500,
+      "before": {
+        "heldFrames": 67,
+        "maxStepMeters": 0.5499999999998977,
+        "minStepMeters": 0,
+        "diagnostics": {
+          "bufferedSnapshots": 32,
+          "targetDelayMs": 150,
+          "underruns": 5,
+          "worstHoldMs": 466.6666666666624
+        }
+      },
+      "after": {
+        "heldFrames": 65,
+        "maxStepMeters": 0.5956447187927125,
+        "minStepMeters": 0,
+        "diagnostics": {
+          "bufferedSnapshots": 32,
+          "targetDelayMs": 150,
+          "underruns": 5,
+          "worstHoldMs": 349.9999999999968,
+          "predictedSamples": 100,
+          "maxPredictionMs": 120,
+          "correctionCount": 5,
+          "maxCorrectionMeters": 0.5499999999998693
+        }
+      }
+    }
+  ]
+}

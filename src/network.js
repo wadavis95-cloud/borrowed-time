@@ -2,7 +2,7 @@
 import {createMovementBuffer} from './movement-buffer.js';
 import {createSnapshotDecoder} from './race-protocol.js';
 import {telemetry} from './telemetry.js';
-import { createGame } from './game.js';
+import { CONFIG, ABILITIES, createGame } from './game.js';
 
 export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
   const url = new URL('/race', window.location.href);
@@ -84,6 +84,39 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
 export function createRaceView(options={}) {
   const buffer=createMovementBuffer({onMetric:(key,ms)=>telemetry.observe(key,ms),onUnderrun:()=>telemetry.count('bufferUnderruns'),...options});
   let latest=null,course=[],debris=[];
+  const rendered=new Map();
+  let correctionCount=0,maxCorrectionMeters=0,lastRenderAt=null;
+  const maxSpeed=CONFIG.topSpeed*Math.max(ABILITIES.boost.multiplier,ABILITIES.longJump.multiplier);
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  function clearMotion(){rendered.clear();lastRenderAt=null;}
+  function present(id,result,previous,confirmed,pair,now){
+    const dt=pair.intervalMs/1000;
+    let velocity=dt>0&&previous?.phase==='running'&&confirmed?.phase==='running'?clamp((confirmed.distance-previous.distance)/dt,0,maxSpeed):0;
+    if(Number.isFinite(confirmed?.speed))velocity=Math.min(velocity,Math.max(0,confirmed.speed));
+    if(result.phase!=='running'){rendered.delete(id);return result;}
+    const extra=pair.predictionMs/1000;
+    if(extra>0){
+      result.distance=Math.min(CONFIG.courseLength-.001,result.distance+velocity*extra);
+      if(Number.isFinite(result.elapsed))result.elapsed+=extra;
+      // Only continue an acknowledged arc; never create a new jump.
+      result.jumpRemaining=Math.max(0,(result.jumpRemaining||0)-extra);
+      if(!result.jumpRemaining)result.jumpKind=null;
+    }
+    const last=rendered.get(id),frameDt=last?Math.max(0,now-last.at):0;
+    let correction=last?.correction??null;
+    if(last&&last.snapshot!==pair.latest&&last.predictionMs>0){
+      const expected=last.distance+last.velocity*frameDt/1000;
+      const offset=expected-result.distance;
+      // Large disagreements snap to authority rather than drift through hazards.
+      correction=Math.abs(offset)<=6?{offset,at:now}:null;
+      if(correction&&Math.abs(offset)>.01){correctionCount++;maxCorrectionMeters=Math.max(maxCorrectionMeters,Math.abs(offset));}
+    }
+    if(correction){const t=clamp((now-correction.at)/300,0,1);result.distance+=correction.offset*(1-t*t*(3-2*t));if(t===1)correction=null;}
+    result.distance=clamp(result.distance,0,CONFIG.courseLength-.001);
+    const visibleSpeed=last&&frameDt>0?clamp((result.distance-last.distance)*1000/frameDt,0,maxSpeed):velocity;
+    rendered.set(id,{at:now,distance:result.distance,velocity:visibleSpeed,predictionMs:pair.predictionMs,snapshot:pair.latest,correction});
+    return result;
+  }
   const blend=(a,b,t)=>a+(b-a)*t;
   function motion(before,after,current,t,intervalMs){
     if(!before||before.phase!==after.phase||current.phase!==after.phase)return {...current};
@@ -94,7 +127,7 @@ export function createRaceView(options={}) {
     result.jumpKind=after.jumpKind;result.jumpDuration=after.jumpDuration;
     result.jumpRemaining=after.jumpRemaining;
     const sameArc=before.jumpRemaining>0&&before.jumpRemaining>=after.jumpRemaining&&before.jumpDuration===after.jumpDuration&&(after.jumpRemaining===0||before.jumpKind===after.jumpKind);
-    if(sameArc){result.jumpRemaining=blend(before.jumpRemaining,after.jumpRemaining,t);if(result.jumpRemaining>0)result.jumpKind=before.jumpKind;}
+    if(sameArc){result.jumpRemaining=after.jumpRemaining===0?Math.max(0,before.jumpRemaining-intervalMs*t/1000):blend(before.jumpRemaining,after.jumpRemaining,t);if(result.jumpRemaining>0)result.jumpKind=before.jumpKind;}
     else if(after.jumpRemaining>0&&intervalMs>0){
       const interval=intervalMs/1000;
       const start=interval-(after.jumpDuration-after.jumpRemaining);
@@ -105,26 +138,30 @@ export function createRaceView(options={}) {
   }
   return {
     push(snapshot,receivedAt){
+      if(latest&&Number.isFinite(snapshot.serverTime)&&snapshot.serverTime<latest.serverTime)clearMotion();
       const newRound=!latest||latest.room.roundId!==snapshot.room.roundId||latest.room.mapId!==snapshot.room.mapId||latest.room.seed!==snapshot.room.seed||latest.you.id!==snapshot.you.id;
-      if(newRound){const generated=createGame({seed:snapshot.room.seed,mapId:snapshot.room.mapId});course=generated.obstacles;debris=generated.debris;buffer.reset();}
+      if(newRound){const generated=createGame({seed:snapshot.room.seed,mapId:snapshot.room.mapId});course=generated.obstacles;debris=generated.debris;buffer.reset();clearMotion();correctionCount=0;maxCorrectionMeters=0;}
       if(snapshot.debris)debris=snapshot.debris;
-      if(!newRound&&latest.you.game.phase==='ready'&&snapshot.you.game.phase==='running')buffer.reset();
+      if(!newRound&&latest.you.game.phase==='ready'&&snapshot.you.game.phase==='running'){buffer.reset();clearMotion();}
       latest=snapshot;buffer.push(snapshot,receivedAt);
     },
     sample(now){
       const pair=buffer.sample(now);if(!pair)return null;
       const {before,after,latest:current,t,intervalMs}=pair;
-      const game=motion(before.you.game,after.you.game,current.you.game,t,intervalMs);
+      if(lastRenderAt!==null&&now-lastRenderAt>250)clearMotion();
+      lastRenderAt=now;
+      const game=present(current.you.id,motion(before.you.game,after.you.game,current.you.game,t,intervalMs),before.you.game,after.you.game,pair,now);
       game.obstacles=course;game.debris=debris;
       game.raceElapsed=Number.isFinite(before.room.raceElapsed)&&Number.isFinite(after.room.raceElapsed)?blend(before.room.raceElapsed,after.room.raceElapsed,t):current.room.raceElapsed;
+      if(Number.isFinite(game.raceElapsed))game.raceElapsed+=pair.predictionMs/1000;
       const opponents=current.players.filter(p=>p.id!==current.you.id&&p.connected&&!['won','lost'].includes(p.phase)).map(player=>{
         const old=before.players.find(p=>p.id===player.id),next=after.players.find(p=>p.id===player.id);
-        return next?motion(old,next,player,t,intervalMs):{...player};
+        return next?present(player.id,motion(old,next,player,t,intervalMs),old,next,pair,now):{...player};
       });
       return {game,opponents};
     },
     current:()=>latest?{...latest.you.game,obstacles:course,debris,raceElapsed:latest.room.raceElapsed}:null,
-    suspend:buffer.suspend,
-    diagnostics:buffer.diagnostics,
+    suspend(){buffer.suspend();clearMotion();},
+    diagnostics:()=>({...buffer.diagnostics(),correctionCount,maxCorrectionMeters}),
   };
 }

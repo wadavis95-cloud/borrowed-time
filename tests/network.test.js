@@ -14,7 +14,7 @@ function snapshot(distance, lane = 1, roundId = 'one') {
 }
 
 test('view uses server collapse timings instead of the original seeded schedule', () => {
-  const view = createRaceView({minDelayMs:50,initialDelayMs:50,maxDelayMs:50});
+  const view = createRaceView({maxPredictionMs:0,minDelayMs:50,initialDelayMs:50,maxDelayMs:50});
   const first = snapshot(100);
   first.debris = [{ id: 'roof', lane: 0, z: 150, warnAt: 1, fallAt: 2.75, impactAt: 3.4 }];
   view.push(first, 1000);
@@ -27,7 +27,7 @@ test('view uses server collapse timings instead of the original seeded schedule'
 });
 
 test('rendering interpolates actual positions without advancing authoritative state', () => {
-  const view = createRaceView({minDelayMs:50,initialDelayMs:50,maxDelayMs:50});
+  const view = createRaceView({maxPredictionMs:0,minDelayMs:50,initialDelayMs:50,maxDelayMs:50});
   const first = snapshot(100, 0), second = snapshot(110, 2);
   view.push(first, 1000);
   view.push(second, 1050);
@@ -42,7 +42,7 @@ test('rendering interpolates actual positions without advancing authoritative st
 });
 
 test('new rounds reset interpolation and remove disconnected ghosts immediately', () => {
-  const view = createRaceView({minDelayMs:50,initialDelayMs:50,maxDelayMs:50});
+  const view = createRaceView({maxPredictionMs:0,minDelayMs:50,initialDelayMs:50,maxDelayMs:50});
   view.push(snapshot(800), 1000);
   const next = snapshot(0, 1, 'two');
   next.players[1].connected = false;
@@ -53,7 +53,7 @@ test('new rounds reset interpolation and remove disconnected ghosts immediately'
 });
 
 test('jump starts occur on the buffered timeline without blending from grounded', () => {
-  const view = createRaceView({minDelayMs:50,initialDelayMs:50,maxDelayMs:50});
+  const view = createRaceView({maxPredictionMs:0,minDelayMs:50,initialDelayMs:50,maxDelayMs:50});
   view.push(snapshot(100), 1000);
   const next = snapshot(101);
   next.players[1].jumpRemaining = 1.4;
@@ -65,7 +65,7 @@ test('jump starts occur on the buffered timeline without blending from grounded'
 
 test('a runner whose race ended disappears instead of freezing on the course', () => {
   for (const phase of ['won', 'lost']) {
-    const view = createRaceView({minDelayMs:50,initialDelayMs:50,maxDelayMs:50});
+    const view = createRaceView({maxPredictionMs:0,minDelayMs:50,initialDelayMs:50,maxDelayMs:50});
     view.push(snapshot(100), 1000);
     const next = snapshot(105);
     next.players[1].phase = phase;
@@ -76,7 +76,7 @@ test('a runner whose race ended disappears instead of freezing on the course', (
 });
 
 test('the view interpolates the race clock with positions and regenerates seeded debris', () => {
-  const view = createRaceView({minDelayMs:50,initialDelayMs:50,maxDelayMs:50});
+  const view = createRaceView({maxPredictionMs:0,minDelayMs:50,initialDelayMs:50,maxDelayMs:50});
   const first = snapshot(18), next = snapshot(36);
   first.room.raceElapsed = 1;
   first.you.game.elapsed = 1;
@@ -100,7 +100,7 @@ test('the view interpolates the race clock with positions and regenerates seeded
 });
 
 test('the shared debris clock continues while a finished local runner watches opponents', () => {
-  const view = createRaceView({minDelayMs:50,initialDelayMs:50,maxDelayMs:50});
+  const view = createRaceView({maxPredictionMs:0,minDelayMs:50,initialDelayMs:50,maxDelayMs:50});
   const first = snapshot(900), next = snapshot(900);
   for (const current of [first, next]) {
     current.you.game.phase = 'won';
@@ -123,7 +123,7 @@ test('the shared debris clock continues while a finished local runner watches op
 });
 
 test('landing interpolates local and remote jump motion through the last snapshot interval', () => {
-  const view = createRaceView({minDelayMs:50,initialDelayMs:50,maxDelayMs:50});
+  const view = createRaceView({maxPredictionMs:0,minDelayMs:50,initialDelayMs:50,maxDelayMs:50});
   const first = snapshot(100), next = snapshot(101);
   for (const state of [first.you.game, first.players[1]]) {
     state.jumpRemaining = .04;
@@ -134,7 +134,7 @@ test('landing interpolates local and remote jump motion through the last snapsho
   view.push(first, 1000);
   view.push(next, 1050);
   const result = view.sample(1075);
-  assert.equal(result.game.jumpRemaining, .02);
-  assert.equal(result.opponents[0].jumpRemaining, .02);
+  assert.ok(Math.abs(result.game.jumpRemaining-.015)<1e-8);
+  assert.ok(Math.abs(result.opponents[0].jumpRemaining-.015)<1e-8);
   assert.equal(view.sample(5000).opponents[0].jumpRemaining, 0);
 });

@@ -7,7 +7,7 @@ function snap(ms,{round='one',phase='running'}={}){
  players:[{id:'other',phase:'running',distance:ms*.03+10,lane:0,connected:true,jumpRemaining:0,jumpDuration:.65}],debris:[{id:'roof',impactAt:2}]};
 }
 test('queue preserves time-spaced movement across batched arrivals',()=>{
- const view=createRaceView({onMetric(){},onUnderrun(){}});
+ const view=createRaceView({maxPredictionMs:0,onMetric(){},onUnderrun(){}});
  for(let t=0;t<=500;t+=50)view.push(snap(t),t);
  const before=view.sample(500).game.distance;
  // Three individually timed snapshots arrive together after a network pause.
@@ -18,7 +18,7 @@ test('queue preserves time-spaced movement across batched arrivals',()=>{
  assert.ok(view.diagnostics().bufferedSnapshots>2);
 });
 test('adaptive delay remains bounded and playback never reverses or invents progress',()=>{
- const view=createRaceView({onMetric(){},onUnderrun(){}});let prior=0,latest=0;
+ const view=createRaceView({maxPredictionMs:0,onMetric(){},onUnderrun(){}});let prior=0,latest=0;
  for(let t=0;t<=6000;t+=10){
   if(t%50===0&&t%1000<850){latest=t;view.push(snap(t),t);}
   const result=view.sample(t);if(!result)continue;
@@ -30,38 +30,38 @@ test('adaptive delay remains bounded and playback never reverses or invents prog
  assert.equal(view.diagnostics().underruns,0);
 });
 test('stall recovery records one underrun and an exact hold duration',()=>{
- const metrics=[],view=createRaceView({onMetric:(...v)=>metrics.push(v),onUnderrun(){}});
+ const metrics=[],view=createRaceView({maxPredictionMs:0,onMetric:(...v)=>metrics.push(v),onUnderrun(){}});
  for(let t=0;t<=500;t+=50){view.push(snap(t),t);view.sample(t);}
  view.sample(800);view.sample(820);view.push(snap(850),850);view.sample(850);
  assert.ok(view.diagnostics().underruns>=1);
  assert.ok(metrics.some(([key,ms])=>key==='bufferHold'&&ms>=20));
 });
 test('latest membership, phase and hazards apply without waiting for buffered movement',()=>{
- const view=createRaceView();view.push(snap(0),0);view.push(snap(50),50);view.sample(50);
+ const view=createRaceView({maxPredictionMs:0});view.push(snap(0),0);view.push(snap(50),50);view.sample(50);
  const next=snap(100,{phase:'won'});next.players[0].connected=false;next.debris[0].impactAt=1.2;
  view.push(next,100);const result=view.sample(100);
  assert.equal(result.game.phase,'won');assert.equal(result.game.distance,3);assert.equal(result.opponents.length,0);assert.equal(result.game.debris[0].impactAt,1.2);
 });
 test('HUD can read authoritative course state without advancing buffered render time',()=>{
- const view=createRaceView();for(let t=0;t<=500;t+=50)view.push(snap(t),t);
+ const view=createRaceView({maxPredictionMs:0});for(let t=0;t<=500;t+=50)view.push(snap(t),t);
  const before=view.sample(500).game.distance;
  assert.equal(view.current().distance,15);assert.ok(view.current().obstacles.length>0);
  assert.equal(view.current().raceElapsed,.5);assert.equal(view.sample(500).game.distance,before);
 });
 test('duplicate timestamps keep the latest authority and phase start does not rewind',()=>{
- const view=createRaceView();for(let t=0;t<=500;t+=50)view.push(snap(t,{phase:'ready'}),t);
+ const view=createRaceView({maxPredictionMs:0});for(let t=0;t<=500;t+=50)view.push(snap(t,{phase:'ready'}),t);
  view.sample(500);view.push(snap(0),550);let previous=0;
  for(let t=0;t<=300;t+=10){if(t%50===0)view.push(snap(t),550+t);const d=view.sample(550+t).game.distance;assert.ok(d>=previous);previous=d;}
  const changed=snap(300);changed.debris[0].impactAt=99;view.push(changed,850);assert.equal(view.current().debris[0].impactAt,99);
 });
 test('hidden-tab resume catches up to buffered time and server clock reversal reanchors',()=>{
- const view=createRaceView();for(let t=0;t<=500;t+=50)view.push(snap(t),t);view.sample(500);
+ const view=createRaceView({maxPredictionMs:0});for(let t=0;t<=500;t+=50)view.push(snap(t),t);view.sample(500);
  for(let t=550;t<=3500;t+=50)view.push(snap(t),t);
  assert.ok(view.sample(3500).game.distance>95);assert.ok(view.diagnostics().bufferedSnapshots<=32);
  const backwards=snap(0);view.push(backwards,3600);assert.equal(view.sample(3600).game.distance,0);
 });
 test('a buffered jump never rewinds its arc after the first acknowledged takeoff',()=>{
- const view=createRaceView();let remaining=null;
+ const view=createRaceView({maxPredictionMs:0});let remaining=null;
  for(let t=0;t<=1900;t+=10){
   if(t%50===0){const state=snap(t);const jump=Math.max(0,.65-(t-1000)/1000);for(const p of [state.you.game,...state.players]){p.jumpRemaining=t>=1000?jump:0;p.jumpDuration=.65;p.jumpKind=t>=1000?'hop':null;}view.push(state,t);}
   const current=view.sample(t).game.jumpRemaining;
@@ -70,13 +70,13 @@ test('a buffered jump never rewinds its arc after the first acknowledged takeoff
  }
 });
 test('an interrupted render loop cannot report suspended time as a buffer hold',()=>{
- const metrics=[],view=createRaceView({onMetric:(...v)=>metrics.push(v),onUnderrun(){}});
+ const metrics=[],view=createRaceView({maxPredictionMs:0,onMetric:(...v)=>metrics.push(v),onUnderrun(){}});
  for(let t=0;t<=500;t+=50){view.push(snap(t),t);view.sample(t);}
  view.sample(800);view.sample(820);view.push(snap(100000),100000);view.sample(100000);
  assert.ok(!metrics.some(([key,ms])=>key==='bufferHold'&&ms>1000),'hidden interval must not become a visible hold');
 });
 test('explicit visibility suspension discards even a brief active hold',()=>{
- const metrics=[],view=createRaceView({onMetric:(...v)=>metrics.push(v),onUnderrun(){}});
+ const metrics=[],view=createRaceView({maxPredictionMs:0,onMetric:(...v)=>metrics.push(v),onUnderrun(){}});
  for(let t=0;t<=500;t+=50){view.push(snap(t),t);view.sample(t);}
  view.sample(800);view.suspend();view.push(snap(850),850);view.sample(850);
  assert.ok(!metrics.some(([key])=>key==='bufferHold'));

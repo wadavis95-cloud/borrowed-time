@@ -100,3 +100,102 @@ The local address can change after reconnecting Wi-Fi. Monitoring key stays in
 restart; earlier smoke evidence is saved. No local fixture data was posted into
 the user's live dashboard. A public WAN retest requires a separately authorized
 deployment after local acceptance.
+
+## Physical phone + Mac local test — October 28
+
+Owner completed lobby UNWM3J and reported a noticeable reduction in stuttering,
+with one visible stutter. Saved snapshot:
+artifacts/readiness/local-phone-buffer-after-20261028.json. No deployment.
+
+The captured local session includes lobby waiting plus the race, not only racing.
+Mobile: 2,258 running-frame samples; one frame >50ms (56ms exact maximum).
+Across mobile session network observations: 2,337 snapshot gaps; p95 bucket <=60ms,
+p99 <=100ms; maximum 300ms. All 28 input acknowledgments were <=58ms and
+23 RTT echoes were <=21ms. These acknowledgments do not measure visual response.
+Buffer target reached 150ms (p95 bucket <=150ms); target is not actual maximum
+visual latency. Three mobile buffer holds were recorded across lobby and race,
+two >50ms, maximum 150ms. A mobile 300ms update gap and 150ms hold share the
+reported timestamp 21:53:30.9 UTC during racing. This is a candidate for the
+visible stutter, not a confirmed match without an owner timestamp. A separate
+56ms running-frame spike occurred at 21:53:22.5 UTC.
+
+Server racing history: maximum event-loop sample 14.11ms, no queued outbound
+bytes; approximately 39.5–40 snapshots/second across two connections (20Hz each).
+No browser/graphics errors or context losses. Browser-reported disconnects zero;
+server totals record one disconnect after the race window. Mac running-frame
+coverage was only 54 frames, so this is primarily a phone rendering observation.
+
+Promising local acceptance, supported by owner perception and measured remaining
+peaks. Prior phone test used public Render/WAN, whereas this uses the Mac/LAN;
+there is no controlled physical-phone before/after percentage or proof of public
+performance improvement. Next step is a separately authorized deployed retest
+when desired. Gameplay and source unchanged during this measurement.
+
+## Public phone retest — noticeable lag remains
+
+Deployed ee90384 to Render Free, deploy dep-dbh6vgvb9u1s73amgb00; owner
+reported "Noticeable lag" after public lobby Q9YEY3 started. Snapshot saved in
+artifacts/readiness/public-buffer-lag-20261028.json. Mobile reports include lobby
+and racing, so aggregate gap/hold totals are not race-only. 2,102 running frame
+samples, max 27ms, zero frames >50ms. Mobile session: 1,365 gaps, 14 >100ms,
+max 327ms (timestamp precedes first racing server sample); eight buffer holds,
+seven >50ms, max 150ms. A 270ms gap and 150ms hold were also reported during
+the racing server history interval. Target smoothing delay reached 150ms.
+25 input acknowledgments <=88ms; 13 RTT echoes <=45ms. Neither measures full
+input-to-screen response. Server racing event-loop samples peak 86.31ms with
+zero send backlog. No browser/graphics errors. No measured >50ms render stalls
+points toward update delivery/buffer behavior rather than a graphics freeze,
+but does not isolate server, Wi-Fi, mobile scheduling, or transport root cause.
+Local test is not a comparable public before/after benchmark. Need owner to
+distinguish continuous sluggish controls from intermittent pauses/catch-up.
+No further source changes, redeploy, or competition submission made.
+
+## Local bounded prediction follow-up — October 28
+
+User chose short visual prediction plus smooth correction after public freezes.
+Backups: backups/pre-prediction-20261028.bundle (verified complete history) and
+backups/pre-prediction-workspace-20261028.zip (11 existing modified/untracked
+files, including previous test evidence). Local branch codex/bounded-prediction.
+Public stays ee90384; no push/deployment/competition submission.
+
+Render cursor can now continue at most 120ms beyond the newest server timestamp.
+Forward speed derives from the last two confirmed distances, limited to game max
+60.8m/s and latest own speed when available. Existing jump arcs and visual clocks
+continue along that timeline. Lane changes and jump starts still need received
+updates. The HUD, purchases, collisions, remaining time, standings and results
+remain authoritative. Rendered running distance stays below the finish until
+the server confirms it. No extra buffer latency added to steady delivery.
+
+When a recovery changes the predicted position, residual differences <=6m ease
+to the confirmed timeline with a 300ms smoothstep. Larger changes snap to
+authority. New round/map/identity, server clock reversal and visibility changes
+clear correction state. Hidden/long render resumes cannot start predicting again
+until fresh data arrives. Existing hold metrics now count holds after the
+prediction tail is exhausted; diagnostics add predictedSamples, maxPredictionMs,
+correctionCount and maxCorrectionMeters. These diagnostics are local replay/API
+values, not new dashboard charts or predicted-versus-real collision decisions.
+
+Test-first evidence: missing-update continuation initially failed; jump landing
+across an update gap initially rewound its arc; hidden resume initially restarted
+prediction on stale data. All were reproduced and fixed. Reference interpolation
+tests explicitly disable prediction. Landing now follows elapsed time through
+the last confirmed interval instead of stretching the arc across lost updates.
+
+Identical synthetic schedules compared with deployed ee90384 at 30m/s, 20Hz
+snapshots and 60Hz rendering: 150ms batched delivery held frames 14->0; 250ms
+40->6; 500ms 67->65. Worst hold for 250ms schedule fell about 217->100ms,
+500ms 467->350ms. The long-outage profile still visibly holds and needs time
+to recover its buffer. These are deterministic replay observations, not evidence
+of actual phone or public improvement. Full output:
+artifacts/performance/prediction-20261028.json.
+
+Fresh review found no important correctness defect. 222 regular tests passed
+(18 gated skips), 57 local network checks passed. Controlled prediction tests
+cover capped travel, collision correction/convergence, zero speed, no fabricated
+lanes/jumps/results, finish cap, jump recovery, hidden resume and clock reset.
+Local build/release check and physical phone acceptance recorded separately.
+
+Tradeoffs: known velocity can be wrong after an unseen hit. Correction can be
+visible, large discrepancies snap, and long outages remain visible. No local
+input prediction was added, so this targets brief freeze/catch-up rather than
+input response. Public verification requires a later explicitly authorized deploy.

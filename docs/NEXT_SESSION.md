@@ -137,3 +137,46 @@ contains both replay and local smoke evidence. User must judge smoothness versus
 added lag in a local two-device lobby. Final server runs on 0.0.0.0:4173; phone same
 Wi-Fi uses http://192.168.0.104:4173/ (Mac awake). Source-only development requires
 rebuild and restart, as before. Public runtime stays 926fb6d. No deploy or submission.
+
+## Buffer released for public phone retest — October 28, 5:58 PM EDT
+
+User explicitly authorized deployment, not competition submission. Fast-forward
+pushed ee90384481bbcc1585ce490733261ac72e049dba to origin/main. Render deployment
+dep-dbh6vgvb9u1s73amgb00 succeeded in 38.1s; Free plan unchanged, existing
+monitoring key unchanged. Tests freshly passed: 213 regular (18 gated skips),
+57 network checks, syntax, 10-file compressed build. Public release checker
+passed 87 assets and temporary two-client race/purchases; test room removed.
+Live movement-buffer/network/metric-schema source matches local byte for byte.
+Predeploy snapshot and public-buffer-baseline-20261028.json saved in
+artifacts/readiness. Predeploy retained reports were zero, but earlier physical
+phone/WAN baseline remains in phone-mac-latency-* artifacts. New metrics reset
+on deployment. One desktop report existed at the post-check baseline; exclude
+verification traffic when comparing owner phone test.
+
+Public tab 7 reloaded to new build and muted on Mac for test. Created Tunnel
+lobby Q9YEY3; waiting for phone, race not started. Phone must refresh public
+https://borrowed-time.onrender.com/ before joining. Only online mode exercises
+buffer (solo does not). Owner should use lanes/hop/both purchases and report
+visible skips and perceived control delay. Keep tab 7 alive; code can expire.
+No competition form or submission action performed. Local source/evidence edits
+not included in deployed ee90384 remain in workspace; no extra documentation
+push made (would trigger redundant deployment).
+
+## Latest: local bounded prediction ready for owner test
+
+Public remains ee90384. Local branch codex/bounded-prediction implements <=120ms
+forward render prediction plus <=300ms correction for residuals <=6m. No rule,
+price or transport changes. Backups pre-prediction-20261028.bundle and
+pre-prediction-workspace-20261028.zip verified/saved before changes. See latest
+docs/SPIKE_BUFFER.md and plan 2026-10-28-bounded-prediction.md.
+
+Fresh verification: 222 regular tests (18 gated skips), 57 network checks, syntax,
+whitespace, compressed client build, local 87-asset/two-client release check all
+passed; reviewer found no important defect. Snapshot replay 150ms bursts held
+frames 14->0, 250ms 40->6; long gaps still pause. These are synthetic, not phone
+improvement proof. Server session 12770 runs 0.0.0.0:4173 using original local
+monitor key. Local game tab 3 reloaded new build and muted; lobby GR9K6V waiting
+for phone (race not started). Phone same Wi-Fi link http://192.168.0.104:4173/.
+Mac awake; refresh phone to ensure new build. This local address may change.
+No push, deployment or submission for prediction change. Public mode remains
+previous buffer and user-reported lag remains unresolved until real retest.
