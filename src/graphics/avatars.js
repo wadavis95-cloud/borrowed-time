@@ -144,10 +144,8 @@ export function createAvatarLibrary({ loadAsset } = {}) {
       for (const pose of sampledPose) { pose.bone.position.copy(pose.position); pose.bone.quaternion.copy(pose.quaternion); }
       mixer.update(0);
       for (const pose of sampledPose) { pose.position.copy(pose.bone.position); pose.quaternion.copy(pose.bone.quaternion); }
-      // A lane change banks the whole silhouette; torso and head counter-rotate.
-      bones.pelvis.rotation.z += lean * motion;
-      bones.chest.rotation.y -= lean * .25 * motion;
-      bones.head.rotation.z -= lean * .5 * motion;
+      // Lane movement keeps the torso facing forward. Authored stride motion
+      // remains; only flexible accessories trail sideways changes.
       bones.spine.rotation.x -= boostFeel * .11 * motion + stumbleFeel * .04;
       bones.head.rotation.x += boostFeel * .065 * motion;
       // Authored distance-matched gait supplies the oscillation. These restrained
@@ -166,8 +164,8 @@ export function createAvatarLibrary({ loadAsset } = {}) {
       if (landingAge < .3) {
         const compression = THREE.MathUtils.smoothstep(landingAge, 0, .07) * (1 - THREE.MathUtils.smoothstep(landingAge, .07, .3));
         const impact = compression * (reduced ? .45 : 1);
-        bones.pelvis.position.y -= impact * .055;
-        bones.spine.rotation.x -= impact * .065;
+        bones.pelvis.position.y -= impact * .07;
+        bones.spine.rotation.x -= impact * .08;
         for (const side of ['L', 'R']) { bones[`thigh${side}`].rotation.x += impact * .15; bones[`shin${side}`].rotation.x -= impact * .25; }
       }
       if (state.phase === 'won') {

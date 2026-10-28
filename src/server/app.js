@@ -18,7 +18,7 @@ const types = {
 // This allowlist keeps server code, repository files, and secrets off HTTP.
 const publicFiles = new Set([
   '/index.html', '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js',
-  '/src/renderer.js', '/src/network.js', '/src/maps.js', '/src/graphics/worlds.js', '/src/graphics/map-obstacles.js',
+  '/src/renderer.js', '/src/network.js', '/src/movement-feedback.js', '/src/graphics/readability.js', '/src/graphics/motion-effects.js', '/src/maps.js', '/src/graphics/worlds.js', '/src/graphics/map-obstacles.js',
   ...MAP_IDS.map(id => `/assets/maps/${id}.svg`),
   '/src/graphics/expansion-worlds.js', '/src/graphics/world-utils.js',
   ...ALL_AVATAR_IDS.map(id => `/assets/characters/${id}.glb`),

@@ -1,9 +1,10 @@
 import * as THREE from 'three';
+import { addObstacleReadability } from './readability.js';
 import { DISTANCE_SCALE } from './tunnel.js';
 
 // Presentation only: rubble/barrier/gap retain their tested collision meanings.
 export function createMapObstacle(mapId, obstacle) {
-  if (['frozen','orbital','desert'].includes(mapId)) return createExpansionObstacle(mapId, obstacle);
+  if (['frozen','orbital','desert'].includes(mapId)) return addObstacleReadability(createExpansionObstacle(mapId, obstacle),obstacle,mapId);
   const ship = mapId === 'pirate', group = new THREE.Group();
   const mat = (color, extras={}) => new THREE.MeshStandardMaterial({color,roughness:.84,...extras});
   const timber=mat(ship?'#a77742':'#795537'), ends=mat(ship?'#d0a061':'#c1a574'), iron=mat('#384b50',{metalness:.5});
@@ -45,7 +46,7 @@ export function createMapObstacle(mapId, obstacle) {
     for(const x of [-.99,.99]) {const cap=mesh(new THREE.CircleGeometry(tall?.88:.27,12),ends,x,tall?1.05:.36,-.12);cap.rotation.y=x<0?-Math.PI/2:Math.PI/2;}
     if(tall) {const root=log(.6,1.6,-.1,.16,.8);root.rotation.z=.7;}
   }
-  return group;
+  return addObstacleReadability(group,obstacle,mapId);
 }
 
 

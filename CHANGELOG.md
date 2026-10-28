@@ -1,5 +1,13 @@
 # Changelog
 
+## 8.1.0-preview.1 — Local readability and movement polish
+
+- Preserved V8 in a verified full-history backup; no push or deployment.
+- Added consistent single-chevron hop and double-chevron long-jump cues, contrast pads and exposed gap rims across all six maps.
+- Added outlined impact warnings with a countdown ring using unchanged server times.
+- Added bounded local, map-specific contact particles, landing ripples and a contact-shadow response; removed extra lane banking and hit camera shake, retaining the camera and authored run style.
+- Retained every gameplay rule, price, speed, course generator and network behavior. See [V8.1 local notes](docs/versions/V8_1_READABILITY_FEEDBACK.md).
+
 ## 8.0.0-preview.1 — Six maps (deployed October 27, 2026)
 
 - Added Frozen Summit, Orbital Escape and Sandstorm Canyon, each with its own environment, themed hazards, four animated characters and illustrated thumbnail.

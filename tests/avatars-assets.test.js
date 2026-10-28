@@ -260,3 +260,15 @@ test('twenty themed avatars have distinct geometry and finite animated skeletons
   }
   assert.equal(sizes.size, ALL_AVATAR_IDS.length - ids.length, 'distinct modeled silhouettes, not only recolors');
 });
+
+test('lane switches retain the forward run posture without sideways banking', async () => {
+  const library=createAvatarLibrary({loadAsset:readAsset});await library.preloadAvatars();
+  const straight=library.createAvatar('courier'),switching=library.createAvatar('courier');
+  for(let i=0;i<30;i++) {
+    const state={phase:'running',distance:i*.4,lane:1,visualLane:1,visualLaneVelocity:0};
+    straight.update(state,1/60);
+    switching.update({...state,lane:2,visualLane:1+i/30,visualLaneVelocity:2},1/60);
+    for(const bone of ['pelvis','spine','chest','head'])assert.deepEqual(straight.group.getObjectByName(bone).quaternion.toArray(),switching.group.getObjectByName(bone).quaternion.toArray(),`${bone} stays forward`);
+  }
+  straight.dispose();switching.dispose();
+});

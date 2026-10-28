@@ -1,5 +1,7 @@
 # Borrowed Time · V8 six-map release
 
+**V8.1 local playtest:** obstacle contrast, hop/long-jump cues, clearer impact countdowns and local contact effects are ready at http://localhost:4173/. Gameplay and prices are unchanged; the public link below remains V8. [Local polish notes](docs/versions/V8_1_READABILITY_FEEDBACK.md).
+
 Six escape maps for solo practice and private races with 2–4 players: **Tunnel Escape, The Last Voyage, Volcanic Jungle, Frozen Summit, Orbital Escape, and Sandstorm Canyon**. Pick a thumbnail or vote with friends in the lobby. Your character and role name are assigned automatically from the winning map's four-person cast.
 
 Your countdown is also your ability budget. Spend five seconds on Boost or four on Long jump, dodge danger, and escape before zero. All maps retain the same behind-runner camera, controls, pace and prices. Real opponents appear as translucent runners at their actual relative positions.

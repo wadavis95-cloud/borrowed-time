@@ -5,8 +5,10 @@ import { createWorld } from './graphics/worlds.js';
 import { createMapObstacle } from './graphics/map-obstacles.js';
 import { CONFIG, getJumpHeight } from './game.js';
 import { getDebrisPhase } from './hazards.js';
+import { addObstacleReadability, warningPresentation } from './graphics/readability.js';
+import { createMotionEffects } from './graphics/motion-effects.js';
 import { createAvatar } from './graphics/avatars.js';
-import { createTunnel, radialTexture, masonrySurface, beveledBoxGeometry, roofSlabGeometry, roofHeight, DISTANCE_SCALE, LANE_WIDTH } from './graphics/tunnel.js';
+import { radialTexture, masonrySurface, beveledBoxGeometry, roofSlabGeometry, roofHeight, DISTANCE_SCALE, LANE_WIDTH } from './graphics/tunnel.js';
 
 const clamp = THREE.MathUtils.clamp;
 const VISIBLE_METRES = 255;
@@ -132,6 +134,7 @@ export function createRenderer(canvas) {
   const localVisualState = {};
   const obstacleCache = new Map(), debrisCache = new Map(), ghosts = new Map();
   const motion = createPresentationMotion({ reducedMotion });
+  const movementEffects = createMotionEffects(scene);
   let localAvatar = null, localAvatarKey = '', disposed = false, contextLost = false, hasDrawn = false;
   const contactShadow = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), shadowMaterial);
   contactShadow.rotation.x = -Math.PI / 2; contactShadow.position.y = .025; scene.add(contactShadow);
@@ -186,12 +189,17 @@ export function createRenderer(canvas) {
       stones(group, 8, 1.2);
       makeMesh(group, boxGeometry, stripe, 0, .21, .44, 1.75, .19, .08);
     }
-    return group;
+    return addObstacleReadability(group,obstacle,'tunnel');
   }
   function makeDebris(event) {
     const group = new THREE.Group(); scene.add(group);
     const ringMaterial = new THREE.MeshBasicMaterial({ color: '#ffc069', transparent: true, opacity: .95, side: THREE.DoubleSide, toneMapped: false });
-    const ring = makeMesh(group, ringGeometry, ringMaterial, 0, .045, 0); ring.rotation.x = -Math.PI / 2;
+    const outlineMaterial = new THREE.MeshBasicMaterial({color:'#142832',side:THREE.DoubleSide,toneMapped:false});
+    const outline = makeMesh(group,new THREE.RingGeometry(.82,1.08,40),outlineMaterial,0,.055,0);outline.rotation.x=-Math.PI/2;
+    const ring = makeMesh(group, ringGeometry, ringMaterial, 0, .065, 0); ring.rotation.x = -Math.PI / 2;
+    const countdownMaterial=new THREE.MeshBasicMaterial({color:'#fff4d0',side:THREE.DoubleSide,toneMapped:false});
+    const countdownGeometry=new THREE.RingGeometry(.72,.77,48);
+    const countdown=makeMesh(group,countdownGeometry,countdownMaterial,0,.07,0);countdown.rotation.x=-Math.PI/2;
     const fillMaterial = new THREE.MeshBasicMaterial({ color: '#ff9a55', transparent: true, opacity: .14, side: THREE.DoubleSide, depthWrite: false });
     const fill = makeMesh(group, new THREE.CircleGeometry(.88, 32), fillMaterial, 0, .035, 0); fill.rotation.x = -Math.PI / 2;
     const chunk = new THREE.Group(); group.add(chunk);
@@ -211,6 +219,7 @@ export function createRenderer(canvas) {
       }
     } else if (['frozen','orbital','desert'].includes(currentMapId)) rubble.add(createMapObstacle(currentMapId, { type:'rubble', length:2 }));
     else stones(rubble, 9, 1.2);
+    addObstacleReadability(rubble,{type:'rubble'},currentMapId);
     group.add(rubble);
     const marker = makeMesh(group, new THREE.PlaneGeometry(.72, .72), new THREE.MeshBasicMaterial({ map: signTexture('!', '#ffe8b6', '#73492f', 64), side: THREE.DoubleSide, toneMapped: false }), 0, 2.65, .1);
     const dustMaterial = new THREE.MeshBasicMaterial({ map: glowMap, color: '#c9b791', transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
@@ -219,7 +228,7 @@ export function createRenderer(canvas) {
       const puff = makeMesh(dust, new THREE.PlaneGeometry(1, 1), dustMaterial, Math.sin(i * 2.4), .35, Math.cos(i * 2.4));
       puff.rotation.y = (i % 3) * Math.PI / 3;
     }
-    return { group, ring, ringMaterial, fill, fillMaterial, chunk, rubble, marker, dust, dustMaterial };
+    return { group, ring, ringMaterial, outline, countdown, countdownGeometry, fill, fillMaterial, chunk, rubble, marker, dust, dustMaterial };
   }
   const checkpointGroups = CONFIG.checkpointDistances.map((distance) => {
     const group = new THREE.Group(); scene.add(group);
@@ -300,9 +309,10 @@ export function createRenderer(canvas) {
     Object.assign(localVisualState, state, { reducedMotion, visualLane, visualLaneVelocity: view.laneVelocity });
     localAvatar.update(localVisualState, state.phase === 'paused' ? 0 : dt);
     localAvatar.group.position.set((visualLane - 1) * LANE_WIDTH, view.jumpHeight, 0);
+    const landingPulse=movementEffects.update(state,view,dt,reducedMotion);
     contactShadow.position.x = localAvatar.group.position.x;
-    contactShadow.scale.setScalar(1 + localAvatar.group.position.y * .16);
-    shadowMaterial.opacity = Math.max(.16, .63 - localAvatar.group.position.y * .14);
+    contactShadow.scale.setScalar(1 + localAvatar.group.position.y * .16 + landingPulse * .12);
+    shadowMaterial.opacity = Math.max(.16, .63 - localAvatar.group.position.y * .14 + landingPulse * .1);
 
     const visibleOpponents = opponents.slice(0, 3);
     const opponentKeys = new Set(visibleOpponents.map(opponentKey));
@@ -350,13 +360,15 @@ export function createRenderer(canvas) {
       if (!entry) { entry = makeDebris(event); debrisCache.set(event.id, entry); }
       entry.group.visible = true; entry.group.position.set((event.lane - 1) * LANE_WIDTH, 0, -relative * DISTANCE_SCALE);
       const warning = phase === 'warning', falling = phase === 'falling', landed = phase === 'landed';
-      entry.ring.visible = entry.fill.visible = !landed;
+      entry.ring.visible = entry.outline.visible = entry.countdown.visible = entry.fill.visible = !landed;
       entry.marker.visible = warning;
       entry.rubble.visible = landed;
       entry.chunk.visible = falling;
-      const pulse = reducedMotion ? 1 : .5 + .5 * Math.sin((elapsed - event.warnAt) * 9);
-      entry.ringMaterial.opacity = .65 + .35 * pulse;
-      entry.fillMaterial.opacity = .1 + .12 * pulse;
+      const warningView=warningPresentation(event,elapsed,reducedMotion);
+      entry.ringMaterial.opacity=.78+.22*warningView.pulse;
+      entry.fillMaterial.opacity=(warningView.urgent?.17:.10)+.10*warningView.pulse;
+      entry.countdownGeometry.setDrawRange(0,Math.ceil(warningView.remaining*48)*6);
+      entry.marker.scale.setScalar(warningView.urgent&&!reducedMotion?1.08:1);
       const fall = falling ? clamp((elapsed - event.fallAt) / (event.impactAt - event.fallAt), 0, 1) : 0;
       if (currentMapId === 'pirate') {
         // Side-entry projectile aims only at its marked lane at the shared impact.
@@ -394,10 +406,9 @@ export function createRenderer(canvas) {
       }
       boostTrails.instanceMatrix.needsUpdate = true; trailMaterial.opacity = boostFeel * .26;
     }
-    const shake = !reducedMotion && running ? (state.hitFlash || 0) * .05 : 0;
     const stride = !reducedMotion && running ? Math.sin(distance * .058 / .72 * Math.PI * 4) * .012 : 0;
-    camera.position.x = (view.cameraLane - 1) * LANE_WIDTH * .065 + Math.sin(elapsed * 65) * shake;
-    camera.position.y = 3.45 + stride + Math.cos(elapsed * 49) * shake + view.cameraJump * .11;
+    camera.position.x = (view.cameraLane - 1) * LANE_WIDTH * .065;
+    camera.position.y = 3.45 + stride + view.cameraJump * .11;
     camera.position.z = (camera.aspect < .9 ? 9.3 : 7.3) + boostFeel * .18;
     const targetFov = (camera.aspect < .9 ? 66 : 57) + boostFeel * 3.2;
     if (Math.abs(camera.fov - targetFov) > .01) { camera.fov = targetFov; camera.updateProjectionMatrix(); }
@@ -427,7 +438,7 @@ export function createRenderer(canvas) {
     group.clear();
   }
   function reset() {
-    motion.reset(); hasDrawn = false; boostTrails.visible = false;
+    motion.reset(); movementEffects.reset(); hasDrawn = false; boostTrails.visible = false;
     localAvatar?.reset(); localAvatar?.group.position.set(0, 0, 0);
     contactShadow.position.x = 0; contactShadow.scale.setScalar(1); shadowMaterial.opacity = .63;
     camera.position.set(0, 3.45, camera.aspect < .9 ? 9.3 : 7.3);
@@ -443,7 +454,7 @@ export function createRenderer(canvas) {
   }
   function dispose() {
     if (disposed) return;
-    disposed = true; world.dispose(); resizeObserver.disconnect(); canvas.removeEventListener('webglcontextlost', onContextLost);
+    disposed = true; movementEffects.dispose(); world.dispose(); resizeObserver.disconnect(); canvas.removeEventListener('webglcontextlost', onContextLost);
     // GLB geometry belongs to the reusable preload cache. Detach avatar clones
     // before disposing scene-owned graphics; each clone disposes its own materials.
     if (localAvatar) { scene.remove(localAvatar.group); localAvatar.dispose(); localAvatar = null; }
