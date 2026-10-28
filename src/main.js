@@ -274,7 +274,16 @@ function updateLeaderboard() {
     place.textContent = player.position === null ? '—' : `${player.position}`;
     const name = document.createElement('span');
     name.className = 'standing-name';
-    name.textContent = `${player.name}${player.id === snapshot.you.id && mode !== 'demo' ? ' (you)' : ''}`;
+    const role = document.createElement('span');
+    role.className = 'standing-role';
+    role.textContent = player.name;
+    name.append(role);
+    if (player.id === snapshot.you.id && mode !== 'demo') {
+      const you = document.createElement('span');
+      you.className = 'standing-you';
+      you.textContent = ' (you)';
+      name.append(you);
+    }
     name.title = name.textContent;
     const dot = document.createElement('i');
     dot.style.backgroundColor = player.color;

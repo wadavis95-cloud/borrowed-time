@@ -1397,3 +1397,8 @@ html[data-input="keyboard"] .game-footer { justify-content:space-between }
   .screen-overlay[data-stage="finish"] .intro-card { padding:10px 14px; }
 }
 .choose-map { display:block;margin:5px auto 0;min-height:44px;padding:9px 14px; }
+
+/* Keep self identity visible even when a compact role name is truncated. */
+.standing-name { display:flex; align-items:baseline; min-width:0; }
+.standing-role { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.standing-you { flex:none; white-space:pre; color:#fff; font-weight:800; }
