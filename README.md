@@ -1,12 +1,14 @@
 # Borrowed Time · V8.4 polished six-map release
 
+**V8.7 local preview:** optional map-specific character portraits/choice and first-place session totals are ready at http://localhost:4173/. All characters have identical stats. Totals show in lobby/results; the cover now says solo + multiplayer, 1–4 players. [Character/session notes](docs/versions/V8_7_CHARACTERS_SESSION.md). Public V8.4 is unchanged; nothing submitted.
+
 **V8.6 local preview:** solo now races three computer opponents on all six maps. Choose **Race computers** at http://localhost:4173/. CPU role labels, (you), live standings/results, whole-race pause and immediate replay are included. No server connection is needed for the solo race. [Solo racer notes](docs/versions/V8_6_SOLO_RIVALS.md). Public V8.4 and unsubmitted presentation drafts are unchanged.
 
 **V8.5 local preview:** stable multiplayer starting lanes and immediate first-snapshot placement remove the opening lane shuffle. A cover, silent gameplay video and submission-description draft are in [artifacts/submission](artifacts/submission/SUBMISSION_DRAFT.md). Nothing submitted or deployed; the public link remains V8.4.
 
 **V8.4 phone playtest:** clearer obstacle and movement feedback, confirmed ability debits, countdown/result polish, map-specific sound and atmosphere, rescue destinations, visible “(you)” labels and better loading/join recovery. Boost remains 5 seconds and Long jump 4 seconds. [Public release record](docs/versions/V8_4_PUBLIC_PLAYTEST.md).
 
-Six escape maps for solo practice and private races with 2–4 players: **Tunnel Escape, The Last Voyage, Volcanic Jungle, Frozen Summit, Orbital Escape, and Sandstorm Canyon**. Pick a thumbnail or vote with friends in the lobby. Your character and role name are assigned automatically from the winning map's four-person cast.
+Six escape maps for solo practice and private races with 2–4 players: **Tunnel Escape, The Last Voyage, Volcanic Jungle, Frozen Summit, Orbital Escape, and Sandstorm Canyon**. Pick a thumbnail or vote with friends in the lobby. Your character defaults automatically from the map's four-person cast; the local V8.7 preview also offers an optional cosmetic choice.
 
 Your countdown is also your ability budget. Spend five seconds on Boost or four on Long jump, dodge danger, and escape before zero. All maps retain the same behind-runner camera, controls, pace and prices. Real opponents appear as translucent runners at their actual relative positions.
 
@@ -34,7 +36,7 @@ The app preloads the characters before enabling play. A failed asset load or una
 4. Vote using the thumbnail cards. Most votes wins, ties are random, and the host starts after at least two players join. Voting locks at the shared three-second countdown.
 5. Once every run ends, the host can prepare a rematch.
 
-Each map has four distinct characters. The server assigns them without duplicates and uses their roles as player names: Captain, Courier, Botanist, and so on. All characters use identical rules. Switching maps through a vote updates both character and name; rematches on the same map preserve them. There is no name or character-selection screen.
+Each map has four distinct characters, named by role: Captain, Courier, Botanist, and so on. All use identical rules. Local V8.7 offers optional map-only character choices and honors the winning map's remembered preference. Automatic defaults remain available, duplicate explicit choices use different player colors, and rematches preserve identities and session wins. There is no name-entry step.
 
 Choose **Watch four-player demo** to watch four simulated runners with role names. The demo opens four real WebSocket clients, joins a normal private room, and sends ordinary movement and purchase inputs. The displayed opponents come from server snapshots. It starts automatically, supports rematches, and closes every demo connection when you exit or a connection fails. Human private-room play remains available separately.
 

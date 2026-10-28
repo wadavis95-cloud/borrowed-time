@@ -13,7 +13,7 @@ const ASSETS = [
   ...MAP_IDS.map(id => `/assets/maps/${id}.svg`),
   '/src/graphics/expansion-worlds.js', '/src/graphics/world-utils.js',
   '/src/renderer.js', '/src/unity-renderer.js', '/src/unity-protocol.js', '/src/network.js', '/src/avatars.js', '/src/hazards.js',
-  '/src/graphics/avatars.js', '/src/graphics/tunnel.js', '/src/solo-race.js', '/src/demo.js', '/src/audio.js', '/src/audio-scene.js', '/src/graphics/atmosphere.js', '/src/input.js', '/src/ability-coach.js',
+  '/src/graphics/avatars.js', '/src/graphics/tunnel.js', '/src/session-scores.js', '/src/graphics/portraits.js', '/src/solo-race.js', '/src/demo.js', '/src/audio.js', '/src/audio-scene.js', '/src/graphics/atmosphere.js', '/src/input.js', '/src/ability-coach.js',
   '/vendor/three.module.js', '/vendor/three.core.js', '/vendor/loaders/GLTFLoader.js',
   '/vendor/utils/BufferGeometryUtils.js', '/vendor/utils/SkeletonUtils.js',
   '/docs/character-preview.html', ...ALL_AVATAR_IDS.map(id => `/assets/characters/${id}.glb`),

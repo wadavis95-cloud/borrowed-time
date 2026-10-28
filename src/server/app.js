@@ -24,7 +24,7 @@ const publicFiles = new Set([
   ...ALL_AVATAR_IDS.map(id => `/assets/characters/${id}.glb`),
   '/src/unity-renderer.js', '/src/unity-protocol.js',
   '/src/avatars.js', '/src/hazards.js', '/src/graphics/avatars.js', '/src/graphics/tunnel.js',
-  '/src/solo-race.js', '/src/demo.js', '/src/audio.js', '/src/audio-scene.js', '/src/graphics/atmosphere.js', '/src/input.js', '/src/ability-coach.js',
+  '/src/session-scores.js', '/src/graphics/portraits.js', '/src/solo-race.js', '/src/demo.js', '/src/audio.js', '/src/audio-scene.js', '/src/graphics/atmosphere.js', '/src/input.js', '/src/ability-coach.js',
   '/docs/character-preview.html',
   '/assets/characters/courier.glb', '/assets/characters/engineer.glb',
   '/assets/characters/guard.glb', '/assets/characters/runner.glb',

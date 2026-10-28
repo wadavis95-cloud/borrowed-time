@@ -159,7 +159,7 @@ test('public transforms cannot disclose another runner’s balance, purchases, o
   assert.equal(snapshot.you.game.timeLeft, 60);
   assert.equal(Object.hasOwn(snapshot.you.game, 'obstacles'), false);
   assert.deepEqual(Object.keys(snapshot.players[1]).sort(), [
-    'avatarId', 'color', 'connected', 'distance', 'id', 'jumpDuration', 'jumpRemaining', 'lane', 'name', 'phase',
+    'avatarId', 'color', 'connected', 'distance', 'id', 'jumpDuration', 'jumpRemaining', 'lane', 'name', 'phase', 'wins',
   ]);
   assert.equal(snapshot.players[1].jumpRemaining, 1.4);
   assert.equal(manager.snapshot('guest').you.game.timeLeft, 56);
@@ -386,7 +386,7 @@ networkTest('two real clients share a countdown but receive private state and co
   assert.equal(other.you.game.timeSpent, 0);
   assert.equal(Object.hasOwn(own.you.game, 'obstacles'), false);
   const ghost = other.players.find((p) => p.id === created.you.id);
-  assert.deepEqual(Object.keys(ghost).sort(), ['avatarId', 'color', 'connected', 'distance', 'id', 'jumpDuration', 'jumpRemaining', 'lane', 'name', 'phase']);
+  assert.deepEqual(Object.keys(ghost).sort(), ['avatarId', 'color', 'connected', 'distance', 'id', 'jumpDuration', 'jumpRemaining', 'lane', 'name', 'phase', 'wins']);
   host.socket.send('{bad json');
   assert.equal((await host.until((m) => m.type === 'error')).code, 'INVALID_JSON');
   host.socket.close();
@@ -460,10 +460,10 @@ networkTest('heartbeat removes a silent connection and shutdown closes active so
   assert.equal(app.rooms.rooms.size, 0);
 });
 
-test('the server assigns four unique avatars across four players and ignores client character choices', () => {
+test('the server assigns four unique automatic defaults and ignores unrequested join identity fields', () => {
   const { manager, connect, send } = setup({ random: () => 0 });
   connect('host');
-  send('host', { type: 'create', name: 'Host', avatarId: 'engineer' });
+  send('host', { type: 'create', name: 'Host' });
   const code = manager.snapshot('host').room.code;
   for (const id of ['second', 'third', 'fourth']) {
     connect(id);
@@ -556,6 +556,8 @@ networkTest('four real clients race with four distinct avatars and preserve iden
   const clients = await Promise.all(Array.from({ length: 4 }, () => client(url)));
   const [host] = clients;
   host.send({ type: 'create', name: 'Host', avatarId: 'invented' });
+  assert.equal((await host.until(message=>message.type==='error')).code,'INVALID_AVATAR');
+  host.send({type:'create'});
   const created = await host.until(message => message.type === 'snapshot');
   for (const [index, guest] of clients.entries()) {
     if (index === 0) continue;
@@ -638,4 +640,26 @@ test('four racers have stable grid lanes in lobby, countdown, map changes and re
   time=3000;manager.tick();assert.deepEqual(lanes(),[1,0,2,1]);
   const room=[...manager.rooms.values()][0];for(const player of room.players.values())player.game.phase='lost';
   manager.tick();manager.handle('one',{type:'rematch'});assert.deepEqual(lanes(),[1,0,2,1]);
+});
+
+test('character choice is cosmetic, map-specific, allows duplicates and locks at countdown',()=>{
+ const {manager,send,create,connect}=setup({random:()=>0});create();connect('guest');send('guest',{type:'join',code:manager.snapshot('host').room.code});
+ assert.equal(send('host',{type:'character',mapId:'tunnel',avatarId:'captain'}).code,'INVALID_AVATAR');
+ assert.equal(send('host',{type:'character',mapId:'tunnel',avatarId:'courier'}).ok,true);
+ assert.equal(send('guest',{type:'character',mapId:'tunnel',avatarId:'courier'}).ok,true);
+ assert.equal(manager.snapshot('guest').you.game.avatarId,'courier');assert.equal(manager.snapshot('host').you.game.timeLeft,60);
+ send('host',{type:'start'});assert.equal(send('host',{type:'character',mapId:'tunnel',avatarId:'guard'}).code,'CHARACTER_LOCKED');
+});
+test('map character preferences survive voting and score follows identity across rematches',()=>{
+ const {manager,send,create,connect,advance}=setup({random:()=>0});create();connect('guest');send('guest',{type:'join',code:manager.snapshot('host').room.code});
+ send('host',{type:'vote',mapId:'pirate'});send('guest',{type:'vote',mapId:'pirate'});
+ assert.equal(send('host',{type:'character',mapId:'pirate',avatarId:'captain'}).ok,true);
+ send('host',{type:'start'});assert.equal(manager.snapshot('host').you.game.avatarId,'captain');advance(3000);
+ const room=[...manager.rooms.values()][0];room.players.get('host').game.phase='won';room.players.get('host').game.finishTime=1;
+ room.players.get('guest').game.phase='lost';advance(20);
+ assert.equal(manager.snapshot('host').players.find(p=>p.id==='host').wins,1);advance(100);assert.equal(manager.snapshot('guest').players.find(p=>p.id==='host').wins,1);
+ send('host',{type:'rematch'});assert.equal(send('host',{type:'character',mapId:'pirate',avatarId:'navigator'}).ok,true);
+ assert.equal(manager.snapshot('host').players.find(p=>p.id==='host').wins,1);send('host',{type:'start'});assert.equal(manager.snapshot('host').you.game.avatarId,'navigator');
+ advance(3000);for(const player of room.players.values())player.game.phase='lost';advance(20);
+ assert.equal(manager.snapshot('host').players.reduce((sum,p)=>sum+p.wins,0),1);
 });

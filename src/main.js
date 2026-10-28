@@ -4,6 +4,7 @@ import { createUnityRenderer } from './unity-renderer.js';
 import { connectRace, createRaceView } from './network.js';
 import { AVATARS } from './avatars.js';
 import { MAPS, MAP_IDS, getMap } from './maps.js';
+import { createSessionScores } from './session-scores.js';
 import { createSoloRace } from './solo-race.js';
 import { createDemoRace } from './demo.js';
 import { createGameAudio } from './audio.js';
@@ -30,6 +31,8 @@ let mapPickerKey = '';
 let soloSeed = 42;
 let mode = 'solo';
 let soloRace = null;
+const soloScores=createSessionScores(),characterChoices={};
+let characterPickerKey='',portraitRequest=0;
 let connection = null, snapshot = null, raceView = createRaceView();
 let networkStatus = '', connectionGeneration = 0, rosterKey = '';
 let lastOverlay = '', lastEvent = 0, toastUntil = 0;
@@ -64,7 +67,7 @@ for (const id of MAP_IDS) {
       if (snapshot?.room.phase === 'lobby' && mode !== 'demo') connection?.send({ type: 'vote', mapId: id });
       return;
     }
-    selectedMapId = id; soloRace = null; game = createGame({ mapId: id }); resetVisuals(); updateHUD();
+    selectedMapId = id; soloRace = null; game = createGame({ mapId: id,avatarId:characterChoices[id] }); resetVisuals(); updateHUD();
   });
   $('map-cards').append(button);
 }
@@ -86,6 +89,46 @@ function updateMapPicker() {
     button.querySelector('.map-votes').textContent = lobby ? `${count} vote${count === 1 ? '' : 's'}${ownVote === id ? ' · Yours' : ''}` : ownVote === id ? 'Selected' : '';
   }
 }
+
+function characterContext(){
+  const online=mode!=='solo';
+  const mapId=online?(snapshot?.room.votes?.[snapshot?.you.id]||snapshot?.room.mapId):selectedMapId;
+  const map=getMap(mapId);
+  const available=!graphicsLoading&&!graphicsError&&(online?mode!=='demo'&&networkStatus==='open'&&snapshot?.room.phase==='lobby':game.phase==='ready');
+  const selected=online?(snapshot?.you.avatarChoices?.[map.id]||(game.mapId===map.id?game.avatarId:null)):game.avatarId;
+  return {map,available,selected};
+}
+function updateCharacterPicker(){
+  const {map,available,selected}=characterContext();
+  $('character-picker').hidden=!available;
+  if(!available&&$('character-dialog').open){portraitRequest++;$('character-dialog').close();}
+  const key=[available,map.id,selected].join(':');if(key===characterPickerKey)return;characterPickerKey=key;
+  $('selected-character').textContent=selected?AVATARS[selected].name:'Automatic';
+}
+$('change-character').addEventListener('click',async()=>{
+  const {map,available,selected}=characterContext();if(!available)return;
+  const request=++portraitRequest;
+  $('character-map-note').textContent=`${map.name} · Appearance only. Same abilities and stats.`;
+  $('character-cards').replaceChildren(...map.avatars.map(id=>{
+    const button=document.createElement('button');button.className='character-card';button.dataset.avatar=id;button.setAttribute('aria-pressed',String(selected===id));
+    const image=document.createElement('img');image.alt='';image.width=180;image.height=220;
+    const label=document.createElement('strong');label.textContent=AVATARS[id].name;button.append(image,label);
+    button.addEventListener('click',()=>{
+      const current=characterContext();if(!current.available||current.map.id!==map.id)return;
+      if(mode==='solo'){characterChoices[map.id]=id;game=createGame({mapId:map.id,avatarId:id});resetVisuals();updateHUD();}
+      else connection.send({type:'character',mapId:map.id,avatarId:id});
+      $('character-dialog').close();
+    });return button;
+  }));
+  $('character-dialog').showModal();
+  try{
+    const {characterPortraits}=await import('./graphics/portraits.js');
+    if(request!==portraitRequest||!$('character-dialog').open)return;
+    const portraits=characterPortraits(map.avatars);
+    for(const button of $('character-cards').children)button.querySelector('img').src=portraits[button.dataset.avatar];
+  }catch{ /* Role labels remain usable if portrait rendering is unavailable. */ }
+});
+$('close-characters').addEventListener('click',()=>{$('character-dialog').close();portraitRequest++;});
 
 $('boost-button').querySelector('.cost').firstChild.textContent = `−${ABILITIES.boost.cost}`;
 $('long-jump-button').querySelector('.cost').firstChild.textContent = `−${ABILITIES.longJump.cost}`;
@@ -153,7 +196,7 @@ function returnToMenu() {
   mode = 'solo';
   soloRace = null;
   networkStatus = '';
-  game = createGame({ mapId: selectedMapId });
+  game = createGame({ mapId: selectedMapId,avatarId:characterChoices[selectedMapId] });
   resetVisuals();
   showNetworkError();
   updateHUD();
@@ -161,7 +204,7 @@ function returnToMenu() {
 function beginRun() {
   if (mode !== 'solo' || !renderer || graphicsError) return;
   soloSeed = freshCourseSeed(soloSeed);
-  soloRace = createSoloRace({ seed: soloSeed, mapId: selectedMapId });
+  soloRace = createSoloRace({ seed: soloSeed, mapId: selectedMapId,avatarId:game.avatarId,scores:soloScores });
   soloRace.start();
   game = soloRace.player;
   resetVisuals();
@@ -186,7 +229,7 @@ function joinRace(type) {
   snapshot = null;
   rosterKey = '';
   raceView = createRaceView();
-  game = createGame({ mapId: selectedMapId });
+  game = createGame({ mapId: selectedMapId,avatarId:characterChoices[selectedMapId] });
   resetVisuals();
   showNetworkError();
   const callbacks = {
@@ -198,7 +241,7 @@ function joinRace(type) {
     },
     onError(message, code) {
       if (generation !== connectionGeneration) return;
-      if (['ACTION_UNAVAILABLE', 'RATE_LIMIT', 'NOT_RACING'].includes(code)) notify(message, 'warning');
+      if (['ACTION_UNAVAILABLE', 'RATE_LIMIT', 'NOT_RACING', 'CHARACTER_LOCKED'].includes(code)) notify(message, 'warning');
       else if(!snapshot) {
         returnToMenu();showNetworkError(message);$('join-code').focus();
       } else showNetworkError(message);
@@ -217,7 +260,7 @@ function joinRace(type) {
     },
   };
   connection = type === 'demo' ? createDemoRace({ ...callbacks, mapId: selectedMapId })
-    : connectRace({ ...callbacks, initialMessage: { type, code, ...(type === 'create' ? { mapId: selectedMapId } : {}) } });
+    : connectRace({ ...callbacks, initialMessage: { type, code, ...(type === 'create' ? { mapId: selectedMapId,avatarId:characterChoices[selectedMapId]||game.avatarId } : {}) } });
   updateRoom();
   updateHUD();
 }
@@ -237,7 +280,7 @@ function updateRoom() {
       : snapshot.room.phase === 'finished' ? 'Race complete'
       : `${count} racers`;
   }
-  const key = JSON.stringify([snapshot?.players.map(p => [p.id, p.name, p.connected, p.color, p.avatarId]), snapshot?.room.hostId]);
+  const key = JSON.stringify([snapshot?.players.map(p => [p.id, p.name, p.connected, p.color, p.avatarId,p.wins]), snapshot?.room.hostId]);
   if (key !== rosterKey) {
     rosterKey = key;
     $('room-players').replaceChildren();
@@ -245,7 +288,7 @@ function updateRoom() {
       const li = document.createElement('li');
       const dot = document.createElement('i');
       dot.style.backgroundColor = player.color;
-      li.append(dot, document.createTextNode(`${player.name}${player.id === snapshot.you.id && !demo ? ' (you)' : ''}${player.id === snapshot.room.hostId && !demo ? ' · host' : ''}${player.connected ? '' : ' · left'}`));
+      li.append(dot, document.createTextNode(`${player.name}${player.id === snapshot.you.id && !demo ? ' (you)' : ''}${player.id === snapshot.room.hostId && !demo ? ' · host' : ''}${player.connected ? '' : ' · left'} · ${player.wins||0} wins`));
       $('room-players').append(li);
     }
   }
@@ -268,11 +311,11 @@ function updateLeaderboard(snapshot = currentRaceSnapshot()) {
   const stale = mode !== 'solo' && networkStatus !== 'open';
   $('leaderboard-title').textContent = results ? finished ? 'Race results' : 'Still racing' : `${own?.position ?? '—'} / ${snapshot.standings.length}`;
   $('leaderboard-note').textContent = stale ? 'Offline · last positions'
-    : results ? 'DNF = did not escape' : 'POSITION';
+    : results ? 'Wins this session' : 'POSITION';
   const rows = snapshot.standings.map(entry => ({ ...entry, ...snapshot.players.find(p => p.id === entry.id) }));
   // Only touch the DOM when order, identity or result changes, not every frame.
   const displayKey = JSON.stringify([snapshot.room.roundId, snapshot.you.id, mode, view,
-    rows.map(p => [p.id, p.position, p.status, p.name, p.color, p.isComputer])]);
+    rows.map(p => [p.id, p.position, p.status, p.name, p.color, p.isComputer,p.wins])]);
   if (displayKey === standingsKey) return;
   standingsKey = displayKey;
   $('leaderboard-rows').replaceChildren(...rows.map(player => {
@@ -301,8 +344,8 @@ function updateLeaderboard(snapshot = currentRaceSnapshot()) {
     dot.style.backgroundColor = player.color;
     const status = document.createElement('small');
     const statusLabel = ({ ready: 'Ready', racing: 'Racing', escaped: 'Escaped', dnf: 'DNF · time out', disconnected: 'DNF · left' })[player.status];
-    status.textContent = results ? statusLabel : player.status === 'escaped' ? '✓' : ['dnf', 'disconnected'].includes(player.status) ? '×' : '';
-    row.setAttribute('aria-label', `${name.textContent}, ${player.position ? `position ${player.position}, ` : ''}${statusLabel}`);
+    status.textContent = results ? `${statusLabel} · ${player.wins||0} ${(player.wins||0)===1?'win':'wins'}` : player.status === 'escaped' ? '✓' : ['dnf', 'disconnected'].includes(player.status) ? '×' : '';
+    row.setAttribute('aria-label', `${name.textContent}, ${player.position ? `position ${player.position}, ` : ''}${statusLabel}, ${player.wins||0} session wins`);
     row.title = `${name.textContent} · ${statusLabel}`;
     row.append(place, dot, name, status);
     return row;
@@ -397,6 +440,7 @@ function updateOverlay() {
 }
 function updateHUD() {
   updateMapPicker();
+  updateCharacterPicker();
   $('guide-hazard').textContent = getMap(game.mapId).warning;
   canvas.setAttribute('aria-label', `${getMap(game.mapId).name}. Three lanes. Dodge hazards, hop small obstacles, spend seconds on Boost and Long jump.`);
   const raceSnapshot=currentRaceSnapshot();
@@ -476,7 +520,7 @@ for (const [id, action] of [['boost-button','boost'], ['long-jump-button','longJ
   $(id).addEventListener('click', () => act(action));
 }
 document.addEventListener('keydown', event => {
-  if ($('guide-dialog').open || event.altKey || event.ctrlKey || event.metaKey || event.target.closest('input,textarea,select,[contenteditable="true"]')) return;
+  if ($('character-dialog').open || $('guide-dialog').open || event.altKey || event.ctrlKey || event.metaKey || event.target.closest('input,textarea,select,[contenteditable="true"]')) return;
   const actions = { ArrowLeft:'left', KeyA:'left', ArrowRight:'right', KeyD:'right', ArrowUp:'jump', KeyW:'jump', KeyQ:'boost', KeyE:'longJump', Digit1:'boost', Digit2:'longJump' };
   if (actions[event.code] || ['KeyP', 'Escape'].includes(event.code)) {
     event.preventDefault();

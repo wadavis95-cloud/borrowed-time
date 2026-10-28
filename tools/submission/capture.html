@@ -45,15 +45,18 @@ $('record').onclick=async()=>{
 $('stop').onclick=()=>{if(recorder?.state==='recording'){recorder.stop();$('stop').disabled=true;}};
 $('cover').onclick=async()=>{
  try{
+ const recording=recorder?.state==='recording';
+ if(!recording){inputStream=doc().querySelector('#game-canvas').captureStream(10);video.srcObject=inputStream;await video.play();await new Promise(resolve=>video.requestVideoFrameCallback(resolve));}
  const cover=document.createElement('canvas');cover.width=1600;cover.height=900;const c=cover.getContext('2d');backdrop(c,1600,900);
  const gradient=c.createLinearGradient(0,0,1300,0);gradient.addColorStop(0,'#071a23f5');gradient.addColorStop(.48,'#0b2431df');gradient.addColorStop(1,'#0b243100');c.fillStyle=gradient;c.fillRect(0,0,1600,900);
- text(c,'MULTIPLAYER ESCAPE RACING',84,110,24,'#f1ce90');
+ text(c,'SOLO + MULTIPLAYER ESCAPE RACING',84,110,24,'#f1ce90');
  text(c,'BORROWED',75,270,118);text(c,'TIME',75,394,138,'#f1ce90');
  text(c,'Spend seconds.',84,492,39);text(c,'Steal the lead.',84,545,39);
  round(c,84,610,274,65,10,'#bd334d');text(c,'BOOST  −5s',109,654,29);
  round(c,375,610,330,65,10,'#295eb6');text(c,'LONG JUMP  −4s',397,654,29);
- text(c,'2–4 PLAYERS   /   6 MAPS',84,758,24,'#c1d7d8');text(c,'Play in your browser. Escape with seconds to spare.',84,805,21,'#b9cfd0',500);
+ text(c,'1–4 PLAYERS   /   6 MAPS',84,758,24,'#c1d7d8');text(c,'Play in your browser. Escape with seconds to spare.',84,805,21,'#b9cfd0',500);
  await new Promise(resolve=>cover.toBlob(async blob=>{await save(blob,'cover.png');resolve();},'image/png'));
+ if(!recording)inputStream.getTracks().forEach(track=>track.stop());
  }catch(error){$('status').textContent=error.message;}
 };
 </script></html>

@@ -14,13 +14,17 @@
   <div class="app">
     <header class="site-header">
       <a class="brand" href="/" aria-label="Borrowed Time home"><img src="/favicon.svg" alt="" width="30" height="30"><span>BORROWED <span class="brand-light">TIME</span></span></a>
-      <div class="header-actions"><span class="version">V8.6 · LOCAL</span><button id="sound-button" class="quiet-button" aria-pressed="false">Sound off</button><button id="guide-button" class="quiet-button">How to play ↗</button></div>
+      <div class="header-actions"><span class="version">V8.7 · LOCAL</span><button id="sound-button" class="quiet-button" aria-pressed="false">Sound off</button><button id="guide-button" class="quiet-button">How to play ↗</button></div>
     </header>
     <main>
       <div class="page-heading" id="page-heading"><div><h1>Race the clock.</h1></div><button id="demo-button" class="demo-button" disabled><span aria-hidden="true">▷</span> Watch demo</button></div>
       <section id="map-picker" class="map-picker" aria-labelledby="map-picker-title">
         <div class="map-picker-heading"><h2 id="map-picker-title">Choose your escape</h2><span id="map-vote-note">6 maps · Same ticking clock</span></div>
         <div id="map-cards" class="map-cards"></div>
+      </section>
+      <section id="character-picker" class="character-picker" hidden aria-label="Your runner">
+        <div><span>Your runner</span><strong id="selected-character">Automatic</strong><small>Same abilities · Same stats</small></div>
+        <button id="change-character" class="quiet-button">Change character</button>
       </section>
       <section class="race-menu" id="race-menu" aria-label="Multiplayer setup">
         <button id="create-room" class="room-button" disabled>Create room</button>
@@ -86,6 +90,10 @@
       <footer class="game-footer"><span class="keyboard-hint"><kbd>A</kbd> <kbd>D</kbd> Move <b>·</b> <kbd>W</kbd> Hop</span><button id="restart-button" class="quiet-button" disabled>Restart run ↻</button></footer>
     </main>
   </div>
+  <dialog id="character-dialog" class="character-dialog" aria-labelledby="character-title">
+    <div class="dialog-heading"><h2 id="character-title">Choose your runner</h2><button id="close-characters" class="quiet-button" aria-label="Close character picker">Close ×</button></div>
+    <p id="character-map-note">Your choice is cosmetic.</p><div id="character-cards" class="character-cards"></div>
+  </dialog>
   <dialog id="guide-dialog">
     <div class="dialog-heading"><span class="eyebrow">MAKE IT OUT</span><button id="close-guide" class="quiet-button" aria-label="Close guide">Close ×</button></div>
     <h2>One clock. Two jobs.</h2>

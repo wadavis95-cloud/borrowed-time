@@ -1,14 +1,17 @@
 // Local race authority: one human plus three ordinary-rule computer drivers.
 // No socket, opponent teleporting, hidden speed multiplier or shared ability budget.
 import {CONFIG,ABILITIES,createGame,startGame,updateGame,moveLane,jump,buyAbility} from './game.js';
+import {createSessionScores} from './session-scores.js';
 import {chooseDemoAction} from './demo.js';
 import {getMap} from './maps.js';
 import {AVATARS} from './avatars.js';
 import {scheduleApproachingDebris} from './hazards.js';
 const COLORS=['#65ead3','#d4b3ff','#ffc482','#9ac9ff'];
 const LANES=[1,0,2,1];
-export function createSoloRace({seed=42,mapId='tunnel',avatarId}={}) {
-  const map=getMap(mapId);
+let nextRound=0;
+export function createSoloRace({seed=42,mapId='tunnel',avatarId,scores=createSessionScores()}={}) {
+  const map=getMap(mapId),roundId=`solo-${++nextRound}`;
+  if(avatarId&&!map.avatars.includes(avatarId))avatarId=undefined;
   const player=createGame({seed,mapId:map.id,avatarId});
   const cast=[player.avatarId,...map.avatars.filter(id=>id!==player.avatarId)];
   const racers=cast.map((id,index)=>{
@@ -39,6 +42,8 @@ export function createSoloRace({seed=42,mapId='tunnel',avatarId}={}) {
       scheduleApproachingDebris(player.debris,racers.map(r=>r.game),CONFIG,ABILITIES.boost.multiplier);
       for(const racer of racers)updateGame(racer.game,step,true);
       elapsed+=step;remaining-=step;
+      const first=[...racers].filter(r=>r.game.phase==='won').sort((a,b)=>a.game.finishTime-b.game.finishTime)[0];
+      if(first)scores.record(roundId,first.id);
     }
   }
   function opponents(){return racers.slice(1).filter(r=>!['won','lost'].includes(r.game.phase)).map(r=>({
@@ -52,9 +57,9 @@ export function createSoloRace({seed=42,mapId='tunnel',avatarId}={}) {
       return group(a)-group(b)||(a.game.phase==='won'?a.game.finishTime-b.game.finishTime:b.game.distance-a.game.distance);
     });
     const winner=ordered.find(r=>r.game.phase==='won');
-    return {room:{phase:finished()?'finished':started?'racing':'lobby',roundId:`solo-${seed}`,winnerId:winner?.id??null,mapId:map.id,raceElapsed:elapsed},
+    return {room:{phase:finished()?'finished':started?'racing':'lobby',roundId,winnerId:winner?.id??null,mapId:map.id,raceElapsed:elapsed},
       you:{id:'you',name:racers[0].name,game:player},
-      players:racers.map(r=>({id:r.id,name:r.name,color:r.color,avatarId:r.avatarId,isComputer:r.isComputer,connected:true,phase:r.game.phase,lane:r.game.lane,distance:r.game.distance})),
+      players:racers.map(r=>({id:r.id,name:r.name,color:r.color,avatarId:r.avatarId,isComputer:r.isComputer,wins:scores.wins(r.id),connected:true,phase:r.game.phase,lane:r.game.lane,distance:r.game.distance})),
       standings:ordered.map((r,i)=>({id:r.id,position:r.game.phase==='lost'?null:i+1,status:r.game.phase==='won'?'escaped':r.game.phase==='lost'?'dnf':started?'racing':'ready'})),
     };
   }

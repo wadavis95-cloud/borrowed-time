@@ -1,5 +1,13 @@
 # Changelog
 
+## 8.7.0-preview.1 — Local character choices and session wins
+
+- Preserved V8.6 in a verified complete-history bundle; no push/deployment/submission.
+- Added optional four-character portrait selection scoped to the chosen/voted map, keeping automatic defaults and identical stats.
+- Server validates and locks choices at countdown, remembers preferences by map, and honors the winning map's choice; duplicate choices retain distinct player colors.
+- Added once-per-round first-place session totals in lobby/results, following player identity across costumes/maps/rematches. Solo totals persist for the current page; room totals last through that room membership.
+- Corrected cover to SOLO + MULTIPLAYER and 1–4 PLAYERS, retained cover-v1.png, and clarified solo support in the description draft.
+
 ## 8.6.0-preview.1 — Local solo computer racers
 
 - Preserved V8.5 in a verified complete-history backup; no push, deployment or submission.
