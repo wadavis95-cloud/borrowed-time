@@ -5,6 +5,7 @@ import { getMap, isMapId, resolveMapVote } from '../maps.js';
 import { scheduleApproachingDebris } from '../hazards.js';
 
 const STEP_MS = 1000 / 60;
+const START_LANES = [1, 0, 2, 1];
 const COLORS = ['#65ead3', '#d4b3ff', '#ffc482', '#9ac9ff'];
 const ACTIONS = new Set(['left', 'right', 'jump', 'boost', 'longJump']);
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -85,6 +86,7 @@ export function createRoomManager({
       id, name: AVATARS[avatarId].name, color, avatarId,
       connected: true, lastSeq: 0, game: createGame({ seed: room.seed, mapId: room.mapId, avatarId, playerColor: color }),
     });
+    room.players.get(id).game.lane = START_LANES[COLORS.indexOf(color)];
     connections.get(id).roomCode = room.code;
     room.lastActivity = now();
   }
@@ -148,6 +150,7 @@ export function createRoomManager({
           player.avatarId = candidates.splice(Math.floor(random() * candidates.length), 1)[0];
           player.name = AVATARS[player.avatarId].name;
           player.game = createGame({ seed: room.seed, mapId: selected, avatarId: player.avatarId, playerColor: player.color });
+          player.game.lane = START_LANES[COLORS.indexOf(player.color)];
         }
       }
       room.phase = 'countdown';
@@ -173,6 +176,7 @@ export function createRoomManager({
           room.players.delete(playerId);
         } else {
           player.game = createGame({ seed: room.seed, mapId: room.mapId, avatarId: player.avatarId, playerColor: player.color });
+          player.game.lane = START_LANES[COLORS.indexOf(player.color)];
           player.lastSeq = 0;
         }
       }

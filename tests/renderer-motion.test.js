@@ -86,3 +86,15 @@ test('an initially paused view can display its supplied local and rival position
   motion.update({ ...state, lane: 0, jumpRemaining: 0 }, .1, []);
   assert.deepEqual(snapshot(view), frozen);
 });
+
+test('first snapshot and reset place the local runner and camera directly in their assigned lane',()=>{
+  for(const lane of [0,2]) {
+    const motion=createMotion();let view=motion.update({phase:'ready',lane},0,[{id:'rival',lane:2-lane}]);
+    assert.equal(view.lane,lane);assert.equal(view.cameraLane,lane);assert.equal(view.laneVelocity,0);
+    assert.equal(view.opponents.get('rival').lane,2-lane);
+    view=motion.update({phase:'running',lane:1},1/60,[]);
+    assert.ok(view.lane>Math.min(lane,1)&&view.lane<Math.max(lane,1),'real lane changes still ease');
+    motion.reset();view=motion.update({phase:'ready',lane:2-lane},1/60,[]);
+    assert.equal(view.lane,2-lane);assert.equal(view.cameraLane,2-lane);assert.equal(view.laneVelocity,0);
+  }
+});

@@ -1,5 +1,7 @@
 # Borrowed Time · V8.4 polished six-map release
 
+**V8.5 local preview:** stable multiplayer starting lanes and immediate first-snapshot placement remove the opening lane shuffle. A cover, silent gameplay video and submission-description draft are in [artifacts/submission](artifacts/submission/SUBMISSION_DRAFT.md). Nothing submitted or deployed; the public link remains V8.4.
+
 **V8.4 phone playtest:** clearer obstacle and movement feedback, confirmed ability debits, countdown/result polish, map-specific sound and atmosphere, rescue destinations, visible “(you)” labels and better loading/join recovery. Boost remains 5 seconds and Long jump 4 seconds. [Public release record](docs/versions/V8_4_PUBLIC_PLAYTEST.md).
 
 Six escape maps for solo practice and private races with 2–4 players: **Tunnel Escape, The Last Voyage, Volcanic Jungle, Frozen Summit, Orbital Escape, and Sandstorm Canyon**. Pick a thumbnail or vote with friends in the lobby. Your character and role name are assigned automatically from the winning map's four-person cast.

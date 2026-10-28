@@ -1,7 +1,6 @@
 import { ABILITIES, CONFIG, createGame, getJumpHeight } from './game.js';
 import { connectRace } from './network.js';
 
-const PREFERRED_LANES = [0, 1, 2, 1];
 // Each runner spends its own clock on a different plan. The first runner is the camera's
 // viewpoint: an early breakaway lets rivals fall behind before their later
 // purchases bring them back. These are inputs, never forced race positions.
@@ -37,8 +36,7 @@ function travelDistance(game, duration) {
 // Different spending times create natural separation, catches and overtakes.
 export function chooseDemoAction(game, index) {
   if (game.phase !== 'running') return null;
-  const preferred = PREFERRED_LANES[index % PREFERRED_LANES.length];
-  if (game.elapsed < .5 && game.lane !== preferred) return game.lane < preferred ? 'right' : 'left';
+  // The server supplies the start grid; never shuffle racers on race start.
   if (index === 3 && game.elapsed >= .3 && game.elapsed < .6 && !game.jumpRemaining) return 'jump';
 
   const debris = game.debris ?? [];

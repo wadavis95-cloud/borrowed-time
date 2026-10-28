@@ -27,7 +27,7 @@ export function createPresentationMotion({ reducedMotion = false } = {}) {
     if (paused && initialized) return view;
     const step = paused ? 0 : clamp(finite(dt), 0, .1);
     const lane = clamp(finite(state.lane, 1), 0, 2);
-    if (paused) view.lane = view.cameraLane = lane;
+    if (!initialized || paused) view.lane = view.cameraLane = lane;
     const laneDecay = Math.exp(-step * 22);
     view.lane = lane + (view.lane - lane) * laneDecay;
     view.laneVelocity = (lane - view.lane) * 22;

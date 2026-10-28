@@ -1,5 +1,12 @@
 # Changelog
 
+## 8.5.0-preview.1 — Local starting grid and presentation drafts
+
+- Preserved V8.4 in a verified complete-history bundle. No push, deployment or competition submission.
+- Assigned stable starting lanes by room color slot, retained across map changes/rematches; all racers retain zero starting distance and the same clock.
+- Initialized local runner/camera at the first supplied lane; ordinary lane changes still smooth normally. Removed demo opening lane-shuffle inputs.
+- Added local gameplay-based cover, silent 54-second MP4 showcase and submission-description draft, plus a separate loopback-only capture/review utility.
+
 ## V8.4 public phone playtest — deployed October 28, 2026
 
 - Published the approved V8.1–V8.4 polish and persistent self-label fix to the existing public URL.

@@ -1,0 +1,59 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Borrowed Time · Submission studio</title><style>
+*{box-sizing:border-box}body{margin:0;background:#101c21;color:#f4ecd7;font:15px system-ui}header{padding:14px 22px;display:flex;align-items:center;gap:14px}header small{color:#a8bcbe}button{border:0;border-radius:8px;background:#f1ce90;color:#19252a;padding:12px 18px;font-weight:750;cursor:pointer}button:disabled{opacity:.4}main{display:grid;grid-template-columns:minmax(580px,1fr) 340px;gap:20px;padding:0 20px 20px}iframe{width:100%;height:780px;border:1px solid #43565a;border-radius:10px}aside p{line-height:1.5;color:#b8c8c8}canvas{width:100%;border-radius:9px;border:1px solid #45616a}#status{padding:10px;background:#20343b;border-radius:6px}video{display:none}
+</style><header><strong>BORROWED TIME / SUBMISSION STUDIO</strong><small>Local drafts only · Nothing is submitted or uploaded publicly.</small></header><main><iframe id="game" src="/" title="Local playable game"></iframe><aside><h2>Authentic gameplay capture</h2><p>Use the game on the left normally. Record a four-player demo; the capture reads its actual clock, abilities and results. HUD is typeset for the video. Silent recording.</p><button id="record">Record</button> <button id="stop" disabled>Stop & save</button><p><button id="cover">Export cover</button></p><p id="status" role="status">Ready. Exports stay in artifacts/submission.</p><canvas id="output" width="1280" height="720"></canvas><video id="source" muted playsinline></video></aside></main><script type="module">
+const $=id=>document.getElementById(id),out=$('output'),ctx=out.getContext('2d'),video=$('source');
+let recorder=null,stream=null,inputStream=null,started=0,drawId=0;
+const doc=()=>$('game').contentDocument,read=s=>doc()?.querySelector(s)?.textContent?.trim()||'';
+function round(context,x,y,w,h,r,color){context.fillStyle=color;context.beginPath();context.roundRect(x,y,w,h,r);context.fill();}
+function text(context,label,x,y,size,color='#f5f1dd',weight=700){context.fillStyle=color;context.font=`${weight} ${size}px system-ui`;context.fillText(label,x,y);}
+function backdrop(context,w,h){const canvas=doc()?.querySelector('#game-canvas');if(!canvas)return;const image=video.readyState>=2?video:canvas;const width=video.readyState>=2?video.videoWidth:canvas.width,height=video.readyState>=2?video.videoHeight:canvas.height;const scale=Math.max(w/width,h/height);context.drawImage(image,(w-width*scale)/2,(h-height*scale)/2,width*scale,height*scale);}
+function draw(){
+ ctx.fillStyle='#12272d';ctx.fillRect(0,0,1280,720);backdrop(ctx,1280,602);
+ const shade=ctx.createLinearGradient(0,0,0,180);shade.addColorStop(0,'#07171cdb');shade.addColorStop(1,'#07171c00');ctx.fillStyle=shade;ctx.fillRect(0,0,1280,180);
+ text(ctx,'BORROWED TIME',32,48,30);text(ctx,'SPEND SECONDS. STEAL THE LEAD.',32,78,15,'#f4d19b');
+ round(ctx,1058,20,194,76,12,'#122a31ed');text(ctx,'TIME LEFT',1076,44,12,'#aec6c7');text(ctx,read('#time-value')+'s',1075,78,29);
+ const board=doc()?.querySelector('#leaderboard');
+ const rows=[...(board?.querySelectorAll('.standing')||[])];
+ if(!board?.hidden){round(ctx,24,112,228,rows.length*26+40,10,'#14292fe8');text(ctx,board.dataset.view==='results'?'RACE RESULTS':'LIVE POSITIONS',40,137,12,'#bad0d1');rows.forEach((r,i)=>text(ctx,`${readRow(r,'.standing-place')}  ${readRow(r,'.standing-name')} ${board.dataset.view==='results'?readRow(r,'small'):''}`,40,164+i*26,14));}
+ const overlay=doc()?.querySelector('#screen-overlay');
+ if(overlay&&!overlay.hidden){
+   if(overlay.dataset.stage==='countdown'){text(ctx,read('#overlay-title'),610,330,94);}
+   else if(overlay.dataset.stage==='finish'){round(ctx,330,190,620,255,20,'#14292fee');text(ctx,read('#overlay-title'),370,250,36);text(ctx,read('#overlay-description'),370,294,21,'#c6dcd5');text(ctx,read('#finish-badge'),370,335,16,'#f6d8a0');text(ctx,'One more race?',370,399,24);}
+ }
+ round(ctx,0,602,1280,118,0,'#142b32');
+ text(ctx,'YOUR CLOCK IS YOUR ABILITY BUDGET',32,634,15,'#c4d6d3');text(ctx,'4 racers · 6 escapes · One ticking clock',32,675,22);
+ const boost=doc()?.querySelector('#boost-button'),jump=doc()?.querySelector('#long-jump-button');
+ round(ctx,700,624,254,72,12,boost?.classList.contains('active')?'#ee6178':'#bd334d');text(ctx,'BOOST',721,653,21);text(ctx,'SPEND 5 SECONDS',721,679,14);
+ round(ctx,972,624,280,72,12,jump?.classList.contains('active')?'#609cfa':'#295eb6');text(ctx,'LONG JUMP',993,653,21);text(ctx,'SPEND 4 SECONDS',993,679,14);
+ drawId=requestAnimationFrame(draw);
+}
+function readRow(row,selector){return row.querySelector(selector)?.textContent?.trim()||'';}
+async function save(blob,name){const res=await fetch('/__save/'+name,{method:'POST',body:blob});if(!res.ok)throw new Error('Export failed');$('status').textContent=await res.text();}
+$('record').onclick=async()=>{
+ try{
+ const canvas=doc()?.querySelector('#game-canvas');if(!canvas)throw new Error('Wait for game graphics.');
+ inputStream=canvas.captureStream(30);video.srcObject=inputStream;await video.play();
+ draw();stream=out.captureStream(30);
+ const mime=['video/mp4;codecs=avc1.42001E','video/webm;codecs=vp9','video/webm;codecs=vp8'].find(type=>MediaRecorder.isTypeSupported(type));
+ if(!mime)throw new Error('Video recording unavailable in this browser.');
+ const chunks=[];recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:5000000});
+ recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+ recorder.onstop=async()=>{cancelAnimationFrame(drawId);stream.getTracks().forEach(t=>t.stop());inputStream.getTracks().forEach(t=>t.stop());await save(new Blob(chunks,{type:recorder.mimeType}),recorder.mimeType.includes('mp4')?'showcase.mp4':'showcase.webm');$('record').disabled=false;};
+ recorder.start(1000);started=performance.now();$('record').disabled=true;$('stop').disabled=false;$('status').textContent='Recording real gameplay · '+mime;
+ }catch(error){$('status').textContent=error.message;}
+};
+$('stop').onclick=()=>{if(recorder?.state==='recording'){recorder.stop();$('stop').disabled=true;}};
+$('cover').onclick=async()=>{
+ try{
+ const cover=document.createElement('canvas');cover.width=1600;cover.height=900;const c=cover.getContext('2d');backdrop(c,1600,900);
+ const gradient=c.createLinearGradient(0,0,1300,0);gradient.addColorStop(0,'#071a23f5');gradient.addColorStop(.48,'#0b2431df');gradient.addColorStop(1,'#0b243100');c.fillStyle=gradient;c.fillRect(0,0,1600,900);
+ text(c,'MULTIPLAYER ESCAPE RACING',84,110,24,'#f1ce90');
+ text(c,'BORROWED',75,270,118);text(c,'TIME',75,394,138,'#f1ce90');
+ text(c,'Spend seconds.',84,492,39);text(c,'Steal the lead.',84,545,39);
+ round(c,84,610,274,65,10,'#bd334d');text(c,'BOOST  −5s',109,654,29);
+ round(c,375,610,330,65,10,'#295eb6');text(c,'LONG JUMP  −4s',397,654,29);
+ text(c,'2–4 PLAYERS   /   6 MAPS',84,758,24,'#c1d7d8');text(c,'Play in your browser. Escape with seconds to spare.',84,805,21,'#b9cfd0',500);
+ await new Promise(resolve=>cover.toBlob(async blob=>{await save(blob,'cover.png');resolve();},'image/png'));
+ }catch(error){$('status').textContent=error.message;}
+};
+</script></html>

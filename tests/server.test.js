@@ -135,7 +135,7 @@ test('server actions move and charge only their connection owner, rejecting stal
   const input = (action, seq, extra = {}) => send('host', { type: 'input', action, seq, roundId, ...extra });
   assert.equal(input('left', 1, { playerId: 'guest', timeLeft: 1000 }).ok, true);
   assert.equal(manager.snapshot('host').you.game.lane, 0);
-  assert.equal(manager.snapshot('guest').you.game.lane, 1);
+  assert.equal(manager.snapshot('guest').you.game.lane, 0);
   assert.equal(input('boost', 2).ok, true);
   assert.equal(manager.snapshot('host').you.game.timeLeft, 55);
   assert.equal(manager.snapshot('host').you.game.timeSpent, 5);
@@ -382,7 +382,7 @@ networkTest('two real clients share a countdown but receive private state and co
   const own = await host.until((m) => m.type === 'snapshot' && m.you.game.timeSpent === 5);
   const other = await guest.until((m) => m.type === 'snapshot' && m.players.some((p) => p.id === created.you.id && p.lane === 0));
   assert.equal(own.you.game.lane, 0);
-  assert.equal(other.you.game.lane, 1);
+  assert.equal(other.you.game.lane, 0);
   assert.equal(other.you.game.timeSpent, 0);
   assert.equal(Object.hasOwn(own.you.game, 'obstacles'), false);
   const ghost = other.players.find((p) => p.id === created.you.id);
@@ -623,4 +623,19 @@ networkTest('four real clients share map votes, themed rosters and private purch
     assert.equal((await fetch(url + '/backups/pre-three-maps-20261027.bundle')).status, 404);
     for (const connection of clients) connection.socket.close();
   });
+});
+
+test('four racers have stable grid lanes in lobby, countdown, map changes and rematches',()=>{
+  let time=0;const manager=createRoomManager({now:()=>time,makeCode:()=> 'GRIDAA',random:()=>0});
+  const ids=['one','two','three','four'];ids.forEach(id=>manager.connect(id));
+  manager.handle('one',{type:'create',mapId:'tunnel'});const code=manager.snapshot('one').room.code;
+  for(const id of ids.slice(1))manager.handle(id,{type:'join',code});
+  const lanes=()=>ids.map(id=>manager.snapshot(id).you.game.lane);
+  assert.deepEqual(lanes(),[1,0,2,1]);
+  for(const id of ids)manager.handle(id,{type:'vote',mapId:'pirate'});
+  manager.handle('one',{type:'start'});assert.deepEqual(lanes(),[1,0,2,1]);
+  assert.equal(manager.snapshot('one').room.mapId,'pirate');
+  time=3000;manager.tick();assert.deepEqual(lanes(),[1,0,2,1]);
+  const room=[...manager.rooms.values()][0];for(const player of room.players.values())player.game.phase='lost';
+  manager.tick();manager.handle('one',{type:'rematch'});assert.deepEqual(lanes(),[1,0,2,1]);
 });

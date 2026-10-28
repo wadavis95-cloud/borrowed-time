@@ -1,0 +1,17 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Borrowed Time · Submission drafts</title><style>
+*{box-sizing:border-box}body{margin:0;background:#11262d;color:#f4eedb;font:16px system-ui}main{max-width:1160px;margin:auto;padding:34px 26px}h1{font-size:32px;margin:6px 0 14px}p{color:#c6d6d5;line-height:1.5}section{margin:28px 0}img,video{width:100%;display:block;border-radius:12px;border:1px solid #4b6265}small{color:#dfc18c}h2{font-size:19px}a{color:#f0cf99}button{padding:10px 16px;border-radius:8px;border:0;background:#e7ca93;color:#16282c;cursor:pointer}pre{white-space:pre-wrap;color:#cfdfda;font:15px system-ui;line-height:1.6;background:#1c343b;padding:20px;border-radius:10px}</style><main>
+<small>LOCAL REVIEW · NOT SUBMITTED · GAME FIX NOT DEPLOYED</small><h1>Borrowed Time</h1><p>A cover and gameplay showcase draft for your review. The video records an actual four-player local demo. The clock, standings and abilities are read from the game; the HUD is typeset for clarity. This draft has no audio.</p>
+<section><h2>Cover · 1600 × 900</h2><img src="/__output/cover.png" alt="Borrowed Time cover: Spend seconds. Steal the lead. Actual pirate-ship gameplay behind the title."></section>
+<section><h2>Gameplay showcase · 1280 × 720</h2><video id="review-video" controls preload="metadata" src="/__output/showcase.mp4" poster="/__output/cover.png"></video><p id="metadata">Reading video metadata…</p></section>
+<section><h2>Submission description draft</h2><pre>Race your friends. Spend your survival time. Escape before zero.
+
+Borrowed Time is a multiplayer escape racer where your countdown is also your ability budget. Spend five seconds on a speed boost or four on a long jump—but every purchase leaves less time to reach safety.
+
+Join a private room with 2–4 players, vote for one of six escape maps, and race through randomized obstacles and timed environmental hazards. See opponents pull ahead, catch them with a well-timed ability, and find out who escaped when the clock runs out.
+
+Playable in a browser on phones and computers, with no login or installation. Includes solo practice, automatic character roles and quick rematches.
+
+Built iteratively with ChatGPT Work using JavaScript, Three.js, Node.js and WebSockets.</pre></section>
+<p><a href="http://localhost:4173/">Test the starting-line fix locally →</a></p></main><script>
+const video=document.querySelector('video');video.addEventListener('loadedmetadata',()=>{document.querySelector('#metadata').textContent=`${Math.round(video.duration)} seconds · ${video.videoWidth} × ${video.videoHeight} · Silent MP4 draft`;});
+</script></html>
