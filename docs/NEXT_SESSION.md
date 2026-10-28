@@ -105,3 +105,17 @@ browser,network and cache condition unspecified. This is solo evidence;zero
 online RTT/gap/input observations. Overall phone feel accepted. Physical phone
 online latency remains unmeasured unless a later phone+Mac race is done. No entry
 or submission; account eligibility/form sign-in/final authorization remain open.
+
+### Phone and Mac multiplayer test completed with minor stutter finding
+
+Real physical phone plus Mac Tunnel race: phone Station Guard won, Mac controls
+untouched. User reports brief noticeable small skips, without interference. Saved
+phone-mac-latency-* artifacts and live/results screenshots in artifacts/readiness.
+p95 bounds: 28 phone input acknowledgments <=100 ms; combined 44 echoes <=100 ms;
+4,543 update gaps <=60 ms. Rare/worst spikes and per-device network distributions
+are not exposed by current API. Server race history recorded event-loop max about
+79–101 ms and sampled backlog <=32 ms, zero send backlog. Root cause not proven;
+current two-snapshot 50 ms interpolation/hold can reveal late updates as skips.
+Do not call online smoothness fully cleared. Network/phone details unspecified.
+Test sampler completed, lobby and sockets cleaned up; no code change or submission.
+User now discussing anti-stutter strategies; keep changes pending their instruction.

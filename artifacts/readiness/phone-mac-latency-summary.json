@@ -1,0 +1,73 @@
+{
+  "sameProcess": true,
+  "traceSamples": 37,
+  "raceSampleCount": 7,
+  "firstRacingSample": "2026-10-28T21:18:05.153Z",
+  "lastRacingSample": "2026-10-28T21:18:36.155Z",
+  "counters": {
+    "errors": {
+      "before": 0,
+      "after": 0,
+      "delta": 0
+    },
+    "graphicsErrors": {
+      "before": 0,
+      "after": 0,
+      "delta": 0
+    },
+    "contextLosses": {
+      "before": 0,
+      "after": 1,
+      "delta": 1
+    },
+    "disconnects": {
+      "before": 0,
+      "after": 0,
+      "delta": 0
+    },
+    "slowFrames": {
+      "before": 5,
+      "after": 7,
+      "delta": 2
+    },
+    "longTasks": {
+      "before": 0,
+      "after": 1,
+      "delta": 1
+    }
+  },
+  "historyIntervalCount": 29,
+  "peaks": {
+    "cpuPct": 8.138969936978329,
+    "eventLoopP95Ms": 11.263999,
+    "eventLoopMaxMs": 100.728831,
+    "simulationBacklogMs": 32.243896484375,
+    "bufferedBytes": 0,
+    "rssMB": 73.818112
+  },
+  "timings": {
+    "gap": {
+      "count": 4543,
+      "p95UpperMs": 60,
+      "p95OverMs": null
+    },
+    "rtt": {
+      "count": 44,
+      "p95UpperMs": 100,
+      "p95OverMs": null
+    },
+    "input": {
+      "count": 28,
+      "p95UpperMs": 100,
+      "p95OverMs": null
+    }
+  },
+  "caveats": [
+    "Network timing p95 does not expose worst individual spike or raw latency histogram.",
+    "Frame/error counters include retained solo reports as well as this online test.",
+    "Older server history buckets keep peaks but compress timing to about10seconds."
+  ],
+  "ownerClarification": "Brief noticeable small skips that did not interfere with play",
+  "finding": "Functional race passed; intermittent stutter remains open, cause not established",
+  "networkType": "Not provided"
+}

@@ -95,7 +95,7 @@ clarifying this wording is optional polish, not a missing attribution.
 - [ ] Switch apps during a solo run and return: verify it pauses/resumes cleanly.
 - [ ] Optional if cellular service is available: turn Wi-Fi off and repeat Orbital
   loading plus a short run. Cellular coverage can vary; report network type.
-- [ ] With the phone and this Mac, create/join one shared lobby yourself. Test a
+- [x] With the phone and this Mac, create/join one shared lobby yourself. Test a
   race with the phone as a racer. Online races continue during app switches; a tab
   refresh exits the session rather than restoring the active race.
 
@@ -144,3 +144,38 @@ owner. Specific audio/app-switch/orientation checks have not been individually
 confirmed. No online phone samples were captured: network RTT, update gaps and
 input acknowledgments have zero observations. A phone-to-Mac race remains the
 focused optional follow-up for physical-phone online latency. No submission.
+
+## Physical phone and Mac multiplayer result
+
+A real two-device public Tunnel race completed in lobby P367UJ. The phone's
+Station Guard escaped and won; the Mac Engineer timed out with controls deliberately
+untouched so new race input-ack observations came from the phone. The owner reported
+brief noticeable small skips that did not interfere with play. Functional connection
+and race completion passed; online smoothness has an open stutter finding.
+
+Captured p95 histogram bounds: input acknowledgment <=100 ms (28 observations),
+application echo RTT <=100 ms (44), movement-update gap <=60 ms (4,543). Gap/RTT
+include both devices; the API does not expose their per-device distributions or
+worst individual delay. These metrics exclude final screen presentation latency.
+Both devices were present, but phone model/browser and Wi-Fi/cellular remain
+unspecified. A p95 bound must not be used to dismiss the reported rare skips.
+
+Server history during the race includes event-loop maxima of roughly 79, 81 and 101 ms
+in peak-preserving buckets. Maximum sampled simulation backlog was approximately
+32 ms, no queued send backlog, and no recorded client disconnect reports. CPU peak
+was 8.14 percent of one core; this is not a percentage of Render Free's assigned CPU
+share, so it cannot rule out host scheduling/throttling. A new graphics-context-loss
+report and long-task report arrived before the first racing sample; neither is
+established as a cause of mid-race skips. Two additional slow frames were recorded
+in the retained client sample, which also includes prior solo play.
+
+Source inspection confirms the current renderer keeps two snapshots, interpolates
+50 ms behind receipt and holds the newest real state when a later update is delayed.
+This can expose delayed updates as visible holds/corrections. The observed server
+pauses are a plausible contributor, not proof of the cause of each reported skip.
+Further spike/tail timing and device/mode correlation should precede any smoothing
+or server optimization change. No product changes or submission were performed.
+
+Evidence: ../artifacts/readiness/phone-mac-latency-before.json, -window.json,
+-after.json, -summary.json, -cleanup.json, phone-mac-live.png and phone-mac-results.png.
+The bounded sampler finished and the test lobby/sockets were cleaned up to zero.
