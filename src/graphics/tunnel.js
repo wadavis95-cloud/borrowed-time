@@ -357,6 +357,9 @@ export function createTunnel(scene, courseLength) {
     for (const { geometry, material, matrices, colors } of batches.values()) {
       const instances = new THREE.InstancedMesh(geometry, material, matrices.length);
       matrices.forEach((matrix, i) => { instances.setMatrixAt(i, matrix); instances.setColorAt(i, colors[i]); });
+      // Structural trim casts local depth shadows; the solid roof stays unshadowed
+      // so stylized daylight can still reach the covered course.
+      instances.castShadow = material === trim || material === worn;
       instances.receiveShadow = material === trim || material === worn; instances.computeBoundingSphere(); section.add(instances);
     }
     mergeStaticSurfaces(section);

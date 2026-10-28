@@ -105,15 +105,21 @@ export function createRenderer(canvas) {
   const darkFog = new THREE.Color('#294657'), brightFog = new THREE.Color('#e4d9bb');
   const coolLight = new THREE.Color('#a9c9eb'), warmLight = new THREE.Color('#ffe0ac');
 
-  const ambient = new THREE.HemisphereLight('#a9c9e6', '#3e4e51', 1.36); scene.add(ambient);
+  const ambient = new THREE.HemisphereLight('#c8e3f4', '#59645b', .92); scene.add(ambient);
   const sun = new THREE.DirectionalLight('#bfd4e8', 2.05);
-  sun.position.set(-6, 11, 4); sun.target.position.set(0, 0, -8);
-  sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
-  sun.shadow.camera.left = -10; sun.shadow.camera.right = 10; sun.shadow.camera.top = 12; sun.shadow.camera.bottom = -12;
-  sun.shadow.camera.near = .5; sun.shadow.camera.far = 50; sun.shadow.bias = -.0006; sun.shadow.normalBias = .035;
+  // Side lighting reveals rounded forms; a single shadow map stays near the runner.
+  sun.position.set(-8, 10, 5); sun.target.position.set(0, .5, -9);
+  const shadowResolution = window.matchMedia('(pointer: coarse)').matches ? 1024 : 2048;
+  sun.castShadow = true; sun.shadow.mapSize.set(shadowResolution, shadowResolution);
+  sun.shadow.radius = 2;
+  sun.shadow.camera.left = -13; sun.shadow.camera.right = 13; sun.shadow.camera.top = 18; sun.shadow.camera.bottom = -18;
+  sun.shadow.camera.near = .5; sun.shadow.camera.far = 50; sun.shadow.bias = -.00025; sun.shadow.normalBias = .025;
   scene.add(sun, sun.target);
-  // A cool bounce keeps clothing and hazard silhouettes readable in the dark.
-  const bounce = new THREE.DirectionalLight('#b1d8e8', .88); bounce.position.set(3, 5, 7); scene.add(bounce);
+  // Gentle front fill preserves bright clothing without washing out the key light.
+  const bounce = new THREE.DirectionalLight('#d5e8f5', .38); bounce.position.set(5, 4, 7); scene.add(bounce);
+  // An unshadowed rear edge separates the runner from similarly colored scenery.
+  const rim = new THREE.DirectionalLight('#ffe7bf', .7);
+  rim.position.set(3, 5, -10); rim.target.position.set(0, 1, 0); scene.add(rim, rim.target);
   const lampLeft = new THREE.PointLight('#ffba76', 12, 12, 2), lampRight = new THREE.PointLight('#ffba76', 12, 12, 2);
   lampLeft.position.set(-4.05, 2.55, -3); lampRight.position.set(4.05, 2.55, -11); scene.add(lampLeft, lampRight);
   let currentMapId = 'tunnel';
@@ -130,7 +136,7 @@ export function createRenderer(canvas) {
   const mint = new THREE.MeshBasicMaterial({ color: '#a4e6cb', toneMapped: false });
   const gapDark = new THREE.MeshBasicMaterial({ color: '#02070c' });
   const glowMap = radialTexture();
-  const shadowMaterial = new THREE.MeshBasicMaterial({ map: glowMap, color: '#07131c', transparent: true, opacity: .63, depthWrite: false });
+  const shadowMaterial = new THREE.MeshBasicMaterial({ map: glowMap, color: '#07131c', transparent: true, opacity: .46, depthWrite: false });
   const stoneGeometry = new THREE.IcosahedronGeometry(1, 1);
   const boxGeometry = beveledBoxGeometry(.065);
   const ringGeometry = new THREE.RingGeometry(.88, 1.02, 40);
@@ -140,7 +146,7 @@ export function createRenderer(canvas) {
   const motion = createPresentationMotion({ reducedMotion });
   const movementEffects = createMotionEffects(scene);
   let localAvatar = null, localAvatarKey = '', disposed = false, contextLost = false, hasDrawn = false;
-  const contactShadow = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), shadowMaterial);
+  const contactShadow = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.65), shadowMaterial);
   contactShadow.rotation.x = -Math.PI / 2; contactShadow.position.y = .025; scene.add(contactShadow);
 
   function makeMesh(group, geometry, material, x, y, z, sx = 1, sy = 1, sz = 1) {
@@ -288,9 +294,10 @@ export function createRenderer(canvas) {
     scene.background.copy(darkSky).lerp(brightSky, progression * .2 + daylight * .8);
     scene.fog.color.copy(darkFog).lerp(brightFog, progression * .2 + daylight * .8);
     scene.fog.far = 158 + daylight * 160;
-    ambient.intensity = 1.28 + progression * .14 + daylight * .5;
+    ambient.intensity = .92 + progression * .12 + daylight * .32;
+    bounce.intensity = .38; rim.intensity = .65 + daylight * .15; rim.color.set('#ffe7bf');
     sun.color.copy(coolLight).lerp(warmLight, progression * .25 + daylight * .75);
-    sun.intensity = 1.92 + daylight * .9;
+    sun.intensity = 2.65 + daylight * .6;
     lampLeft.intensity = lampRight.intensity = 12 * (1 - daylight * .7);
     renderer.toneMappingExposure = 1.04 - daylight * .09;
     if (currentMapId !== 'tunnel') {
@@ -298,8 +305,12 @@ export function createRenderer(canvas) {
       scene.background.set(getMap(currentMapId).sky || (ship ? '#83becd' : '#a1d5bc'));
       scene.fog.color.set(getMap(currentMapId).fog || (ship ? '#9dbfca' : '#9fc4a5'));
       scene.fog.near = 75; scene.fog.far = ship ? 260 : 330;
-      ambient.intensity = ship ? 1.9 : 1.85;
-      sun.color.set(getMap(currentMapId).sun || '#ffe1ae'); sun.intensity = currentMapId === 'orbital' ? 1.9 : 2.7;
+      // Keep skylight bright, but let the key create a readable light/shade side.
+      ambient.intensity = currentMapId === 'frozen' ? 1.18 : currentMapId === 'orbital' ? 1.05 : 1.02;
+      bounce.intensity = currentMapId === 'orbital' ? .5 : .34;
+      rim.color.set(currentMapId === 'orbital' ? '#8bdfff' : currentMapId === 'frozen' ? '#e2f5ff' : '#ffe2b4');
+      rim.intensity = currentMapId === 'orbital' ? 1.05 : .72;
+      sun.color.set(getMap(currentMapId).sun || '#ffe1ae'); sun.intensity = currentMapId === 'orbital' ? 2.5 : 3.25;
       lampLeft.intensity = lampRight.intensity = 0; renderer.toneMappingExposure = 1.02;
     } else scene.fog.near = 36;
     world.update(distance, elapsed, reducedMotion, state.debris || []);
@@ -320,7 +331,7 @@ export function createRenderer(canvas) {
     const landingPulse=movementEffects.update(state,view,dt,reducedMotion);
     contactShadow.position.x = localAvatar.group.position.x;
     contactShadow.scale.setScalar(1 + localAvatar.group.position.y * .16 + landingPulse * .12);
-    shadowMaterial.opacity = Math.max(.16, .63 - localAvatar.group.position.y * .14 + landingPulse * .1);
+    shadowMaterial.opacity = Math.max(.10, .46 - localAvatar.group.position.y * .13 + landingPulse * .08);
 
     const visibleOpponents = opponents.slice(0, 3);
     const opponentKeys = new Set(visibleOpponents.map(opponentKey));
@@ -448,7 +459,7 @@ export function createRenderer(canvas) {
   function reset() {
     motion.reset(); movementEffects.reset(); finish.reset(); hasDrawn = false; boostTrails.visible = false;
     localAvatar?.reset(); localAvatar?.group.position.set(0, 0, 0);
-    contactShadow.position.x = 0; contactShadow.scale.setScalar(1); shadowMaterial.opacity = .63;
+    contactShadow.position.x = 0; contactShadow.scale.setScalar(1); shadowMaterial.opacity = .46;
     camera.position.set(0, 3.45, camera.aspect < .9 ? 9.3 : 7.3);
     camera.fov = camera.aspect < .9 ? 66 : 57; camera.updateProjectionMatrix();
     lookTarget.set(0, 1.95, -18); camera.lookAt(lookTarget);
