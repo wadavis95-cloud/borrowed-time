@@ -19,3 +19,6 @@ artifacts/music-source/
 
 # Local monitoring access key (never publish)
 .local/
+
+# Generated, hashed browser release files
+build/

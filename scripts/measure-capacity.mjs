@@ -43,11 +43,11 @@ async function coldVisitors(origin,count,summary){
  }
  await Promise.all(Array.from({length:Math.min(4,count)},async()=>{while(next<count){next++;await visit();}}));
 }
-async function scenario({rooms,seconds,burst=false,downloads=0,explore=false}){
+async function scenario({rooms,seconds,burst=false,downloads=0,explore=false,snapshotVersion=2}){
  const service=await server(explore),metrics=measurements(),clients=[];
  let drive,pings,downloadsTask;const driverLag=monitorEventLoopDelay({resolution:10});
  try{
-  const start=performance.now();await populate(service.origin,rooms,{burst,metrics,clients});
+  const start=performance.now();await populate(service.origin,rooms,{burst,metrics,clients,snapshotVersion});
   const arrivalMs=performance.now()-start;
   drive=setInterval(()=>{for(const c of clients)c.drive();},150);
   await sleep(3300); // Countdown is actual production timing, not bypassed.
@@ -61,7 +61,7 @@ async function scenario({rooms,seconds,burst=false,downloads=0,explore=false}){
   const durationMs=performance.now()-at,usage=process.cpuUsage(cpu);
   const report=await service.command('report');await downloadsTask;driverLag.disable();
   const active=clients.filter(c=>c.snapshot?.room.phase==='racing'&&c.snapshot.you.game.phase==='running').length;
-  const result={rooms,racers:rooms*4,burst,downloads,explore,arrivalMs,durationMs,limits:service.limits,activeRacersAtEnd:active,
+  const result={snapshotVersion,rooms,racers:rooms*4,burst,downloads,explore,arrivalMs,durationMs,limits:service.limits,activeRacersAtEnd:active,
    metrics:Object.fromEntries(Object.entries(metrics).map(([key,value])=>[key,value instanceof Samples?value.summary():value])),
    perClientSnapshotsPerSecond:metrics.snapshots/clients.length/(durationMs/1000),outboundBytesPerSecond:metrics.bytes/(durationMs/1000),
    http:{...http,visitorMs:http.visitorMs.summary()},
@@ -97,13 +97,13 @@ export function parseOptions(args){
  for(const arg of args){
   if(arg.startsWith('--seconds='))options.seconds=Number(arg.split('=')[1]);
   else if(arg.startsWith('--profile='))options.profile=arg.split('=')[1];
-  else throw new Error('Use --profile=smoke|baseline|explore|soak and --seconds=5..120. No remote targets accepted.');
+  else throw new Error('Use --profile=smoke|baseline|explore|soak|compare and --seconds=5..120. No remote targets accepted.');
  }
- if(!['smoke','baseline','explore','soak'].includes(options.profile)||!Number.isInteger(options.seconds)||options.seconds<5||options.seconds>120)throw new Error('Invalid bounded capacity-test options.');
+ if(!['smoke','baseline','explore','soak','compare'].includes(options.profile)||!Number.isInteger(options.seconds)||options.seconds<5||options.seconds>120)throw new Error('Invalid bounded capacity-test options.');
  return options;
 }
 export async function run(options){
- const scenarios=options.profile==='smoke'?[{rooms:1}]:options.profile==='explore'?[{rooms:50,explore:true},{rooms:100,explore:true}]:options.profile==='soak'?[{rooms:25}]:[{rooms:1},{rooms:5},{rooms:15},{rooms:25},{rooms:25,burst:true},{rooms:25,downloads:20}];
+ const scenarios=options.profile==='compare'?[{rooms:25,snapshotVersion:1},{rooms:25,snapshotVersion:2}]:options.profile==='smoke'?[{rooms:1}]:options.profile==='explore'?[{rooms:50,explore:true},{rooms:100,explore:true}]:options.profile==='soak'?[{rooms:25}]:[{rooms:1},{rooms:5},{rooms:15},{rooms:25},{rooms:25,burst:true},{rooms:25,downloads:20}];
  const result={at:new Date().toISOString(),commit:process.env.PERF_COMMIT||null,options,host:{cpu:cpus()[0]?.model,logicalCpus:cpus().length,memoryGB:totalmem()/1e9,platform:platform(),arch:arch(),node:process.version},limitations:['Loopback only; not Render capacity, geographic latency, browser rendering or phone loading.','Driver and isolated server share this computer; driver pressure is measured separately.','Protocol ping RTT and lane confirmation do not include rendered-frame delay.','Cold downloads consume real bodies but have no WAN bandwidth shaping or browser decoding.'],scenarios:[]};
  for(const spec of scenarios)result.scenarios.push(await scenario({...spec,seconds:options.seconds}));
  if(options.profile==='baseline'||options.profile==='smoke')result.limits=await limits();

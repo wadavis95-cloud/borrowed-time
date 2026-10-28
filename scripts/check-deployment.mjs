@@ -1,3 +1,4 @@
+import {createSnapshotDecoder} from '../src/race-protocol.js';
 import assert from 'node:assert/strict';
 import { WebSocket } from 'ws';
 import {MUSIC_TRACKS} from '../src/music.js';
@@ -9,7 +10,7 @@ import { ABILITIES } from '../src/game.js';
 // the real transport, then removes the room. No browser or extra dependencies.
 const USAGE = 'Usage: node scripts/check-deployment.mjs https://your-game.onrender.com';
 const ASSETS = [
-  '/src/asset-versions.js', '/src/racer-ai.js', '/src/telemetry.js', '/monitor/index.html', '/monitor/dashboard.js', '/monitor/dashboard.css',
+  '/src/race-protocol.js', '/src/asset-versions.js', '/src/racer-ai.js', '/src/telemetry.js', '/monitor/index.html', '/monitor/dashboard.js', '/monitor/dashboard.css',
   '/src/music.js', '/assets/music/CREDITS.txt', ...Object.values(MUSIC_TRACKS).map(track=>track.src),
   '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js', '/src/maps.js',
   '/src/graphics/worlds.js', '/src/graphics/map-obstacles.js', '/src/movement-feedback.js', '/src/race-presentation.js', '/src/race-ui.js', '/src/loading.js', '/src/finish-destinations.js', '/src/graphics/finish.js', '/src/graphics/readability.js', '/src/graphics/motion-effects.js',
@@ -37,11 +38,11 @@ function parseTarget(args) {
   return target;
 }
 
-async function request(target, path, { method = 'GET', timeout = 15000 } = {}) {
+async function request(target, path, { method = 'GET', timeout = 15000, headers } = {}) {
   let response;
   try {
     response = await fetch(new URL(path, target), {
-      method, redirect: 'error', signal: AbortSignal.timeout(timeout),
+      method, headers, redirect: 'error', signal: AbortSignal.timeout(timeout),
     });
   } catch {
     throw new Error(`${method} ${path} failed or timed out. Check the URL, network, and service deploy logs.`);
@@ -54,12 +55,13 @@ function createClient(target, label) {
   const endpoint = new URL('/race', target);
   endpoint.protocol = target.protocol === 'https:' ? 'wss:' : 'ws:';
   const socket = new WebSocket(endpoint, { origin: target.origin, handshakeTimeout: 10000 });
+  const decode=createSnapshotDecoder();
   const inbox = [];
   const waiters = new Set();
   let failure;
   const wake = () => { for (const check of [...waiters]) check(); };
   socket.on('message', (raw) => {
-    try { inbox.push(JSON.parse(raw.toString())); }
+    try { const value=JSON.parse(raw.toString());inbox.push(value.type==='snapshot'?decode(value):value); }
     catch { failure = new Error(`${label}: the server sent invalid JSON.`); }
     // Snapshots arrive at 20 Hz. Keep recent messages without growing forever.
     if (inbox.length > 200) inbox.shift();
@@ -94,7 +96,7 @@ function createClient(target, label) {
 
   function send(message) {
     assert.equal(socket.readyState, WebSocket.OPEN, `${label}: WebSocket is not open.`);
-    socket.send(JSON.stringify(message));
+    socket.send(JSON.stringify(['create','join'].includes(message.type)?{...message,snapshotVersion:2}:message));
   }
 
   function close() {
@@ -189,7 +191,14 @@ async function main() {
   assert.match(page.headers.get('content-type') ?? '', /text\/html/, 'Home page must be HTML.');
   const html = await page.text();
   assert.match(html, /id="game-canvas"/, 'The home page is not the game.');
-  assert.match(html, /src="\/src\/main\.js"/, 'The game entry module is missing.');
+  assert.match(html, /src="(?:\/src\/main\.js|\/client\/main-[A-Z0-9]{8}\.js)"/, 'The game entry module is missing.');
+  assert.equal(page.headers.get('cache-control'),'no-store','HTML must stay fresh.');
+  for(const [,path]of html.matchAll(/(?:src|href)="(\/client\/[^" ]+)"/g)){
+    const code=await request(target,path,{method:'HEAD',headers:{'Accept-Encoding':'br'}});
+    assert.match(code.headers.get('cache-control')??'',/immutable/);
+    assert.equal(code.headers.get('content-encoding'),'br');
+    assert.match(code.headers.get('vary')??'',/Accept-Encoding/i);
+  }
   // Bound concurrency so the check is gentle on a small free instance.
   for (let index = 0; index < ASSETS.length; index += 4) {
     await Promise.all(ASSETS.slice(index, index + 4).map(async path => {

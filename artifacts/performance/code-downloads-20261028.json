@@ -1,0 +1,14 @@
+{
+  "measuredAt": "2026-10-28T17:54:36.611Z",
+  "scope": "Full browser game JS/CSS graph excluding dashboard; not music, models or total cold page transfer",
+  "sourceInputBytes": 2485364,
+  "minifiedBytes": 815136,
+  "gzipBytes": 229357,
+  "brotliBytes": 192853,
+  "brotliReductionPct": 92.24045314851266,
+  "limitations": [
+    "Build file body sizes, not browser time-to-interactive.",
+    "Dynamic chunks load on demand; cached clients can avoid network transfer.",
+    "No public or phone transfer test for this local change yet."
+  ]
+}

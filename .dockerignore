@@ -11,3 +11,6 @@ backups/
 
 # Never include local monitoring credentials in a build context
 .local/
+
+# Rebuilt in the image, never copy local output
+build/

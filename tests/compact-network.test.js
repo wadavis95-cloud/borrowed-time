@@ -1,0 +1,30 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {once} from 'node:events';
+import {createGameServer} from '../src/server/app.js';
+import {client,measurements} from '../scripts/perf/client.mjs';
+const networkTest=process.env.RUN_NETWORK_TESTS==='1'?test:test.skip;
+networkTest('compact and legacy clients share private purchases, changed debris, finish, rematch and host migration',async t=>{
+ let time=1000;const app=createGameServer({now:()=>time});t.after(()=>app.close());
+ app.server.listen(0,'127.0.0.1');await once(app.server,'listening');const origin=`http://127.0.0.1:${app.server.address().port}`;
+ const host=client(origin,measurements(),0,2),guest=client(origin,measurements(),1,1);t.after(()=>{host.close();guest.close();});
+ await Promise.all([host.wait(m=>m.type==='connected'),guest.wait(m=>m.type==='connected')]);
+ host.send({type:'create',mapId:'tunnel'});const initial=await host.wait(m=>m.type==='snapshot');
+ guest.send({type:'join',code:initial.room.code});await guest.wait(m=>m.type==='snapshot');
+ await host.wait(m=>m.type==='snapshot'&&m.players.length===2);
+ host.send({type:'vote',mapId:'pirate'});await host.wait(m=>m.type==='snapshot'&&m.room.votes[m.you.id]==='pirate');
+ guest.send({type:'vote',mapId:'pirate'});host.send({type:'start'});
+ await host.wait(m=>m.type==='snapshot'&&m.room.phase==='countdown');time+=3001;app.rooms.tick(time);
+ const race=await host.wait(m=>m.type==='snapshot'&&m.room.phase==='racing');
+ host.send({type:'input',action:'boost',seq:1,roundId:race.room.roundId});
+ const boosted=await host.wait(m=>m.type==='snapshot'&&m.you.game.timeSpent>0);assert.equal(boosted.you.game.timeSpent,5);
+ const other=await guest.wait(m=>m.type==='snapshot'&&m.room.phase==='racing');assert.equal(other.you.game.timeSpent,0);assert.equal('game' in other.players[0],false);
+ const room=app.rooms.rooms.get(initial.room.code);for(const p of room.players.values())p.game.debris[0].impactAt=99;
+ await host.wait(m=>m.type==='snapshot'&&m.debris[0].impactAt===99);
+ for(const p of room.players.values()){p.game.phase='won';p.game.finishTime=p.id===boosted.you.id?20:21;}
+ time+=100;app.rooms.tick(time);
+ await host.wait(m=>m.type==='snapshot'&&m.room.phase==='finished'&&m.standings[0].status==='escaped');
+ host.send({type:'rematch'});const rematch=await host.wait(m=>m.type==='snapshot'&&m.room.roundId!==race.room.roundId);assert.equal(rematch.you.game.timeSpent,0);
+ host.send({type:'leave'});await guest.wait(m=>m.type==='snapshot'&&m.room.hostId===m.you.id);
+ host.send({type:'create',mapId:'orbital'});const again=await host.wait(m=>m.type==='snapshot'&&m.room.mapId==='orbital');assert.equal(again.players.length,1);
+});

@@ -1,10 +1,12 @@
+import {createSnapshotDecoder} from '../../src/race-protocol.js';
 import {WebSocket} from 'ws';
 import {performance} from 'node:perf_hooks';
 import {createGame} from '../../src/game.js';
 import {chooseDemoAction} from '../../src/demo.js';
 import {Samples,localOrigin} from './metrics.mjs';
 export function measurements(){return {gaps:new Samples(),snapshotAge:new Samples(),rtt:new Samples(),laneConfirmation:new Samples(),joins:new Samples(),bytes:0,snapshots:0,roundTransitions:0,unexpectedCloses:0,laneTimeouts:0,errors:{}};}
-export function client(origin,metrics,index=0){
+export function client(origin,metrics,index=0,snapshotVersion=2){
+ const decode=createSnapshotDecoder();
  localOrigin(origin);const url=new URL('/race',origin);url.protocol='ws:';
  const socket=new WebSocket(url,{origin:new URL(origin).origin,handshakeTimeout:5000});
  let latest=null,course=null,round=null,seq=0,last=0,measuring=false,expectedClose=false,failure=null,pendingLane=null,pingAt=null;
@@ -15,7 +17,7 @@ export function client(origin,metrics,index=0){
  socket.on('close',()=>{if(measuring&&!expectedClose)metrics.unexpectedCloses++;failure??=new Error('Connection closed');wake();});
  socket.on('pong',()=>{if(measuring&&pingAt!==null)metrics.rtt.add(performance.now()-pingAt);pingAt=null;});
  socket.on('message',raw=>{
-  const message=JSON.parse(raw.toString()),now=performance.now();history.push(message);if(history.length>8)history.shift();
+  let message=JSON.parse(raw.toString());if(message.type==='snapshot')message=decode(message);const now=performance.now();history.push(message);if(history.length>8)history.shift();
   if(measuring)metrics.bytes+=raw.length;
   if(message.type==='error'&&measuring)metrics.errors[message.code]=(metrics.errors[message.code]||0)+1;
   if(message.type==='snapshot'){
@@ -27,10 +29,10 @@ export function client(origin,metrics,index=0){
   }
   wake();
  });
- function send(message){if(socket.readyState===WebSocket.OPEN)socket.send(JSON.stringify(message));}
+ function send(message){if(socket.readyState===WebSocket.OPEN)socket.send(JSON.stringify(['create','join'].includes(message.type)?{...message,snapshotVersion}:message));}
  function wait(predicate,timeout=6000){return new Promise((resolve,reject)=>{
   let timer;const check=()=>{const match=history.find(predicate);if(match){clearTimeout(timer);waiters.delete(check);resolve(match);}else if(failure){clearTimeout(timer);waiters.delete(check);reject(failure);}};
-  timer=setTimeout(()=>{waiters.delete(check);reject(new Error('Client wait timed out'));},timeout);waiters.add(check);check();
+  timer=setTimeout(()=>{waiters.delete(check);reject(new Error('Client wait timed out: '+String(predicate)));},timeout);waiters.add(check);check();
  });}
  return {socket,send,wait,get snapshot(){return latest;},
   measure(){measuring=true;last=0;},
@@ -56,15 +58,15 @@ export function client(origin,metrics,index=0){
   close(){expectedClose=true;measuring=false;socket.terminate();wake();}
  };
 }
-export async function populate(origin,count,{burst=false,metrics=measurements(),clients=[]}={}){
+export async function populate(origin,count,{burst=false,metrics=measurements(),clients=[],snapshotVersion=2}={}){
  const maps=['tunnel','pirate','jungle','frozen','orbital','desert'];
  async function room(index){
-  const started=performance.now(),host=client(origin,metrics,0);clients.push(host);await host.wait(m=>m.type==='connected');
+  const started=performance.now(),host=client(origin,metrics,0,snapshotVersion);clients.push(host);await host.wait(m=>m.type==='connected');
   host.send({type:'create',mapId:maps[index%maps.length]});
   const snapshot=await host.wait(m=>m.type==='snapshot'||m.type==='error');
   if(snapshot.type==='error')throw new Error(snapshot.code);
   for(let i=1;i<4;i++){
-   const guest=client(origin,metrics,i);clients.push(guest);await guest.wait(m=>m.type==='connected');guest.send({type:'join',code:snapshot.room.code});
+   const guest=client(origin,metrics,i,snapshotVersion);clients.push(guest);await guest.wait(m=>m.type==='connected');guest.send({type:'join',code:snapshot.room.code});
    await guest.wait(m=>m.type==='snapshot');
   }
   host.send({type:'start'});metrics.joins.add(performance.now()-started);

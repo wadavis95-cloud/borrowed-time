@@ -1,4 +1,5 @@
 // Transport sends intentions; it never decides whether an ability or movement succeeds.
+import {createSnapshotDecoder} from './race-protocol.js';
 import {telemetry} from './telemetry.js';
 import { createGame } from './game.js';
 
@@ -6,6 +7,7 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
   const url = new URL('/race', window.location.href);
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
   const socket = new WebSocket(url);
+  const decode=createSnapshotDecoder();
   let closed = false;
   let sequence = 0;
   let roundId = null;
@@ -27,7 +29,7 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
   socket.addEventListener('open', () => {
     if (closed) return;
     onStatus('open');
-    send(initialMessage);
+    send({...initialMessage,snapshotVersion:2});
   });
   socket.addEventListener('message', ({ data }) => {
     if (closed) return;
@@ -37,6 +39,7 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
     if(message.type==='connected')probing=message.telemetry===true;
     if(message.type==='probe'&&message.at===probeAt){telemetry.observe('rtt',performance.now()-probeAt);probeAt=null;}
     if (message.type === 'snapshot') {
+      try{message=decode(message);}catch(error){onError(error.message);socket.close();return;}
       const at=performance.now();if(lastSnapshotAt!==null)telemetry.observe('gap',at-lastSnapshotAt);lastSnapshotAt=at;
       if (roundId !== message.room.roundId) { roundId = message.room.roundId; sequence = 0;pendingInputs.clear(); }
       for(const [seq,sentAt]of pendingInputs){if(seq<=message.you.inputSeq){telemetry.observe('input',performance.now()-sentAt);pendingInputs.delete(seq);}}

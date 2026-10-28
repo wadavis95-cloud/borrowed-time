@@ -91,3 +91,12 @@ test('older chart buckets preserve traffic averages and delay peaks without thin
  const d=m.snapshot();assert.equal(d.history[0].at,10000);assert.equal(d.history[0].intervalSeconds,10);assert.equal(d.history[0].bytesOutPerSec,100);assert.equal(d.history[0].simulationBacklogMs,99);
  assert.equal(d.history.at(-1).bytesOutPerSec,0);assert.ok(d.history.slice(-30).every(p=>p.intervalSeconds===1));m.dispose();
 });
+
+test('hashed dashboard bundles remain monitoring traffic, while game bundles count toward game traffic',async()=>{
+ const {EventEmitter}=await import('node:events');const m=createMonitoring({token:key,autoStart:false});
+ for(const path of ['/client/dashboard-ABCDEFGH.js','/client/dashboard-style-ABCDEFGH.css','/client/main-ABCDEFGH.js']){
+  const res=new EventEmitter();res.writeHead=function(status){this.statusCode=status;};res.getHeader=()=>undefined;
+  m.http({url:path,method:'GET'},res);res.writeHead(200,{'Content-Length':100});res.emit('finish');
+ }
+ const totals=m.snapshot().totals;assert.equal(totals.monitorBytes,200);assert.equal(totals.otherBytes,100);assert.equal(totals.httpRequests,1);m.dispose();
+});

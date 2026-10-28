@@ -92,7 +92,7 @@ export function createMonitoring({token='',state=()=>({}),now=Date.now,autoStart
  }
  function http(req,res){
   if(!enabled)return;let path;try{path=new URL(req.url,'http://localhost').pathname;}catch{return;}
-  if(path.startsWith('/ops/'))return;const admin=path.startsWith('/monitor');
+  if(path.startsWith('/ops/'))return;const admin=path.startsWith('/monitor')||/^\/client\/dashboard(?:-style)?-[A-Z0-9]{8}\.(?:js|css)$/.test(path);
   const at=performance.now();let finished=false,declaredBytes=0;
   const writeHead=res.writeHead;
   res.writeHead=function(...args){const headers=args.find((arg,index)=>index>0&&arg&&typeof arg==='object'&&!Array.isArray(arg));if(headers)declaredBytes=Number(headers['Content-Length']??headers['content-length'])||0;return writeHead.apply(this,args);};

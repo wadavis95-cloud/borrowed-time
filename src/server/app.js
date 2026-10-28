@@ -1,3 +1,5 @@
+import {readClientBuild,chooseEncoding} from './client-build.js';
+import {createSnapshotEncoder} from '../race-protocol.js';
 import {ASSET_VERSIONS} from '../asset-versions.js';
 import { createServer } from 'node:http';
 import { open } from 'node:fs/promises';
@@ -21,7 +23,7 @@ const types = {
 };
 // This allowlist keeps server code, repository files, and secrets off HTTP.
 const publicFiles = new Set([
-  '/src/asset-versions.js', '/src/racer-ai.js', '/src/telemetry.js', '/monitor/index.html', '/monitor/dashboard.js', '/monitor/dashboard.css',
+  '/src/race-protocol.js', '/src/asset-versions.js', '/src/racer-ai.js', '/src/telemetry.js', '/monitor/index.html', '/monitor/dashboard.js', '/monitor/dashboard.css',
   '/src/music.js', '/assets/music/CREDITS.txt', ...Object.values(MUSIC_TRACKS).map(track=>track.src),
   '/index.html', '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js',
   '/src/renderer.js', '/src/network.js', '/src/movement-feedback.js', '/src/race-presentation.js', '/src/race-ui.js', '/src/loading.js', '/src/finish-destinations.js', '/src/graphics/finish.js', '/src/graphics/readability.js', '/src/graphics/motion-effects.js', '/src/maps.js', '/src/graphics/worlds.js', '/src/graphics/map-obstacles.js',
@@ -52,6 +54,7 @@ const vendorFiles = new Map([
 ]);
 
 export function createStaticFileHandler({ publicRoot = root } = {}) {
+  const build=readClientBuild(publicRoot);
   return async function serveFile(request, response) {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       response.writeHead(405, { Allow: 'GET, HEAD' });
@@ -70,15 +73,22 @@ export function createStaticFileHandler({ publicRoot = root } = {}) {
       return;
     }
     const file = pathname === '/' ? '/index.html' : pathname === '/monitor' || pathname === '/monitor/' ? '/monitor/index.html' : pathname;
-    if (!publicFiles.has(file) && !vendorFiles.has(file)) {
+    const builtPath=build?.files.get(file);
+    if (!builtPath && !publicFiles.has(file) && !vendorFiles.has(file)) {
       response.writeHead(404, { 'Content-Type': 'text/plain' });
       response.end(request.method === 'HEAD' ? undefined : 'Not found');
       return;
     }
     let handle;
     try {
-      const path = resolve(publicRoot, vendorFiles.get(file) || '.' + file);
+      const path = builtPath || (file==='/index.html'&&build?build.html:file==='/monitor/index.html'&&build?build.monitor:resolve(publicRoot, vendorFiles.get(file) || '.' + file));
       let encoded = false;
+      let encoding;
+      if(builtPath){
+        encoding=chooseEncoding(request.headers['accept-encoding']);
+        if(!encoding){response.writeHead(406,{'Vary':'Accept-Encoding','Cache-Control':'no-store'});response.end();return;}
+        handle=await open(path+(encoding==='br'?'.br':encoding==='gzip'?'.gz':''),'r');
+      }
       const acceptsGzip = String(request.headers['accept-encoding'] || '').split(',').some(token => {
         const [name, ...params] = token.trim().toLowerCase().split(';');
         if (name.trim() !== 'gzip') return false;
@@ -102,9 +112,9 @@ export function createStaticFileHandler({ publicRoot = root } = {}) {
       response.writeHead(200, {
         'Content-Type': types[extension] || 'application/octet-stream',
         'Content-Length': stats.size,
-        ...((compressed || encoded) ? { 'Content-Encoding': 'gzip' } : {}),
-        ...(file.endsWith('.glb') ? { Vary: 'Accept-Encoding' } : {}),
-        'Cache-Control': ASSET_VERSIONS[file] && new URL(request.url,'http://localhost').search === '?v='+ASSET_VERSIONS[file] ? 'public, max-age=31536000, immutable' : 'no-store', 'X-Content-Type-Options': 'nosniff',
+        ...(encoding&&encoding!=='identity'?{'Content-Encoding':encoding}:(compressed||encoded)?{'Content-Encoding':'gzip'}:{}),
+        ...((builtPath||file.endsWith('.glb')) ? { Vary: 'Accept-Encoding' } : {}),
+        'Cache-Control': builtPath ? 'public, max-age=31536000, immutable' : ASSET_VERSIONS[file] && new URL(request.url,'http://localhost').search === '?v='+ASSET_VERSIONS[file] ? 'public, max-age=31536000, immutable' : 'no-store', 'X-Content-Type-Options': 'nosniff',
       });
       if (request.method === 'HEAD') response.end();
       // Backpressure keeps concurrent large Web builds from being buffered in
@@ -153,7 +163,7 @@ export function createGameServer({
   function broadcast() {
     for (const [id, socket] of sockets) {
       const snapshot = rooms.snapshot(id);
-      if (snapshot) send(socket, snapshot);
+      if (snapshot) send(socket, socket.encodeSnapshot ? socket.encodeSnapshot(snapshot) : snapshot);
     }
   }
 
@@ -237,9 +247,11 @@ export function createGameServer({
         if(['INVALID_MESSAGE','INVALID_INPUT','INVALID_ACTION','INVALID_AVATAR','INVALID_MAP'].includes(result.code))monitor.count('invalidMessages');
         send(socket, { type: 'error', code: result.code, message: result.message });
       } else if (message.type === 'leave') {
+        socket.encodeSnapshot=null;
         send(socket, { type: 'left' });
         broadcast();
       } else if (message.type !== 'input') {
+        if(['create','join'].includes(message.type))socket.encodeSnapshot=message.snapshotVersion===2?createSnapshotEncoder():null;
         // Lobby changes appear immediately; movement uses the regular 20Hz feed.
         broadcast();
       }

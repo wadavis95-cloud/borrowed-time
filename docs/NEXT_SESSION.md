@@ -52,3 +52,13 @@ Browser reports and server charts now cover up to 30 minutes (6,000 report / 1,8
 ## Latest public rollout — October 28, 2026
 
 User authorized deployment to remove the Mac from hosting the phone test, then approved protected hosted monitoring. Render is live at runtime `aaac5d5` with the approved model/detail passes, browser-only demo, selected-map loading, versioned caching and 30-minute diagnostics. See `docs/versions/PUBLIC_PERFORMANCE_PLAYTEST_2026_10_28.md`. Public game: https://borrowed-time.onrender.com/ ; public dashboard: https://borrowed-time.onrender.com/monitor#experience . Hosted key is private ignored `.local/render-monitor-key.txt`; local/LAN key remains separate. Public assets/race/cache/auth/browser reporting checks passed. Keep the first-Orbital latency investigation open; physical-phone public/cellular tests have not yet been measured, and Render Free wake-up can delay first-page access independently of map loading. No competition submission. This latest rollout supersedes earlier local-only/no-push instructions for the already deployed work; future new changes still need their own deployment authorization.
+
+## October 28 — local compact race + browser code build
+
+Approved loading/bandwidth steps 1 and 2 implemented locally on
+codex/compact-race-build. Not deployed. See docs/LOADING_BANDWIDTH.md for protocol,
+build workflow, measured 59.4% race-traffic reduction and code compression figures.
+Backups/pre-wire-build-20261028.bundle preserves the prior version. Rebuild with
+npm run build:client after browser source edits and restart the local server.
+The current local server uses the generated compressed/hashed build. Runtime
+still sends movement at 20Hz. Render remains Free and the public game unchanged.
