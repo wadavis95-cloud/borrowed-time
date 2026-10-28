@@ -156,8 +156,7 @@ export function createGameAudio({enabledByDefault=false}={}) {
     const before = previous;
     previous = next;
     void music?.update({mapId:state.mapId,elapsed:next.elapsed,
-      playing:requested&&context?.state==='running'&&next.phase==='running',
-      urgency:direction.urgency});
+      playing:requested&&context?.state==='running'&&next.phase==='running'});
     if (!requested || context?.state !== 'running') return;
     if (!before) return; // Enabling sound or a new snapshot begins silently.
 

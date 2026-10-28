@@ -41,3 +41,12 @@ Boost and paid Long jump now have no launch sound, and paid-jump landings are si
 Clock cadence now accelerates continuously through these points: 35s → 1-second interval; 30s → 0.85; 20s → 0.60; 15s → 0.42; 10s → 0.28; 5s → 0.18; 0s → 0.13. The mechanical ticks also become moderately louder as time runs low. Real remaining budget drives the effect, so spending seconds raises urgency immediately. Pause/mute/hidden-tab silence and no catch-up bursts are preserved.
 
 Verified silent Boost, paid takeoff and landing, unchanged music level during abilities, and urgent tick thresholds in focused tests. All 173 unit tests passed (11 network skips); syntax and whitespace checks passed. No gameplay change or deployment.
+
+
+## Steady soundtrack mix
+
+Removed the automatic time-based music attenuation. The soundtrack now keeps the existing normal-play gain of 0.075 throughout the run, regardless of abilities, clock urgency or time pickups. A short startup fade remains to avoid clicks; pause/mute still stop playback. The clock retains its faster, stronger late-race ticking. No track files or gameplay changed.
+
+User selections to preserve: Outrunners for Tunnel Escape, Black Diamond for Frozen Summit and Desert Loop for Sandstorm Canyon. Orbital's current selection remains provisional pending a more futuristic replacement.
+
+Regression checks verify urgency changes and pickups leave music volume unchanged and do not restart the recording. All 173 unit tests passed (11 network skips); syntax and whitespace checks passed. Local only.
