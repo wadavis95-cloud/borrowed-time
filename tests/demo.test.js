@@ -244,3 +244,20 @@ test('the early burst leaves unboosted rivals behind and a later chaser returns 
   assert.ok(earlyBreakaway, 'one early boost should leave the other three unboosted runners out of view');
   assert.ok(chaserReturned, 'a separate later purchase should bring a previously hidden rival back into view');
 });
+
+test('showcase spends time immediately on boost and a nearby leap without changing solo strategies', () => {
+  const racer=()=>{const g=createGame({course:[]});startGame(g);return g;};
+  const camera=racer();updateGame(camera,.6);
+  assert.equal(chooseDemoAction(camera,0),null);
+  assert.equal(chooseDemoAction(camera,0,{showcase:true}),'boost');
+  assert.equal(applyAction(camera,'boost'),true);
+  assert.equal(camera.timeSpent,5);
+  assert.notEqual(chooseDemoAction(camera,0,{showcase:true}),'boost');
+  const rival=racer();updateGame(rival,.9);
+  assert.equal(chooseDemoAction(rival,1,{showcase:true}),'longJump');
+  assert.equal(applyAction(rival,'longJump'),true);
+  assert.equal(rival.timeSpent,4);
+  assert.notEqual(chooseDemoAction(rival,1,{showcase:true}),'longJump');
+  updateGame(camera,4.5);
+  assert.equal(chooseDemoAction(camera,0,{showcase:true}),'longJump');
+});

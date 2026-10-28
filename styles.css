@@ -1302,7 +1302,7 @@ html[data-input="keyboard"] .game-footer { justify-content:space-between }
 .room-panel.live-room { display:flex; flex-wrap:nowrap; align-items:center; justify-content:space-between; gap:12px; padding:6px 12px }
 .room-panel.live-room .room-presence,.room-panel.live-room .eyebrow { display:none }
 .room-panel.live-room #room-code { font-size:16px }
-.room-panel.live-room #room-code::before { content:'ROOM '; font-size:9px; letter-spacing:.08em; color:#b1c4c8 }
+.room-panel.live-room #room-code::before { content:'LOBBY '; font-size:9px; letter-spacing:.08em; color:#b1c4c8 }
 
 /* V7: one picker, direct choice in solo and live voting in the room lobby. */
 .map-picker { margin:0 0 22px; }

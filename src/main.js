@@ -217,7 +217,7 @@ function joinRace(type) {
   if (!renderer || graphicsError) return;
   const code = $('join-code').value.trim().toUpperCase();
   if (type === 'join' && !/^[A-Z0-9]{6}$/.test(code)) {
-    showNetworkError('Enter the six-character code from your friend’s room.');
+    showNetworkError('Enter the six-character code from your friend’s lobby.');
     $('join-code').focus();
     return;
   }
@@ -266,7 +266,7 @@ function joinRace(type) {
 }
 function updateRoom() {
   const demo = mode === 'demo';
-  $('leave-room').textContent = demo ? 'Exit demo' : 'Leave room';
+  $('leave-room').textContent = demo ? 'Exit demo' : 'Leave lobby';
   $('room-code').textContent = snapshot?.room.code || '······';
   if (networkStatus === 'disconnected') $('room-status').textContent = 'Disconnected. Return to the menu to join a new race.';
   else if (!snapshot) $('room-status').textContent = 'Connecting to the race server…';
@@ -414,16 +414,16 @@ function updateOverlay() {
     const host = room?.hostId === snapshot?.you.id;
     $('screen-overlay').hidden = networkStatus === 'open' && room?.phase === 'racing' && !ended;
     if (networkStatus === 'disconnected') {
-      overlay('CONNECTION LOST', 'The race moved on.', 'Your connection to the server ended. Return to the menu to create or join a room.', 'Back to menu →');
+      overlay('CONNECTION LOST', 'The race moved on.', 'Your connection to the server ended. Return to the menu to create or join a lobby.', 'Back to menu →');
     } else if (!snapshot) {
-      overlay('MULTIPLAYER', 'Joining the race.', 'Connecting to your room. Any connection errors appear above the course.', 'Back to menu →');
+      overlay('MULTIPLAYER', 'Joining the race.', 'Connecting to your lobby. Any connection errors appear above the course.', 'Back to menu →');
     } else if (room.phase === 'lobby') {
       const count = snapshot.players.filter(player => player.connected).length;
       if (mode === 'demo') {
         overlay('FOUR-PLAYER DEMO', 'Meet the runners.', '', 'Getting ready…', true, '');
         return;
       }
-      overlay('MAP VOTE OPEN', 'First to escape wins.', 'Abilities cost seconds from your clock.', host ? 'Start race →' : 'Waiting for host…', !host || count < 2, count < 2 ? 'Invite a friend with the room code.' : controlHint());
+      overlay('MAP VOTE OPEN', 'First to escape wins.', 'Abilities cost seconds from your clock.', host ? 'Start race →' : 'Waiting for host…', !host || count < 2, count < 2 ? 'Invite a friend with the lobby code.' : controlHint());
     } else if (room.phase === 'countdown') {
       overlay(getMap(room.mapId).name.toUpperCase(), `${Math.max(1,Math.min(3,room.countdown||1))}`, '', 'Starting…', true, controlHint());
     } else if (ended) {

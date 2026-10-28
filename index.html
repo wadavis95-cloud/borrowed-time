@@ -27,15 +27,15 @@
         <button id="change-character" class="quiet-button">Change character</button>
       </section>
       <section class="race-menu" id="race-menu" aria-label="Multiplayer setup">
-        <button id="create-room" class="room-button" disabled>Create room</button>
+        <button id="create-room" class="room-button" disabled>Create lobby</button>
         <span class="room-or">or</span>
-        <label>Room code<input id="join-code" maxlength="6" placeholder="ABC123" autocapitalize="characters" autocomplete="off" spellcheck="false"></label>
-        <button id="join-room" class="room-button secondary" disabled>Join room</button>
+        <label>Lobby code<input id="join-code" maxlength="6" placeholder="ABC123" autocapitalize="characters" autocomplete="off" spellcheck="false"></label>
+        <button id="join-room" class="room-button secondary" disabled>Join lobby</button>
       </section>
-      <section class="room-panel" id="room-panel" aria-label="Multiplayer room" hidden>
-        <div><span class="eyebrow">ROOM CODE</span><strong id="room-code">Connecting…</strong></div>
-        <div class="room-presence"><p id="room-status" role="status">Connecting to the race server…</p><ul id="room-players" aria-label="Players in room"></ul></div>
-        <button id="leave-room" class="quiet-button">Leave room</button>
+      <section class="room-panel" id="room-panel" aria-label="Multiplayer lobby" hidden>
+        <div><span class="eyebrow">LOBBY CODE</span><strong id="room-code">Connecting…</strong></div>
+        <div class="room-presence"><p id="room-status" role="status">Connecting to the race server…</p><ul id="room-players" aria-label="Players in lobby"></ul></div>
+        <button id="leave-room" class="quiet-button">Leave lobby</button>
       </section>
       <p id="network-error" class="network-error" role="alert" hidden></p>
       <div class="game-layout">
@@ -107,7 +107,7 @@
       <li id="guide-hazard">Watch the amber markers. Move out of the marked lane before impact; hop the wreckage afterward.</li>
       <li><strong>Find your way into daylight.</strong> Time gates restore seconds along the route.</li>
     </ul>
-    <div class="guide-note">Create a room and share its code to race with up to three friends. Vote for a map in the lobby. Most votes wins; ties are random. Your character and role name are assigned automatically. The host starts the race. Online races keep running when you switch tabs; solo practice can be paused with P or Escape.</div>
+    <div class="guide-note">Create a lobby and share its code to race with up to three friends. Vote for a map in the lobby. Most votes wins; ties are random. Your character and role name are assigned automatically. The host starts the race. Online races keep running when you switch tabs; solo practice can be paused with P or Escape.</div>
     <p class="guide-more">The four-player demo uses simulated runners connected to the same race server. You can leave it at any time and play your own run.</p>
     <details class="guide-more"><summary>Art credits</summary><p>Runner adapted from <a href="https://studio.blender.org/characters/snow/v4/" target="_blank" rel="noopener">Snow by Blender Studio / Blender Foundation</a>, under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Modified proportions, wardrobe, materials and original movement for Borrowed Time. No endorsement implied. Tunnel surfaces: Concrete Floor Worn 001 (Dimitrios Savva / Rico Cilliers) and Brick Floor 02 (Charlotte Baglioni), <a href="https://polyhaven.com" target="_blank" rel="noopener">Poly Haven</a>, CC0.</p></details>
   </dialog>

@@ -18,7 +18,7 @@ const travelDistance = projectTravel;
 
 // Every strategy uses the same rules and reacts to its own hazards first.
 // Different spending times create natural separation, catches and overtakes.
-export function chooseDemoAction(game, index) {
+export function chooseDemoAction(game, index, { showcase = false } = {}) {
   if (game.phase !== 'running') return null;
   // The server supplies the start grid; never shuffle racers on race start.
   if (index === 3 && game.elapsed >= .3 && game.elapsed < .6 && !game.jumpRemaining) return 'jump';
@@ -99,6 +99,15 @@ export function chooseDemoAction(game, index) {
       if (!game.jumpRemaining) return 'jump';
       if (distance > travelDistance(game, Math.max(0, game.jumpRemaining - .03))) return dodge();
     }
+  }
+  // Only Watch demo gets this short opening showcase. Hazard reactions above
+  // take priority, and normal purchases enforce the same timer and cooldowns.
+  if (showcase && !game.stunRemaining) {
+    const openingLeap = index === 1 ? .9 : index === 0 ? 5.1 : null;
+    if (openingLeap !== null && game.elapsed >= openingLeap && game.elapsed < openingLeap + .6
+      && !game.jumpRemaining && game.timeLeft > ABILITIES.longJump.cost + 5) return 'longJump';
+    if (index === 0 && game.elapsed >= .6 && game.elapsed < 1.2
+      && !game.boostCooldown && game.timeLeft > ABILITIES.boost.cost + 5) return 'boost';
   }
   if (!game.boostCooldown && !game.stunRemaining && game.timeLeft > ABILITIES.boost.cost + 5
     && BOOST_PLANS[index % BOOST_PLANS.length].some(start => game.elapsed >= start
@@ -182,7 +191,7 @@ export function createDemoRace({ mapId = 'tunnel', onStatus, onError, onSnapshot
     for (const [index, runner] of runners.entries()) {
       if (!runner.snapshot || runner.snapshot.room.phase !== 'racing') continue;
       const game = { ...runner.snapshot.you.game, obstacles: runner.course.obstacles, debris: runner.snapshot.debris ?? runner.course.debris };
-      const action = chooseDemoAction(game, index);
+      const action = chooseDemoAction(game, index, { showcase: true });
       if (action && !runner.connection.input(action)) {
         fail('A demo runner could not send its move. Start the demo again to reconnect.');
         break;
