@@ -56,3 +56,7 @@ Load/switch/frame breakdowns now include estimated device (`mobile`, `desktop`, 
 ## Retention extension
 
 Extended locally after the physical-phone test: browser observations 2 -> 30 minutes; server charts 3 -> 30 minutes. The browser sends at its original interval and the dashboard still polls every two seconds. Gameplay clocks, loading deadlines, authentication and private-data rules are unchanged. This is bounded in-memory retention, not durable storage: server restart clears it, and already-expired observations cannot be restored. Longer retention prevents early samples expiring during a normal six-map test but does not fix the separate draw-submission/presentation timing gap behind the reported Orbital delay.
+
+## Hosted playtest enabled October 28
+
+The user approved enabling this dashboard on the existing Render service. Use `https://borrowed-time.onrender.com/monitor#experience` for public-game reports; localhost measures the separate Mac process. The approved hosted key is in ignored `.local/render-monitor-key.txt` (owner-only), configured as `MONITOR_TOKEN` in Render and never included in a URL or repository. The local key remains separate. Authorized API reads and real public browser reporting were verified after deployment; unauthenticated reads return 401. See `docs/versions/PUBLIC_PERFORMANCE_PLAYTEST_2026_10_28.md`. Existing limits/privacy rules apply; free-instance sleep/restart clears in-memory history. No durable hosted monitoring, paid plan or external telemetry provider was added.
