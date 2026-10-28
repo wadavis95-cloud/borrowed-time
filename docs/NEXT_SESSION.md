@@ -73,3 +73,23 @@ Pre/post aggregate snapshots and public verification artifact saved under
 artifacts/performance. Ask existing testers to refresh the game before testing.
 Continue evaluating real phone loading, frames, RTT/input delay, bandwidth and
 server pressure; do not treat the local 100-racer benchmark as Render capacity.
+
+## Submission readiness check completed October 28
+
+See docs/SUBMISSION_READINESS.md.198 regular tests and 56 network checks passed,
+plus public release/two-client check, a bounded four-client voting/purchase/host
+migration check, six public map/demo smoke checks and a public two-browser race,
+results, rematch and host-refresh migration. No product source changed or deployed.
+Fresh screenshots, regression outputs and aggregate monitoring are preserved in
+artifacts/readiness; submission draft now references current public 926fb6d and
+includes 397-character DESCRIPTION.txt plus a fresh unedited preview image. Old
+video remains optional/older. User must physically test phone UI/audio/loading,
+app switching and a phone+Mac lobby; no other testers required. Handshake sign-in
+is required before the actual form limits/Showcase setting/eligibility can be
+checked. No terms accepted, form filled, upload, entry or submission performed.
+Final monitoring snapshot has 51 desktop reports, 16,792 frames, p95 frame <=16.8 ms,
+no browser/graphics errors; WAN gap p95 bucket <=100 ms, echo <=500 ms, input acknowledgment <=150 ms
+(only 3 acknowledgments). Treat these as limited samples, not a phone or public capacity claim.
+All test lobbies/sockets cleaned up. Ready for phone test and later explicit
+manual-submission authorization. Earlier Orbital 5–7 second report remains a cold
+phone investigation if it recurs; desktop cached checks do not close it.

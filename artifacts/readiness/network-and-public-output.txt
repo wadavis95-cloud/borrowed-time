@@ -1,0 +1,69 @@
+
+> borrowed-time@8.9.0-preview.1 test:network
+> RUN_NETWORK_TESTS=1 node --test tests/server.test.js tests/assets.test.js tests/monitoring.test.js tests/client-build.test.js tests/compact-network.test.js
+
+✔ Unity build responses preserve binary bytes, MIME and empty HEAD bodies (19.653041ms)
+✔ compressed Unity builds advertise gzip and the underlying JavaScript, data or wasm MIME (6.980583ms)
+✔ Unity serving exposes only named build artifacts and frontend bridges (11.716208ms)
+✔ 3D browser modules load locally while the rest of node_modules stays private (45.833042ms)
+✔ character GLBs negotiate gzip while preserving raw fallback and binary bytes (3.459875ms)
+✔ only exact current asset versions are immutable; pages, modules and stale versions re-fetch (8.702834ms)
+✔ browser build is split, hashed, compressed and linked by fresh HTML (804.491208ms)
+✔ built code negotiates compression and immutable cache; HTML and source stay fresh (788.518958ms)
+✔ manifest cannot expose arbitrary filesystem paths and encodings honor exclusions (1.216ms)
+✔ compact and legacy clients share private purchases, changed debris, finish, rematch and host migration (207.612167ms)
+✔ monitor aggregation is bounded, expires client observations, and validates fixed schema (41.1995ms)
+✔ browser diagnostics do not retry failures, retain identifiers, or measure hidden frames (1.718667ms)
+✔ monitor metrics require a key, stay disabled without one, and exclude dashboard polling bytes (25.035167ms)
+✔ telemetry rejects cross-origin, oversized and identifying payloads and expires aggregate reports (5.661625ms)
+✔ echo probes are rate-bounded ordinary messages and input acknowledgment is private to the player (24.345167ms)
+✔ map-switch latency is bounded, separated by reuse, map and estimated device (0.559333ms)
+✔ device estimate stays independent of controls and never sends raw identifiers (0.171875ms)
+✔ a phone report survives a complete six-map session and expires after thirty minutes (0.317708ms)
+✔ longer retention still caps report memory and makes early cap eviction visible (30.992334ms)
+✔ older chart buckets preserve traffic averages and delay peaks without thinning recent samples (4.448083ms)
+✔ hashed dashboard bundles remain monitoring traffic, while game bundles count toward game traffic (0.305334ms)
+✔ rooms allow four connected guests, normalize codes, and reject duplicate membership (2.10675ms)
+✔ boosting racer advances the same roof-collapse schedule for everyone in the room (7.669375ms)
+✔ standings follow progress, then escape order, preserve DNF results and reset on rematch (0.718958ms)
+✔ only the host can start, with two players, and countdown starts both clocks together (1.437375ms)
+✔ server actions move and charge only their connection owner, rejecting stale rounds and sequences (0.344709ms)
+✔ public transforms cannot disclose another runner’s balance, purchases, or ability flags (0.213417ms)
+✔ a disconnected racer loses without pausing the other racer and host ownership transfers (1.2885ms)
+✔ disconnecting during countdown keeps its original deadline for remaining racers (0.218583ms)
+✔ winner uses earliest engine finish time even when another player is processed first (0.206917ms)
+✔ the first finisher does not stop racers who are still running (1.070209ms)
+✔ only a finished round can rematch, clearing old slots and rejecting previous-round input (0.380916ms)
+✔ a guest cannot rematch a finished round and both connected players get fresh games (0.525292ms)
+✔ leaving a lobby removes the slot and leaving the final connected runner deletes the room (0.240458ms)
+✔ idle rooms expire after five minutes and room capacity rejects new rooms (0.116625ms)
+✔ inputs over thirty a second are rejected, then recover after the rate window (1.336792ms)
+✔ invalid envelopes and sequence numbers never mutate game state (0.213041ms)
+✔ two real clients share a countdown but receive private state and connection-owned inputs (3158.602625ms)
+✔ HTTP serves only public files and WebSocket upgrade rejects other browser origins (21.449208ms)
+✔ transport bounds connection count, frame size, and message floods without crashing (8.108ms)
+✔ heartbeat removes a silent connection and shutdown closes active sockets (83.307458ms)
+✔ the server assigns four unique automatic defaults and ignores unrequested join identity fields (0.492625ms)
+✔ rematches preserve all four identities while resetting the course and debris state (0.642708ms)
+✔ room race time tracks simulated time and continues after the viewing player finishes (4.546084ms)
+✔ active player clocks stay synchronized through different collisions and purchases (13.357792ms)
+✔ four real clients race with four distinct avatars and preserve identities on rematch (3105.508541ms)
+▶ four real clients share map votes, themed rosters and private purchases on all maps
+  ✔ tunnel (117.040291ms)
+  ✔ pirate (114.07225ms)
+  ✔ jungle (114.060292ms)
+  ✔ frozen (114.377ms)
+  ✔ orbital (110.903583ms)
+  ✔ desert (112.568375ms)
+✔ four real clients share map votes, themed rosters and private purchases on all maps (685.2775ms)
+✔ four racers have stable grid lanes in lobby, countdown, map changes and rematches (1.090708ms)
+✔ character choice is cosmetic, map-specific, allows duplicates and locks at countdown (0.348875ms)
+✔ map character preferences survive voting and score follows identity across rematches (0.569625ms)
+ℹ tests 56
+ℹ suites 0
+ℹ pass 56
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7167.444792

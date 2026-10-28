@@ -1,0 +1,93 @@
+{
+  "at": "2026-10-28T20:11:01.276Z",
+  "origin": "https://borrowed-time.onrender.com/",
+  "mapChecks": [
+    {
+      "map": "The Last Voyage",
+      "result": "ready after first selection in this test"
+    },
+    {
+      "map": "Volcanic Jungle",
+      "canvas": "Volcanic Jungle. Three lanes. Dodge hazards, hop small obstacles, spend seconds on Boost and Long jump.",
+      "runner": "Your runner\nTrail Scout\nSame abilities · Same stats\nChange character"
+    },
+    {
+      "map": "Frozen Summit",
+      "canvas": "Frozen Summit. Three lanes. Dodge hazards, hop small obstacles, spend seconds on Boost and Long jump.",
+      "runner": "Your runner\nSnow Ranger\nSame abilities · Same stats\nChange character"
+    },
+    {
+      "map": "Orbital Escape",
+      "canvas": "Orbital Escape. Three lanes. Dodge hazards, hop small obstacles, spend seconds on Boost and Long jump.",
+      "runner": "Your runner\nStation Officer\nSame abilities · Same stats\nChange character"
+    },
+    {
+      "map": "Sandstorm Canyon",
+      "canvas": "Sandstorm Canyon. Three lanes. Dodge hazards, hop small obstacles, spend seconds on Boost and Long jump.",
+      "runner": "Your runner\nDesert Mechanic\nSame abilities · Same stats\nChange character"
+    },
+    {
+      "map": "Tunnel Escape",
+      "canvas": "Tunnel Escape. Three lanes. Dodge hazards, hop small obstacles, spend seconds on Boost and Long jump.",
+      "runner": "Your runner\nStation Guard\nSame abilities · Same stats\nChange character"
+    },
+    {
+      "map": "Orbital Escape",
+      "canvas": "Orbital Escape. Three lanes. Dodge hazards, hop small obstacles, spend seconds on Boost and Long jump.",
+      "runner": "Your runner\nFlight Engineer\nSame abilities · Same stats\nChange character"
+    }
+  ],
+  "demoChecks": [
+    {
+      "map": "tunnel",
+      "result": "demo running after countdown; screenshot saved"
+    },
+    {
+      "map": "pirate",
+      "result": "demo running after countdown; screenshot saved"
+    },
+    {
+      "map": "jungle",
+      "result": "demo running after countdown; screenshot saved"
+    },
+    {
+      "map": "frozen",
+      "result": "demo running after countdown; screenshot saved"
+    },
+    {
+      "map": "orbital",
+      "result": "demo running after countdown; screenshot saved"
+    },
+    {
+      "map": "desert",
+      "result": "demo running after countdown; screenshot saved"
+    }
+  ],
+  "solo": [
+    "A/D/W controls exercised",
+    "Q showed Boost minus5 seconds",
+    "E showed Long jump minus4 seconds",
+    "Pause then resume worked",
+    "Natural timeout and CPU escaped result visible",
+    "Player marked (you), session wins visible"
+  ],
+  "multiplayer": [
+    "Two real browser tabs joined same lobby",
+    "Independent Q boost and E leap visible",
+    "Natural results appeared in both tabs",
+    "Back to voting rematch reset timer and votes",
+    "Host refresh migrated ownership to remaining guest",
+    "Temporary guest left and tab was closed"
+  ],
+  "guide": [
+    "One clock Two jobs explains countdown currency",
+    "Both ability costs visible",
+    "Selected tunnel music title artist source CC0 visible"
+  ],
+  "limitations": [
+    "Window remained609CSS pixels despite viewport override; no390pixel or physical touch validation",
+    "Existing browser cache reused",
+    "No subjective audio listening pass"
+  ],
+  "consoleErrors": []
+}

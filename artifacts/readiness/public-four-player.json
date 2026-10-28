@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-28T20:04:40.262Z",
+  "origin": "https://borrowed-time.onrender.com",
+  "maxConcurrentTestClients": 4,
+  "results": [
+    "Four real compact-protocol clients joined one lobby",
+    "All four map votes synchronized",
+    "All four racers started the same selected map",
+    "Boost cost and effect stayed private to its purchaser",
+    "Second racer used long jump independently",
+    "Host disconnect transferred control without stopping the race",
+    "Empty test lobby removed; no leftover racers"
+  ],
+  "scope": "Functional smoke check, not a capacity/load test"
+}

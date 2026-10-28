@@ -1,36 +1,56 @@
-# Borrowed Time — submission draft
+# Borrowed Time submission draft
 
-**NOT SUBMITTED. These are local review materials only.**
+Not submitted. No contest fields have been filled and no materials uploaded.
 
-## Proposed title
+## Entry details
 
-Borrowed Time
+Title: Borrowed Time
 
-## Short pitch
+Playable project URL: https://borrowed-time.onrender.com/
 
-Race your friends. Spend your survival time. Escape before zero.
+Short pitch: Race your friends. Spend your survival time. Escape before zero.
 
-## Description
+Description: use DESCRIPTION.txt in this folder. The draft is 397 characters,
+including spaces, excluding its final newline. Confirm the live form's actual
+limit before entry. It describes solo and multiplayer, both current ability costs,
+six maps and what was learned using ChatGPT Work.
 
-Borrowed Time is a multiplayer escape racer where your countdown is also your ability budget. Spend five seconds on a speed boost or four on a long jump—but every purchase leaves less time to reach safety.
+Current public runtime: 926fb6d, deployed October 28, 2026. Includes compact
+multiplayer updates and minified, compressed, versioned browser code downloads.
+Do not submit the private /monitor URL or any local URL as the project link.
 
-Play solo against three computer racers, or join a private room with 2–4 players. Choose from six escape maps and race through randomized obstacles and timed environmental hazards. See opponents pull ahead, catch them with a well-timed ability, and find out who escaped when the clock runs out.
+## Images and video
 
-Playable in a browser on phones and computers, with no login or installation. Includes solo practice, map-specific character choices, session win totals and quick rematches.
+- cover.png: existing 1600 by 900 designed cover with real earlier pirate gameplay,
+  SOLO + MULTIPLAYER and 1–4 PLAYERS. Both ability prices and six-map count remain
+  accurate. This is a designed cover, not a literal current browser screenshot.
+- preview-current.png: fresh unedited public pirate demo screenshot captured during
+  the October 28 readiness check. Use when the entry form asks for a key game screen.
+- ../readiness/demo-*.png: fresh public screenshots of all six maps at race opening.
+- ../readiness/results-orbital.png: current solo results showing CPU escape, player
+  DNF, session wins and the player identified with (you).
+- showcase.mp4: optional older silent presentation draft, approximately 54 seconds.
+  It uses genuine earlier local demo gameplay with a composed HUD. It has not been
+  refreshed to the latest detailed models and download changes. Omit it unless
+  deliberately selected; it is not required by the four entry fields in the PDF.
 
-Built iteratively with ChatGPT Work using JavaScript, Three.js, Node.js and WebSockets.
+Earlier draft preserved in ../readiness/submission-draft-before.md. No old artwork
+or video has been overwritten.
 
-## Review files
+## Final entry checks
 
-- `cover.png`: 1600×900 PNG, revised to say SOLO + MULTIPLAYER and 1–4 PLAYERS. Earlier draft preserved as `cover-v1.png`. Actual pirate-ship gameplay with original title/typographic layout; no generated concept art presented as gameplay.
-- `showcase.mp4`: approximately 54 seconds, 1280×720, H.264/yuv420p MP4 with fast-start metadata, approximately 7.8 MiB. Silent draft. A genuine local four-player demo, with actual clock, ability activity, names and results typeset for readability. No injected wins, positions or balances. All four finish naturally.
-- `start-grid.png`, `boost.png`, `finish.png`: stills extracted from the recorded video for review.
+Official entry fields are title, cover image, description and project URL. The
+linked official rules specify October 30, 2026 at 11:59 PM Pacific, although the
+public mission overview says October 31. Use the earlier deadline.
 
-The clip captures one map and one race, not every feature. It uses a composed HUD rather than a literal full-browser recording. It is a presentation draft, not a trailer claiming a different visual quality.
+Official rules:
+https://go.joinhandshake.com/rs/390-ZTF-353/images/%5BAI_Skills_Studio_Challenge%5D_Contest_Official_Rules.pdf?version=0
 
-Local review: http://localhost:9879/__review
+Mission:
+https://app.joinhandshake.com/learn/create-a-multiplayer-game-8d7d59b5
 
-Public game URL (existing deployed V8.4): https://borrowed-time.onrender.com/
-Local game with starting-grid fix (V8.5): http://localhost:4173/
-
-No contest entry, form, upload, deployment or public asset publication was performed for this task. Publishing or submitting these drafts requires a later explicit instruction.
+The mission and entry form currently require a Handshake sign-in. Account
+eligibility, reachable email, exact form limits and any Showcase entry setting
+remain final manual checks. Do not claim they have been verified. The official
+rules restrict automated entries. Submission itself stays manual and requires
+explicit user authorization; no acceptance of terms, entry or upload was performed.
