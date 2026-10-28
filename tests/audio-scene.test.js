@@ -25,10 +25,11 @@ test('clock urgency follows actual remaining budget without mutating state or ch
   assert.ok(urgent.urgency>relaxed.urgency);assert.ok(urgent.beatSeconds<relaxed.beatSeconds);
 });
 
-test('clock ticks accelerate from one second toward a quarter second using only the local budget',()=>{
+test('clock ticks become sharply faster in the last fifteen seconds using only the local budget',()=>{
  const scene=createAudioScene();
  const interval=timeLeft=>scene.update({phase:'running',mapId:'tunnel',distance:100,elapsed:4,timeLeft,debris:[]}).beatSeconds;
  assert.equal(interval(60),1);
  assert.ok(interval(15)<interval(30));assert.ok(interval(5)<interval(15));
- assert.ok(interval(0)>=.2&&interval(0)<.3);
+ assert.ok(interval(15)<=.45);assert.ok(interval(10)<=.3);assert.ok(interval(5)<=.2);
+ assert.ok(interval(0)>=.1&&interval(0)<.15);
 });

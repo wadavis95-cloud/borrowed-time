@@ -7,6 +7,16 @@ export const AUDIO_SURFACES = Object.freeze({
   orbital: Object.freeze({frequency:950,body:190,decay:.09,air:180}),
   desert: Object.freeze({frequency:1700,body:62,decay:.10,air:950}),
 });
+// Remaining seconds, never distance-to-exit: spending time immediately raises urgency.
+export function clockTickInterval(timeLeft=60){
+ const remaining=Number.isFinite(timeLeft)?Math.max(0,timeLeft):60;
+ const stages=[[0,.13],[5,.18],[10,.28],[15,.42],[20,.60],[30,.85],[35,1]];
+ for(let i=1;i<stages.length;i++){
+  const [end,slow]=stages[i], [start,fast]=stages[i-1];
+  if(remaining<=end)return fast+(slow-fast)*(remaining-start)/(end-start);
+ }
+ return 1;
+}
 export function createAudioScene() {
   let previous=null;
   const warned=new Set(),impacted=new Set();
@@ -20,7 +30,7 @@ export function createAudioScene() {
     previous={mapId,elapsed,distance:state.distance,phase:state.phase};
     const active=state.phase==='running';
     const urgency=Math.max(0,Math.min(1,(30-(state.timeLeft??60))/25));
-    const result={active,mapId,surface:AUDIO_SURFACES[mapId],urgency,beatSeconds:1-.78*Math.pow(Math.max(0,Math.min(1,(30-(state.timeLeft??60))/30)),1.35),warning:null,impact:null};
+    const result={active,mapId,surface:AUDIO_SURFACES[mapId],urgency,beatSeconds:clockTickInterval(state.timeLeft),warning:null,impact:null};
     if(!active)return result;
     const baseline=restart||before.phase!=='running'||elapsed-before.elapsed>.5;
     for(const event of state.debris||[]) {

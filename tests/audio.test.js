@@ -46,9 +46,11 @@ test('local feedback and clock voices stay bounded and stop on pause, hide, mute
     audio.update({...state,elapsed:.03,distance:20,debris});
     assert.equal(sources.length,ticking,'walking and shared hazard events add no sound');
     audio.update({...state,elapsed:.04,distance:21,boostRemaining:4});
-    const boosted=sources.length;assert.ok(boosted>ticking,'the local Boost has a sound');
+    const boosted=sources.length;assert.equal(boosted,ticking,'Boost is silent');
     audio.update({...state,elapsed:.05,distance:22,boostRemaining:4,jumpKind:'long',jumpRemaining:1.2});
-    assert.ok(sources.length>boosted,'the local Long jump has a sound');
+    assert.equal(sources.length,boosted,'Long jump is silent');
+    audio.update({...state,elapsed:.06,distance:23,jumpKind:null,jumpRemaining:0});
+    assert.equal(sources.length,boosted,'paid-jump landing stays silent');
     for(let i=1;i<=600;i++) {
       ctx.currentTime=i/60;
       for(const s of [...active])if(s.end<=ctx.currentTime){active.delete(s);s.onended?.();}

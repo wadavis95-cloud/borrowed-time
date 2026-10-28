@@ -95,21 +95,14 @@ export function createGameAudio({enabledByDefault=false}={}) {
     source.stop(end + .01);
   }
 
-  function launch(long) {
-    // Paid leap: a sharp rising zip with a short airy tail; free hop is softer.
-    play({noise:true,frequency:long?900:500,endFrequency:long?2800:1250,duration:long?.16:.11,gain:long?.20:.12});
-    play({frequency:long?320:210,endFrequency:long?700:290,duration:.13,gain:.10});
-    if(long)play({frequency:540,endFrequency:380,duration:.09,gain:.05,delay:.10});
+  function hop() {
+    play({noise:true,frequency:500,endFrequency:1250,duration:.11,gain:.12});
+    play({frequency:210,endFrequency:290,duration:.13,gain:.10});
   }
 
   function land(surface) {
     play({ noise: true, frequency: surface.frequency*.8, endFrequency: surface.frequency*.3, duration: .14, gain: .27 });
     play({ frequency: surface.body, endFrequency: surface.body*.45, duration: .12, gain: .13 });
-  }
-
-  function boost() {
-    play({ noise: true, frequency: 350, endFrequency: 2400, duration: .48, gain: .22 });
-    play({ frequency: 100, endFrequency: 260, duration: .22, gain: .12 });
   }
 
   function collision() {
@@ -130,8 +123,8 @@ export function createGameAudio({enabledByDefault=false}={}) {
     nextBeat=Math.min(nextBeat,now+direction.beatSeconds);
     if(now<nextBeat)return;
     const frequency=tickIndex++%2?1000:1400;
-    play({noise:true,frequency:3400,endFrequency:1400,duration:.025,gain:.13,filter:'highpass',attack:.002});
-    play({frequency,endFrequency:frequency*.68,duration:.025,gain:.075,attack:.002});
+    play({noise:true,frequency:3400,endFrequency:1400,duration:.025,gain:.13+direction.urgency*.06,filter:'highpass',attack:.002});
+    play({frequency,endFrequency:frequency*.68,duration:.025,gain:.075+direction.urgency*.03,attack:.002});
     nextBeat=now+direction.beatSeconds;
   }
 
@@ -164,7 +157,7 @@ export function createGameAudio({enabledByDefault=false}={}) {
     previous = next;
     void music?.update({mapId:state.mapId,elapsed:next.elapsed,
       playing:requested&&context?.state==='running'&&next.phase==='running',
-      duck:next.boost>0||next.jump>0,urgency:direction.urgency});
+      urgency:direction.urgency});
     if (!requested || context?.state !== 'running') return;
     if (!before) return; // Enabling sound or a new snapshot begins silently.
 
@@ -196,9 +189,8 @@ export function createGameAudio({enabledByDefault=false}={}) {
       || next.jumpKind === 'long' && before.jumpKind !== 'long');
     const landed = next.jump <= 0 && before.jump > 0;
     if (hit) collision();
-    if (launched) launch(next.jumpKind === 'long');
-    if (landed && !hit) land(direction.surface);
-    if (next.boost > 0 && before.boost <= 0) boost();
+    if (launched && next.jumpKind !== 'long') hop();
+    if (landed && !hit && before.jumpKind !== 'long') land(direction.surface);
 
   }
 

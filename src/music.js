@@ -13,7 +13,7 @@ export function createMusicPlayer(context,{fetchAudio=(...args)=>fetch(...args)}
  let generation=0,disposed=false,failed=false,level=-1;
  function stop(){if(!source)return;source.onended=null;try{source.stop();}catch{}source.disconnect();source=null;}
  function volume(){
-  const next=.075*(desired.duck?.4:1)*(1-Math.min(1,Math.max(0,desired.urgency||0))*.45);
+  const next=.075*(1-Math.min(1,Math.max(0,desired.urgency||0))*.55);
   if(Math.abs(next-level)>.001){level=next;gain.gain.setTargetAtTime(next,context.currentTime,.12);}
  }
  function start(){

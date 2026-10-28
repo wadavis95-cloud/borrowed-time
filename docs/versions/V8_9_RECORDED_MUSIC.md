@@ -32,3 +32,12 @@ Music sits beneath local clock/ability sounds, softens during Boost/jumps and lo
 ## Backup
 
 `backups/pre-recorded-music-20261028.bundle` preserves the complete pre-change history at `289d6a3`. No Git history was rewritten. Restore from that checkpoint to return to the prior generated motifs.
+
+
+## Silent abilities and stronger clock urgency
+
+Boost and paid Long jump now have no launch sound, and paid-jump landings are silent. Free-hop, collision, start/finish cues and the selected music remain. Music no longer dips for abilities; it softens only with low remaining time.
+
+Clock cadence now accelerates continuously through these points: 35s → 1-second interval; 30s → 0.85; 20s → 0.60; 15s → 0.42; 10s → 0.28; 5s → 0.18; 0s → 0.13. The mechanical ticks also become moderately louder as time runs low. Real remaining budget drives the effect, so spending seconds raises urgency immediately. Pause/mute/hidden-tab silence and no catch-up bursts are preserved.
+
+Verified silent Boost, paid takeoff and landing, unchanged music level during abilities, and urgent tick thresholds in focused tests. All 173 unit tests passed (11 network skips); syntax and whitespace checks passed. No gameplay change or deployment.

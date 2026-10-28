@@ -11,13 +11,14 @@ function setup(fetchAudio=async()=>({ok:true,arrayBuffer:async()=>new ArrayBuffe
  const music=createMusicPlayer(ctx,{fetchAudio:(url,args)=>{requests.push(url);return fetchAudio(url,args);}});
  return {music,ctx,sources,levels,requests};
 }
-test('six selected tracks load only for the playing map, loop, duck, pause and restart',async()=>{
+test('six selected tracks load only for the playing map, loop, prioritize the urgent clock, pause and restart',async()=>{
  assert.deepEqual(Object.keys(MUSIC_TRACKS),['tunnel','pirate','jungle','frozen','orbital','desert']);
  const {music,ctx,sources,levels,requests}=setup();
  await music.update({mapId:'pirate',playing:false,elapsed:0});assert.equal(requests.length,0);
  await music.update({mapId:'pirate',playing:true,elapsed:3,duck:false,urgency:0});
  assert.equal(requests.length,1);assert.equal(sources[0].loop,true);assert.deepEqual(sources[0].started,[0,3]);
- const base=levels.at(-1);await music.update({mapId:'pirate',playing:true,elapsed:4,duck:true,urgency:1});assert.ok(levels.at(-1)<base);
+ const base=levels.at(-1);await music.update({mapId:'pirate',playing:true,elapsed:4,duck:true,urgency:0});assert.equal(levels.at(-1),base,'silent abilities do not dip the music');
+ await music.update({mapId:'pirate',playing:true,elapsed:4,urgency:1});assert.ok(levels.at(-1)<base);
  await music.update({mapId:'pirate',playing:false,elapsed:4});assert.equal(sources[0].stopped,true);
  ctx.currentTime=5;await music.update({mapId:'pirate',playing:true,elapsed:4});assert.equal(requests.length,1);assert.deepEqual(sources[1].started,[0,4]);
  music.reset();assert.equal(sources[1].stopped,true);

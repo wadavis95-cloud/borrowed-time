@@ -1,6 +1,6 @@
 # Borrowed Time · V8.4 polished six-map release
 
-**V8.9 local music playtest:** six selected CC0 recordings now replace the generated background notes, one per map. Music loads only for the active map, loops, follows pause/mute, and softens under abilities and urgent clock ticks. [Track and license notes](docs/versions/V8_9_RECORDED_MUSIC.md). Not deployed or submitted.
+**V8.9 local music playtest:** six selected CC0 recordings now replace the generated background notes, one per map. Music loads only for the active map, loops, follows pause/mute, and softens under urgent clock ticks. [Track and license notes](docs/versions/V8_9_RECORDED_MUSIC.md). Not deployed or submitted.
 
 **V8.8 local playtest:** Long jump now has a shorter/lower arc and a brief 1.9× forward burst, with a forward-reaching pose. Still costs 4 seconds; Boost remains 5 seconds. Try it at http://localhost:4173/. [Forward-leap tuning](docs/versions/V8_8_FORWARD_LEAP.md). Not deployed or submitted; public V8.4 is unchanged.
 
@@ -70,7 +70,7 @@ Fresh solo runs and restarts randomize obstacle and roof-debris placements. Mult
 
 Controls adapt to keyboard/mouse or touch input, including hybrid devices. Keyboard uses A/D, W, Q and E; Space does not hop. The HUD emphasizes remaining time, ability prices and availability, movement controls, and hazard feedback. Gameplay and results omit distance, sectors, hit counts, spending totals, and elapsed-run statistics. The simulation keeps those measurements internally.
 
-Sound is enabled by default and starts after the first click, tap or key press. Use the speaker icon in the header to mute or enable it. Only your runner’s hops, landings, Boost, Long jump, collisions and finish cues are audible; footsteps and other racers’ action/hazard sounds are removed. Each map uses its selected recorded music track, which softens during abilities and low time. A mechanical clock tick speeds up as your remaining time drops. Hidden tabs stay silent; no audio assets or service are downloaded.
+Sound is enabled by default and starts after the first click, tap or key press. Use the speaker icon in the header to mute or enable it. Boost and Long jump are silent, including paid-jump landings. Only your runner’s free hops/landings, collisions and finish cues are audible; footsteps and other racers’ action/hazard sounds are removed. Each map uses its selected recorded music track, which softens as time runs low. A mechanical clock tick speeds up as your remaining time drops. Hidden tabs stay silent; no audio assets or service are downloaded.
 
 Amber markers warn of roof collapses, cannon strikes or volcanic rocks, depending on the map. Change lanes before impact: even a paid jump cannot protect you underneath a falling chunk. After landing, its rubble can be hopped. A chunk can penalize each runner only once; a hit also briefly slows you down.
 
