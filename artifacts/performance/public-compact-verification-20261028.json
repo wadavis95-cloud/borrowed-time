@@ -1,0 +1,27 @@
+{
+  "verifiedAt": "2026-10-28T19:43:57.176Z",
+  "commit": "926fb6d9dbfb927c060fdf01b6fb12c573fb8307",
+  "deploy": "dep-dbh50divcj2c73f8dl30",
+  "htmlCache": "no-store",
+  "assets": [
+    {
+      "path": "/client/styles-5MLHWEUH.css",
+      "status": 200,
+      "bytes": 7956,
+      "encoding": "br",
+      "cache": "public, max-age=31536000, immutable",
+      "vary": "Accept-Encoding"
+    },
+    {
+      "path": "/client/main-ODWATHR3.js",
+      "status": 200,
+      "bytes": 18814,
+      "encoding": "br",
+      "cache": "public, max-age=31536000, immutable",
+      "vary": "Accept-Encoding"
+    }
+  ],
+  "metricsUnauthorized": 401,
+  "metricsAuthorized": 200,
+  "monitoringEnabled": true
+}

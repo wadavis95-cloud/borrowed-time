@@ -69,3 +69,24 @@ responses were verified. A future deployment must verify the container build.
 Old tabs loading an old lazy chunk after a deployment may need a reload; durable
 cross-deploy asset retention is not implemented. Caching does not remove Render
 Free's sleeping/wake-up behavior or the single-instance in-memory-room limit.
+
+## Deployment verification — October 28, 2026
+
+The user subsequently authorized deployment. Commit 926fb6d is now public through
+Render deploy dep-dbh50divcj2c73f8dl30, live at 3:43:35 PM EDT. Render successfully
+built the multi-stage Docker image, including ten hashed gzip/Brotli browser files;
+this resolves the earlier local Docker-verification limitation.
+
+Public release checks passed for 85 source/fallback assets, hashed entry/CSS
+Brotli and immutable headers, fresh HTML and a temporary compact two-player race
+(shared countdown, movement, private ability purchases, hazards, standings and
+cleanup). Protected metrics returned 401 without a key and 200 with the existing
+approved key. Browser graphics/demo loaded without console errors and readiness
+reports reached the dashboard. This is release verification, not proof of phone
+performance or production peak capacity. Pre-deployment aggregate metrics were
+saved before the process restart. Monitoring still retains up to 30 minutes in
+memory and resets when the service restarts or sleeps. No plan or key change.
+
+Evidence: artifacts/performance/public-compact-verification-20261028.json,
+pre-compact-deploy-20261028.json and post-compact-deploy-20261028.json;
+docs/images/public-compact-monitor.png and public-compact-deploy.png.

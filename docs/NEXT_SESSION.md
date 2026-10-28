@@ -62,3 +62,14 @@ Backups/pre-wire-build-20261028.bundle preserves the prior version. Rebuild with
 npm run build:client after browser source edits and restart the local server.
 The current local server uses the generated compressed/hashed build. Runtime
 still sends movement at 20Hz. Render remains Free and the public game unchanged.
+
+### Latest: compact/download optimizations are now deployed
+
+User approved publication after the local pass. Public runtime is 926fb6d,
+Render dep-dbh50divcj2c73f8dl30 (live October 28, 3:43:35 PM EDT). Public Docker,
+compressed/cache headers, compact multiplayer lifecycle and protected monitoring
+verified. Existing public monitoring key unchanged; dashboard receives reports.
+Pre/post aggregate snapshots and public verification artifact saved under
+artifacts/performance. Ask existing testers to refresh the game before testing.
+Continue evaluating real phone loading, frames, RTT/input delay, bandwidth and
+server pressure; do not treat the local 100-racer benchmark as Render capacity.
