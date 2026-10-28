@@ -28,10 +28,10 @@ https://opengameart.org/content/black-diamond
 https://opengameart.org/sites/default/files/Black%20Diamond.mp3
 CC0 1.0
 
-orbital: Singularity
-vitalezzz
-https://opengameart.org/content/singularity-0
-https://opengameart.org/sites/default/files/singularity_action_0.mp3
+orbital: Chase
+Adiutorium
+https://opengameart.org/content/chase-2
+https://opengameart.org/sites/default/files/chase.mp3
 CC0 1.0
 
 desert: Desert Loop

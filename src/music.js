@@ -4,7 +4,7 @@ export const MUSIC_TRACKS=Object.freeze({
  pirate:Object.freeze({title:'Pirate Indenture',artist:'Eldritch Grim',src:'/assets/music/pirate.mp3',source:'https://opengameart.org/content/pirate-indenture'}),
  jungle:Object.freeze({title:'Bamboo Blitz',artist:'Tsorthan Grove',src:'/assets/music/jungle.mp3',source:'https://opengameart.org/content/bamboo-blitz'}),
  frozen:Object.freeze({title:'Black Diamond',artist:'Joth',src:'/assets/music/frozen.mp3',source:'https://opengameart.org/content/black-diamond'}),
- orbital:Object.freeze({title:'Singularity — action',artist:'vitalezzz',src:'/assets/music/orbital.mp3',source:'https://opengameart.org/content/singularity-0'}),
+ orbital:Object.freeze({title:'Chase',artist:'Adiutorium',src:'/assets/music/orbital.mp3',source:'https://opengameart.org/content/chase-2'}),
  desert:Object.freeze({title:'Desert Loop',artist:'iamoneabe',src:'/assets/music/desert.mp3',source:'https://opengameart.org/content/desert-loop'}),
 });
 export function createMusicPlayer(context,{fetchAudio=(...args)=>fetch(...args)}={}){

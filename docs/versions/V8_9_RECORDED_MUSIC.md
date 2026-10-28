@@ -50,3 +50,8 @@ Removed the automatic time-based music attenuation. The soundtrack now keeps the
 User selections to preserve: Outrunners for Tunnel Escape, Black Diamond for Frozen Summit and Desert Loop for Sandstorm Canyon. Orbital's current selection remains provisional pending a more futuristic replacement.
 
 Regression checks verify urgency changes and pickups leave music volume unchanged and do not restart the recording. All 173 unit tests passed (11 network skips); syntax and whitespace checks passed. Local only.
+
+
+## Orbital Chase audition
+
+Replaced Orbital Escape’s provisional Singularity recording with Chase by Adiutorium for a local audition. The source page identifies Chase as CC0. Retained the first 90 seconds, the existing loudness normalization and fixed playback gain; updated map credit and file manifest. The former track remains recoverable in Git and its original source file remains in the ignored music-source archive. No gameplay change or deployment.

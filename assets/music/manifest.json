@@ -49,15 +49,15 @@
   },
   {
     "mapId": "orbital",
-    "title": "Singularity",
-    "source": "https://opengameart.org/content/singularity-0",
-    "download": "https://opengameart.org/sites/default/files/singularity_action_0.mp3",
+    "title": "Chase",
+    "source": "https://opengameart.org/content/chase-2",
+    "download": "https://opengameart.org/sites/default/files/chase.mp3",
     "license": "CC0",
-    "original": "artifacts/music-source/orbital.mp3",
-    "bytes": 1441228,
-    "artist": "vitalezzz",
+    "original": "artifacts/music-source/chase.mp3",
+    "bytes": 1441166,
+    "artist": "Adiutorium",
     "local": "assets/music/orbital.mp3",
-    "sha256": "1bcc9810fd790444fd430f940c42450502237c0cd6e87b2a5698a0a510fbe6ff"
+    "sha256": "81adcf6a5d9ec5496105618140f71acd5bf3df33d0f813502f4d1780c0b4dc0d"
   },
   {
     "mapId": "desert",
