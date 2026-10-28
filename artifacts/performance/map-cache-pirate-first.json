@@ -1,0 +1,193 @@
+{
+  "at": "2026-10-28T13:53:25.250Z",
+  "totals": {
+    "connections": 0,
+    "connectionRejects": 0,
+    "roomRejects": 0,
+    "disconnects": 0,
+    "slowClients": 0,
+    "invalidMessages": 0,
+    "rateLimits": 0,
+    "messagesIn": 0,
+    "bytesIn": 0,
+    "messagesOut": 0,
+    "bytesOut": 0,
+    "snapshots": 0,
+    "httpRequests": 58,
+    "httpErrors": 0,
+    "http4xx": 0,
+    "http5xx": 0,
+    "monitorBytes": 1156384,
+    "telemetryBytesIn": 1080,
+    "assetBytes": 4321996,
+    "pageBytes": 11865,
+    "otherBytes": 2481309,
+    "httpAborts": 0,
+    "telemetryAccepted": 3,
+    "telemetryRejected": 0
+  },
+  "client": {
+    "reports": 3,
+    "windowSeconds": 120,
+    "frame": {
+      "count": 0,
+      "p95UpperMs": null,
+      "p95OverMs": null
+    },
+    "gap": {
+      "count": 0,
+      "p95UpperMs": null,
+      "p95OverMs": null
+    },
+    "rtt": {
+      "count": 0,
+      "p95UpperMs": null,
+      "p95OverMs": null
+    },
+    "input": {
+      "count": 0,
+      "p95UpperMs": null,
+      "p95OverMs": null
+    },
+    "load": {
+      "count": 1,
+      "p95UpperMs": 500,
+      "p95OverMs": null
+    },
+    "mapFirst": {
+      "count": 1,
+      "p95UpperMs": 200,
+      "p95OverMs": null
+    },
+    "mapRepeat": {
+      "count": 0,
+      "p95UpperMs": null,
+      "p95OverMs": null
+    },
+    "longTasks": 2,
+    "errors": 0,
+    "graphicsErrors": 0,
+    "contextLosses": 0,
+    "disconnects": 0,
+    "slowFrames": 0,
+    "frames": 0,
+    "byMap": [
+      {
+        "name": "tunnel",
+        "reports": 2,
+        "frames": 0,
+        "frameP95UpperMs": null,
+        "frameP95OverMs": null,
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "mapFirst": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "mapRepeat": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        }
+      },
+      {
+        "name": "pirate",
+        "reports": 1,
+        "frames": 0,
+        "frameP95UpperMs": null,
+        "frameP95OverMs": null,
+        "load": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "mapFirst": {
+          "count": 1,
+          "p95UpperMs": 200,
+          "p95OverMs": null
+        },
+        "mapRepeat": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        }
+      }
+    ],
+    "byInput": [
+      {
+        "name": "keyboard",
+        "reports": 3,
+        "frames": 0,
+        "frameP95UpperMs": null,
+        "frameP95OverMs": null,
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "mapFirst": {
+          "count": 1,
+          "p95UpperMs": 200,
+          "p95OverMs": null
+        },
+        "mapRepeat": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        }
+      }
+    ],
+    "byMode": [
+      {
+        "name": "solo",
+        "reports": 3,
+        "frames": 0,
+        "frameP95UpperMs": null,
+        "frameP95OverMs": null,
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "mapFirst": {
+          "count": 1,
+          "p95UpperMs": 200,
+          "p95OverMs": null
+        },
+        "mapRepeat": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        }
+      }
+    ],
+    "byDevice": [
+      {
+        "name": "desktop",
+        "reports": 3,
+        "frames": 0,
+        "frameP95UpperMs": null,
+        "frameP95OverMs": null,
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "mapFirst": {
+          "count": 1,
+          "p95UpperMs": 200,
+          "p95OverMs": null
+        },
+        "mapRepeat": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        }
+      }
+    ]
+  }
+}

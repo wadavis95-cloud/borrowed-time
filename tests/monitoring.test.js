@@ -50,3 +50,20 @@ net('echo probes are rate-bounded ordinary messages and input acknowledgment is 
  ws.send(JSON.stringify({type:'create',mapId:'tunnel'}));const snapshot=await wait(m=>m.type==='snapshot');assert.equal(snapshot.you.inputSeq,0);assert.ok(snapshot.players.every(p=>!('inputSeq'in p)));
  assert.ok(app.monitor.snapshot().totals.bytesOut>0);
 });
+
+test('map-switch latency is bounded, separated by reuse, map and estimated device',async()=>{
+ const report={...makeReport(),map:'pirate',inputMode:'touch',mode:'solo',device:'mobile'};
+ assert.ok(Array.isArray(report.mapFirst));addObservation(report,'mapFirst',175);addObservation(report,'mapRepeat',35);assert.equal(validReport(report),true);
+ const m=createMonitoring({token:key,autoStart:false});
+ // Exercise the real ingestion route with a minimal stream request and response.
+ const {PassThrough}=await import('node:stream');const req=new PassThrough();Object.assign(req,{url:'/ops/client',method:'POST',headers:{origin:'http://localhost',host:'localhost','content-type':'application/json'}});
+ let status;const res={writeHead(code){status=code;},end(){}};m.handle(req,res);req.end(JSON.stringify(report));await new Promise(r=>setImmediate(r));assert.equal(status,204);
+ const c=m.snapshot().client;assert.equal(c.mapFirst.p95UpperMs,200);assert.equal(c.mapRepeat.p95UpperMs,50);assert.equal(c.byDevice[0].name,'mobile');assert.equal(c.byDevice[0].mapFirst.count,1);assert.equal(c.byMap[0].mapRepeat.count,1);
+ assert.equal(validReport({...report,device:'iPhone 25'}),false);m.dispose();
+});
+test('device estimate stays independent of controls and never sends raw identifiers',async()=>{
+ const {detectDevice}=await import('../src/telemetry.js');assert.equal(typeof detectDevice,'function');
+ assert.equal(detectDevice({userAgent:'Mozilla iPhone'}),'mobile');assert.equal(detectDevice({userAgent:'Macintosh',platform:'MacIntel',maxTouchPoints:5}),'mobile');assert.equal(detectDevice({userAgent:'Android',userAgentData:{mobile:false}}),'mobile');assert.equal(detectDevice({userAgent:'Windows NT'}),'desktop');assert.equal(detectDevice({userAgent:'unrecognized'}),'unknown');
+ const sent=[];const telemetry=createTelemetry({device:'mobile',request:async(url,options)=>{if(options?.body)sent.push(JSON.parse(options.body));return {ok:true,json:async()=>({enabled:true})};}});
+ await telemetry.init();telemetry.context('tunnel','keyboard','solo');telemetry.observe('mapFirst',80);await telemetry.flush();assert.equal(sent.at(-1).device,'mobile');assert.equal(sent.at(-1).inputMode,'keyboard');assert.equal('userAgent' in sent.at(-1),false);
+});

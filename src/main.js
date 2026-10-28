@@ -1,5 +1,6 @@
 // The coordinator: browser inputs, solo rules, multiplayer snapshots, 3D scene, and HUD.
 import {telemetry} from './telemetry.js';
+import {assetUrl} from './asset-versions.js';
 import { CONFIG, ABILITIES, createGame, freshCourseSeed, pauseGame, resumeGame, moveLane, jump, buyAbility, updateGame } from './game.js';
 import { createUnityRenderer } from './unity-renderer.js';
 import { connectRace, createRaceView } from './network.js';
@@ -11,7 +12,7 @@ import { createDemoRace } from './demo.js';
 import {MUSIC_TRACKS} from './music.js';
 import { createGameAudio } from './audio.js';
 import { createInputMode } from './input.js';
-import { loadClassicGraphics } from './loading.js';
+import { loadClassicGraphics, createMapLoader, withDeadline } from './loading.js';
 import { createRaceUI } from './race-ui.js';
 import { finishPresentation } from './race-presentation.js';
 import { createAbilityCoach } from './ability-coach.js';
@@ -25,7 +26,7 @@ const raceUI=createRaceUI({reducedMotion:window.matchMedia('(prefers-reduced-mot
   elements:{card:document.querySelector('.intro-card'),clock:$('time-value').closest('.clock-panel'),debit:$('clock-debit'),status:$('status-label'),trail:$('time-debit'),note:$('clock-feedback'),
     boost:$('boost-button'),jump:$('long-jump-button'),go:$('race-go'),title:$('overlay-title'),overlay:$('screen-overlay'),finishMark:$('finish-mark'),finishBadge:$('finish-badge')}});
 let renderer = null, graphicsError = '', graphicsLoading = true;
-let graphicsProgress = 0;
+let graphicsProgress = 0, avatarLibrary=null, mapLoader=null;
 const graphicsMessage = '3D graphics are unavailable. Try an up-to-date browser with graphics acceleration enabled, then reload.';
 let selectedMapId = 'tunnel';
 let game = createGame({ mapId: selectedMapId });
@@ -58,7 +59,7 @@ for (const id of MAP_IDS) {
   const button = document.createElement('button');
   button.type = 'button'; button.className = 'map-card'; button.dataset.map = id;
   button.setAttribute('aria-pressed', String(id === selectedMapId));
-  const image = document.createElement('img'); image.src = map.thumbnail; image.alt = ''; image.width = 600; image.height = 320;
+  const image = document.createElement('img'); image.src = assetUrl(map.thumbnail); image.alt = ''; image.width = 600; image.height = 320;
   const copy = document.createElement('span'); copy.className = 'map-card-copy';
   const title = document.createElement('strong'); title.textContent = map.name;
   const tagline = document.createElement('small'); tagline.textContent = map.tagline;
@@ -69,7 +70,7 @@ for (const id of MAP_IDS) {
       if (snapshot?.room.phase === 'lobby' && mode !== 'demo') connection?.send({ type: 'vote', mapId: id });
       return;
     }
-    selectedMapId = id; soloRace = null; game = createGame({ mapId: id,avatarId:characterChoices[id] }); resetVisuals(); updateHUD();
+    selectedMapId = id; soloRace = null; game = createGame({ mapId: id,avatarId:characterChoices[id] }); ensureMapGraphics(id); resetVisuals(); updateHUD();
   });
   $('map-cards').append(button);
 }
@@ -124,6 +125,7 @@ $('change-character').addEventListener('click',async()=>{
   }));
   $('character-dialog').showModal();
   try{
+    await withDeadline(avatarLibrary.preloadAvatars(()=>{},map.avatars));
     const {characterPortraits}=await import('./graphics/portraits.js');
     if(request!==portraitRequest||!$('character-dialog').open)return;
     const portraits=characterPortraits(map.avatars);
@@ -143,11 +145,15 @@ async function prepareGraphics() {
     // Restore the last pre-Unity (V4) presentation as the normal game.
     // Keep the Unity study available only when explicitly requested.
     if (new URLSearchParams(location.search).get('graphics') !== 'unity') {
-      const createRenderer = await loadClassicGraphics(()=>Promise.all([
-        import('./renderer.js'), import('./graphics/avatars.js'),
-      ]),progress=>{
+      const createRenderer = await loadClassicGraphics(async()=>{
+        const modules=await Promise.all([import('./renderer.js'), import('./graphics/avatars.js')]);
+        avatarLibrary=modules[1];return modules;
+      },progress=>{
         graphicsProgress=Math.round(progress*100);updateOverlay();
-      });
+      },45000,getMap(selectedMapId).avatars);
+      mapLoader=createMapLoader({load:avatarLibrary.preloadAvatars,isLoaded:avatarLibrary.isAvatarLoaded,
+        onChange({loading,progress,error}){graphicsLoading=loading;if(progress!==undefined)graphicsProgress=Math.round(progress*100);if(error){graphicsError=error.message;telemetry.count('graphicsErrors');}updateHUD();}});
+      await mapLoader.prepare(selectedMapId,{measure:false});
       renderer = createRenderer(canvas);
     } else {
       renderer = await createUnityRenderer(canvas, { onProgress(progress) {
@@ -163,6 +169,10 @@ async function prepareGraphics() {
   updateHUD();
 }
 
+function ensureMapGraphics(mapId){
+  if(!mapLoader||mapLoader.ready(mapId)||graphicsError)return;
+  void mapLoader.prepare(mapId,{measure:!document.hidden});
+}
 function showCourse() {
   canvas.closest('.arena').scrollIntoView({ block: 'start', behavior: 'auto' });
 }
@@ -204,7 +214,7 @@ function returnToMenu() {
   updateHUD();
 }
 function beginRun() {
-  if (mode !== 'solo' || !renderer || graphicsError) return;
+  if (mode !== 'solo' || !renderer || graphicsLoading || graphicsError) return;
   soloSeed = freshCourseSeed(soloSeed);
   soloRace = createSoloRace({ seed: soloSeed, mapId: selectedMapId,avatarId:game.avatarId,scores:soloScores });
   soloRace.start();
@@ -216,7 +226,7 @@ function beginRun() {
   showCourse();
 }
 function joinRace(type) {
-  if (!renderer || graphicsError) return;
+  if (!renderer || graphicsLoading || graphicsError) return;
   const code = $('join-code').value.trim().toUpperCase();
   if (type === 'join' && !/^[A-Z0-9]{6}$/.test(code)) {
     showNetworkError('Enter the six-character code from your friend’s lobby.');
@@ -364,7 +374,7 @@ function togglePause() {
   updateHUD();
 }
 function act(action) {
-  if (!renderer || graphicsError || mode === 'demo') return;
+  if (!renderer || graphicsLoading || graphicsError || mode === 'demo') return;
   if (mode === 'online') {
     if (networkStatus === 'open' && snapshot?.room.phase === 'racing' && game.phase === 'running') connection.input(action);
     return;
@@ -405,7 +415,7 @@ function updateOverlay() {
   canvas.closest('.arena').classList.toggle('briefing', brief);
   if (graphicsLoading) {
     $('screen-overlay').hidden = false;
-    overlay('INTO THE LIGHT', 'Preparing your escape.', `Loading the maps and runners… ${graphicsProgress}%`, 'Loading…', true);
+    overlay('INTO THE LIGHT', 'Preparing your escape.', `Loading ${getMap(game.mapId).name}… ${graphicsProgress}%`, 'Loading…', true);
     return;
   }
   if (graphicsError) {
@@ -463,7 +473,7 @@ function updateHUD() {
   const raceSnapshot=currentRaceSnapshot();
   updateLeaderboard(raceSnapshot);
   const online = mode !== 'solo';
-  const running = Boolean(renderer) && !graphicsError && mode !== 'demo' && game.phase === 'running' && (!online || networkStatus === 'open');
+  const running = Boolean(renderer) && !graphicsLoading && !graphicsError && mode !== 'demo' && game.phase === 'running' && (!online || networkStatus === 'open');
   $('race-menu').hidden = online || game.phase !== 'ready';
   $('page-heading').hidden = online || game.phase !== 'ready';
   $('room-panel').hidden = !online;
@@ -472,7 +482,7 @@ function updateHUD() {
   $('race-mode-label').textContent = mode === 'demo' ? 'DEMO' : online ? 'MULTIPLAYER' : soloRace ? 'VS CPU' : 'SOLO';
   $('avatar-label').textContent = AVATARS[game.avatarId]?.name || 'Runner';
   for (const id of ['create-room', 'join-room', 'restart-button']) $(id).disabled = !renderer || Boolean(graphicsError);
-  $('demo-button').disabled = !renderer || Boolean(graphicsError) || online;
+  $('demo-button').disabled = !renderer || graphicsLoading || Boolean(graphicsError) || online;
   $('time-value').textContent = Math.max(0, game.timeLeft).toFixed(1);
   $('time-fill').style.width = `${Math.min(100, game.timeLeft / CONFIG.initialTime * 100)}%`;
   $('time-value').closest('.clock-panel').classList.toggle('low', game.timeLeft < 15);
@@ -505,7 +515,7 @@ function updateHUD() {
     lastEvent = game.recentEvent.id;
     notify(game.recentEvent.text, game.recentEvent.kind);
   }
-  const key = [graphicsLoading, graphicsError, mode, networkStatus, game.phase, snapshot?.room.phase, snapshot?.room.countdown, snapshot?.room.hostId, snapshot?.room.winnerId, raceSnapshot?.room.phase, raceSnapshot?.room.winnerId, rosterKey].join(':');
+  const key = [graphicsLoading, graphicsProgress, graphicsError, mode, networkStatus, game.phase, snapshot?.room.phase, snapshot?.room.countdown, snapshot?.room.hostId, snapshot?.room.winnerId, raceSnapshot?.room.phase, raceSnapshot?.room.winnerId, rosterKey].join(':');
   if (key !== lastOverlay) { updateOverlay(); lastOverlay = key; }
   raceUI.update(game,{mode,room:networkStatus==='disconnected'?undefined:snapshot?.room},performance.now());
 }
@@ -583,6 +593,7 @@ canvas.addEventListener('pointercancel', () => { touchStart = null; });
 // Solo pauses on tab switches. A multiplayer clock belongs to the server and keeps running.
 document.addEventListener('visibilitychange', () => {
   if (mode === 'solo' && document.hidden && game.phase === 'running') { pauseGame(game); updateHUD(); }
+  if(document.hidden)mapLoader?.cancelMeasurement();
   accumulator = 0;
   lastFrame = performance.now();
 });
@@ -593,21 +604,23 @@ $('guide-button').addEventListener('click', () => {
 $('close-guide').addEventListener('click', () => $('guide-dialog').close());
 
 function frame(now) {
+  if(renderer&&!graphicsError)ensureMapGraphics(game.mapId);
   telemetry.context(game.mapId,inputMode.mode,mode==='online'?'online':mode==='demo'?'demo':'solo');
   const frameMs=now-lastFrame;
-  if(!document.hidden&&game.phase==='running')telemetry.frame(frameMs);
+  if(!document.hidden&&!graphicsLoading&&game.phase==='running')telemetry.frame(frameMs);
   const dt = Math.min(frameMs / 1000, .1);
   lastFrame = now;
-  if (!graphicsError && mode === 'solo' && !document.hidden && (game.phase === 'running' || soloRace && !soloRace.finished && game.phase !== 'paused')) {
+  if (!graphicsLoading && !graphicsError && mode === 'solo' && !document.hidden && (game.phase === 'running' || soloRace && !soloRace.finished && game.phase !== 'paused')) {
     accumulator += dt;
     while (accumulator >= STEP) { if(soloRace)soloRace.update(STEP);else updateGame(game, STEP); accumulator -= STEP; }
   } else accumulator = 0;
-  if(!graphicsError&&mode==='demo'&&!document.hidden)connection?.update(dt);
+  if(!graphicsLoading&&!graphicsError&&mode==='demo'&&!document.hidden)connection?.update(dt);
   updateHUD();
   const view = mode==='demo'&&connection?.view ? {game:connection.view(),opponents:connection.opponents()} : mode !== 'solo' && snapshot ? raceView.sample(now) : soloRace ? {game:soloRace.view(),opponents:soloRace.opponents()} : null;
-  if (renderer && !graphicsError) {
+  if (renderer && !graphicsLoading && !graphicsError) {
     try {
       renderer.draw(view?.game || game, now / 1000, dt, view?.opponents || []);
+      if(!document.hidden){const timing=mapLoader?.drawn(game.mapId);if(timing){telemetry.observe(timing.reused?'mapRepeat':'mapFirst',timing.ms);void telemetry.flush();}}
       if(!firstRendered&&telemetry.enabled){firstRendered=true;telemetry.ready(performance.now());}
     } catch {
       // A lost graphics context must not leave a connected player racing blind.

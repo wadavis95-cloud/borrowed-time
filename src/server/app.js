@@ -1,3 +1,4 @@
+import {ASSET_VERSIONS} from '../asset-versions.js';
 import { createServer } from 'node:http';
 import { open } from 'node:fs/promises';
 import { pipeline } from 'node:stream/promises';
@@ -20,7 +21,7 @@ const types = {
 };
 // This allowlist keeps server code, repository files, and secrets off HTTP.
 const publicFiles = new Set([
-  '/src/racer-ai.js', '/src/telemetry.js', '/monitor/index.html', '/monitor/dashboard.js', '/monitor/dashboard.css',
+  '/src/asset-versions.js', '/src/racer-ai.js', '/src/telemetry.js', '/monitor/index.html', '/monitor/dashboard.js', '/monitor/dashboard.css',
   '/src/music.js', '/assets/music/CREDITS.txt', ...Object.values(MUSIC_TRACKS).map(track=>track.src),
   '/index.html', '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js',
   '/src/renderer.js', '/src/network.js', '/src/movement-feedback.js', '/src/race-presentation.js', '/src/race-ui.js', '/src/loading.js', '/src/finish-destinations.js', '/src/graphics/finish.js', '/src/graphics/readability.js', '/src/graphics/motion-effects.js', '/src/maps.js', '/src/graphics/worlds.js', '/src/graphics/map-obstacles.js',
@@ -103,7 +104,7 @@ export function createStaticFileHandler({ publicRoot = root } = {}) {
         'Content-Length': stats.size,
         ...((compressed || encoded) ? { 'Content-Encoding': 'gzip' } : {}),
         ...(file.endsWith('.glb') ? { Vary: 'Accept-Encoding' } : {}),
-        'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
+        'Cache-Control': ASSET_VERSIONS[file] && new URL(request.url,'http://localhost').search === '?v='+ASSET_VERSIONS[file] ? 'public, max-age=31536000, immutable' : 'no-store', 'X-Content-Type-Options': 'nosniff',
       });
       if (request.method === 'HEAD') response.end();
       // Backpressure keeps concurrent large Web builds from being buffered in

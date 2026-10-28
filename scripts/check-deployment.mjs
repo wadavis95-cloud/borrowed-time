@@ -9,7 +9,7 @@ import { ABILITIES } from '../src/game.js';
 // the real transport, then removes the room. No browser or extra dependencies.
 const USAGE = 'Usage: node scripts/check-deployment.mjs https://your-game.onrender.com';
 const ASSETS = [
-  '/src/racer-ai.js', '/src/telemetry.js', '/monitor/index.html', '/monitor/dashboard.js', '/monitor/dashboard.css',
+  '/src/asset-versions.js', '/src/racer-ai.js', '/src/telemetry.js', '/monitor/index.html', '/monitor/dashboard.js', '/monitor/dashboard.css',
   '/src/music.js', '/assets/music/CREDITS.txt', ...Object.values(MUSIC_TRACKS).map(track=>track.src),
   '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js', '/src/maps.js',
   '/src/graphics/worlds.js', '/src/graphics/map-obstacles.js', '/src/movement-feedback.js', '/src/race-presentation.js', '/src/race-ui.js', '/src/loading.js', '/src/finish-destinations.js', '/src/graphics/finish.js', '/src/graphics/readability.js', '/src/graphics/motion-effects.js',

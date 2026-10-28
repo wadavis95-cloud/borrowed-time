@@ -46,3 +46,9 @@ There is no external uptime monitor, durable history, alert delivery or billing 
 - `scripts/local-monitor.mjs`: local-only launcher and ignored key file.
 
 Gameplay, prices, map rules and movement are unchanged. Acknowledgment sequence and a lightweight probe are additive protocol diagnostics. The release checker now verifies all 83 public assets and that metrics are protected or disabled. Unit/network checks cover disabled/missing/wrong-key access, fixed-schema/size/origin rejection, rolling expiry, bandwidth classification, histogram overflow, private acknowledgment fields and multiplayer regression. Browser checks verified live downloads, race traffic, first-render/frame/network/input reports, map/control/mode segmentation and no console errors.
+
+## Map loading and device comparison (local trial)
+
+The player-experience section now includes `mapFirst` and `mapRepeat`: preparation requested through first completed renderer draw, including model decoding/scene construction. First means not yet decoded in this tab (HTTP cache may help); repeat means already in memory. Initial navigation readiness stays separate. Abandoned and hidden-tab timings are excluded. Histograms have 50/100/200/500/1000/2000/5000 ms boundaries plus overflow, still eight bounded buckets.
+
+Load/switch/frame breakdowns now include estimated device (`mobile`, `desktop`, `unknown`) independently of controls; mobile includes detected tablets. This is a coarse inference, not reliable device identification. No raw user-agent or hardware model is transmitted. All current schema/body/rate/privacy bounds still apply. No actual phone results exist yet. See `docs/MAP_LOADING_CACHE.md` for measurements and phone-test limitations. Current release verification includes 84 public assets.

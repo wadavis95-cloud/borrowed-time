@@ -1,3 +1,4 @@
+import {assetUrl} from './asset-versions.js';
 // The selected CC0 recordings are served locally. No third-party requests at play time.
 export const MUSIC_TRACKS=Object.freeze({
  tunnel:Object.freeze({title:'Outrunners',artist:'OOG37 / Two Litre Falls Music',src:'/assets/music/tunnel.mp3',source:'https://opengameart.org/content/outrunners'}),
@@ -35,7 +36,7 @@ export function createMusicPlayer(context,{fetchAudio=(...args)=>fetch(...args)}
   const token=generation;controller=new AbortController();
   pending=(async()=>{
    try{
-    const response=await fetchAudio(MUSIC_TRACKS[nextMap].src,{signal:controller.signal});
+    const response=await fetchAudio(assetUrl(MUSIC_TRACKS[nextMap].src),{signal:controller.signal});
     if(!response.ok)throw new Error(`Music download failed (${response.status}).`);
     const bytes=await response.arrayBuffer();
     if(disposed||token!==generation)return;

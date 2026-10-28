@@ -176,3 +176,15 @@ networkTest('character GLBs negotiate gzip while preserving raw fallback and bin
   const head=await readResponse(origin+'/assets/characters/courier.glb','HEAD',{'Accept-Encoding':'gzip'});
   assert.equal(head.headers['content-encoding'],'gzip');assert.equal(head.body.length,0);assert.equal(Number(head.headers['content-length']),compressed.length);
 });
+
+networkTest('only exact current asset versions are immutable; pages, modules and stale versions re-fetch',async t=>{
+ const {createHash}=await import('node:crypto');const bytes=Buffer.from('fixture model');const version=createHash('sha256').update(bytes).digest('hex');
+ const origin=await serveFixture(t,{'assets/characters/courier.glb':bytes,'index.html':'page','src/main.js':'module'});
+ // Use the real app manifest for the known current version and the real shipped asset.
+ const {ASSET_VERSIONS}=await import('../src/asset-versions.js');
+ const app=createGameServer();app.server.listen(0,'127.0.0.1');await once(app.server,'listening');t.after(()=>app.close());const base=`http://127.0.0.1:${app.server.address().port}`;
+ const path='/assets/characters/courier.glb',url=base+path+'?v='+ASSET_VERSIONS[path];
+ for(const method of ['GET','HEAD']){const r=await readResponse(url,method,{'Accept-Encoding':'gzip'});assert.equal(r.status,200);assert.equal(r.headers['cache-control'],'public, max-age=31536000, immutable');assert.equal(r.headers['content-encoding'],'gzip');if(method==='HEAD')assert.equal(r.body.length,0);}
+ for(const path of ['/', '/src/main.js','/assets/characters/courier.glb','/assets/characters/courier.glb?v=old'])assert.equal((await readResponse(base+path)).headers['cache-control'],'no-store');
+ assert.equal((await readResponse(origin+'/assets/characters/courier.glb?v='+version)).headers['cache-control'],'no-store');
+});

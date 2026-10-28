@@ -1,3 +1,4 @@
+import {assetUrl} from '../asset-versions.js';
 import * as THREE from 'three';
 import { ALL_AVATAR_IDS } from '../avatars.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -22,32 +23,33 @@ function validateAsset(asset, id) {
  * and skeleton. The injectable loader is also the test boundary for failed loads. */
 export function createAvatarLibrary({ loadAsset } = {}) {
   const loader = new GLTFLoader();
-  const load = loadAsset || ((id) => loader.loadAsync(new URL(`../../assets/characters/${id}.glb`, import.meta.url).href));
-  let assets = null;
-  let pending = null;
-
-  const observers=new Set();let completed=0,attempt=0;
-  function report(callback,value){try{callback(value);}catch{/* UI progress cannot invalidate an asset. */}}
-  function preloadAvatars(onProgress=()=>{}) {
-    if (assets) {report(onProgress,1);return Promise.resolve();}
-    observers.add(onProgress);report(onProgress,completed/IDS.length);
-    if (pending) return pending;
-    completed=0;const current=++attempt;
-    pending = Promise.all(IDS.map(async (id) => {
-      const asset=validateAsset(await load(id),id);
-      if(current===attempt){completed++;for(const callback of observers)report(callback,completed/IDS.length);}
-      return [id,asset];
-    }))
-      .then((entries) => { assets = new Map(entries);observers.clear(); })
-      .catch((error) => { attempt++;completed=0;observers.clear();pending = null;throw error; });
-    return pending;
+  const load = loadAsset || ((id) => loader.loadAsync(new URL(assetUrl(`/assets/characters/${id}.glb`), import.meta.url).href));
+  const assets = new Map(), pending = new Map();
+  function isAvatarLoaded(id){return assets.has(id);}
+  async function preloadAvatars(onProgress=()=>{},ids=IDS) {
+    const requested=[...new Set(ids)];
+    if(requested.some(id=>!IDS.includes(id)))throw new Error('Unknown avatar requested');
+    if(requested.every(id=>assets.has(id))){try{onProgress(1);}catch{}return;}
+    let completed=0;
+    const report=()=>{try{onProgress(requested.length?completed/requested.length:1);}catch{/* Optional progress cannot invalidate a load. */}};
+    report();
+    await Promise.all(requested.map(async id=>{
+      if(!assets.has(id)){
+        if(!pending.has(id)){
+          const work=Promise.resolve().then(()=>load(id)).then(asset=>{assets.set(id,validateAsset(asset,id));}).finally(()=>pending.delete(id));
+          pending.set(id,work);
+        }
+        await pending.get(id);
+      }
+      completed++;report();
+    }));
   }
 
   /** Feet at y=0, faces -Z. World position and jump height remain renderer-owned. */
   function createAvatar(avatarId, { ghost = false, color = '#65d9cb' } = {}) {
-    if (!assets) throw new Error('Call and await preloadAvatars() before creating an avatar');
     const id = IDS.includes(avatarId) ? avatarId : 'courier';
     const asset = assets.get(id);
+    if(!asset)throw new Error(`Call and await preloadAvatars() for ${id} before creating an avatar`);
     const group = new THREE.Group(); group.name = `${id}${ghost ? '-ghost' : ''}`;
     const model = cloneSkeleton(asset.scene); group.add(model);
     const bones = {};
@@ -254,9 +256,11 @@ export function createAvatarLibrary({ loadAsset } = {}) {
       },
     };
   }
-  return { preloadAvatars, createAvatar };
+  return { preloadAvatars, createAvatar, isAvatarLoaded };
 }
 
 const library = createAvatarLibrary();
 export const preloadAvatars = library.preloadAvatars;
 export const createAvatar = library.createAvatar;
+
+export const isAvatarLoaded = library.isAvatarLoaded;

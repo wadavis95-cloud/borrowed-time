@@ -1,0 +1,171 @@
+{
+  "at": "2026-10-28T13:53:12.114Z",
+  "totals": {
+    "connections": 0,
+    "connectionRejects": 0,
+    "roomRejects": 0,
+    "disconnects": 0,
+    "slowClients": 0,
+    "invalidMessages": 0,
+    "rateLimits": 0,
+    "messagesIn": 0,
+    "bytesIn": 0,
+    "messagesOut": 0,
+    "bytesOut": 0,
+    "snapshots": 0,
+    "httpRequests": 54,
+    "httpErrors": 0,
+    "http4xx": 0,
+    "http5xx": 0,
+    "monitorBytes": 812061,
+    "telemetryBytesIn": 360,
+    "assetBytes": 2235893,
+    "pageBytes": 11865,
+    "otherBytes": 2481309,
+    "httpAborts": 0,
+    "telemetryAccepted": 1,
+    "telemetryRejected": 0
+  },
+  "client": {
+    "reports": 1,
+    "windowSeconds": 120,
+    "frame": {
+      "count": 0,
+      "p95UpperMs": null,
+      "p95OverMs": null
+    },
+    "gap": {
+      "count": 0,
+      "p95UpperMs": null,
+      "p95OverMs": null
+    },
+    "rtt": {
+      "count": 0,
+      "p95UpperMs": null,
+      "p95OverMs": null
+    },
+    "input": {
+      "count": 0,
+      "p95UpperMs": null,
+      "p95OverMs": null
+    },
+    "load": {
+      "count": 1,
+      "p95UpperMs": 500,
+      "p95OverMs": null
+    },
+    "mapFirst": {
+      "count": 0,
+      "p95UpperMs": null,
+      "p95OverMs": null
+    },
+    "mapRepeat": {
+      "count": 0,
+      "p95UpperMs": null,
+      "p95OverMs": null
+    },
+    "longTasks": 0,
+    "errors": 0,
+    "graphicsErrors": 0,
+    "contextLosses": 0,
+    "disconnects": 0,
+    "slowFrames": 0,
+    "frames": 0,
+    "byMap": [
+      {
+        "name": "tunnel",
+        "reports": 1,
+        "frames": 0,
+        "frameP95UpperMs": null,
+        "frameP95OverMs": null,
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "mapFirst": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "mapRepeat": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        }
+      }
+    ],
+    "byInput": [
+      {
+        "name": "keyboard",
+        "reports": 1,
+        "frames": 0,
+        "frameP95UpperMs": null,
+        "frameP95OverMs": null,
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "mapFirst": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "mapRepeat": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        }
+      }
+    ],
+    "byMode": [
+      {
+        "name": "solo",
+        "reports": 1,
+        "frames": 0,
+        "frameP95UpperMs": null,
+        "frameP95OverMs": null,
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "mapFirst": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "mapRepeat": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        }
+      }
+    ],
+    "byDevice": [
+      {
+        "name": "desktop",
+        "reports": 1,
+        "frames": 0,
+        "frameP95UpperMs": null,
+        "frameP95OverMs": null,
+        "load": {
+          "count": 1,
+          "p95UpperMs": 500,
+          "p95OverMs": null
+        },
+        "mapFirst": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        },
+        "mapRepeat": {
+          "count": 0,
+          "p95UpperMs": null,
+          "p95OverMs": null
+        }
+      }
+    ]
+  }
+}

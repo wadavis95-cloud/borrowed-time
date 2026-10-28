@@ -320,3 +320,18 @@ test('detailed cast has finite surface coordinates and owns its material texture
   courier.dispose();courier.dispose();assert.equal(disposed,2,'owned textures released once');ghost.dispose();
   }
 });
+
+test('selected roster loads only requested characters and shares overlapping requests', async()=>{
+ const loaded=[];const library=createAvatarLibrary({loadAsset:async id=>{loaded.push(id);return readAsset(id);}});
+ await Promise.all([library.preloadAvatars(()=>{},['courier','engineer']),library.preloadAvatars(()=>{},['engineer','guard','runner'])]);
+ assert.deepEqual(loaded.sort(),['courier','engineer','guard','runner']);
+ await library.preloadAvatars(()=>{},['courier']);assert.equal(loaded.length,4);
+ assert.equal(library.isAvatarLoaded('captain'),false);assert.throws(()=>library.createAvatar('captain'),/preload/i);
+ const avatar=library.createAvatar('courier');avatar.dispose();
+});
+test('a failed selected download can retry without reloading successful models',async()=>{
+ const counts={};let fail=true;const library=createAvatarLibrary({loadAsset:async id=>{counts[id]=(counts[id]||0)+1;if(id==='engineer'&&fail)throw Error('offline');return readAsset(id);}});
+ await assert.rejects(library.preloadAvatars(()=>{},['courier','engineer']),/offline/);
+ await new Promise(r=>setTimeout(r,100));fail=false;
+ await library.preloadAvatars(()=>{},['courier','engineer']);assert.equal(counts.courier,1);assert.equal(counts.engineer,2);
+});
