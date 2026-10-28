@@ -1,5 +1,7 @@
 # V8.1 · Obstacle readability and movement feedback
 
+Historical local-playtest record. These changes were subsequently published in the [V8.4 public release](V8_4_PUBLIC_PLAYTEST.md) on October 28, 2026.
+
 Local playtest, October 27, 2026. **Not pushed or deployed.** Public V8 remains runtime `8f9552f43f276c75e2d55c6c155ca500e4b6f2c8`.
 
 ## Try it

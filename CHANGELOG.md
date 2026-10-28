@@ -1,5 +1,11 @@
 # Changelog
 
+## V8.4 public phone playtest — deployed October 28, 2026
+
+- Published the approved V8.1–V8.4 polish and persistent self-label fix to the existing public URL.
+- Render runtime `36d682d` is Live; public 67-asset and two-player multiplayer checks pass. No gameplay or price changes.
+- See [public verification](docs/versions/V8_4_PUBLIC_PLAYTEST.md).
+
 ## 8.4.0-preview.1 — Local finish, transition and reliability polish
 
 - Preserved V8.3 and the visible self-label fix in a verified complete-history bundle; no push or deployment.

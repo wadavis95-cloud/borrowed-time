@@ -1,5 +1,7 @@
 # V8.3 · Audio and map atmosphere
 
+Historical local-playtest record. These changes were subsequently published in the [V8.4 public release](V8_4_PUBLIC_PLAYTEST.md) on October 28, 2026.
+
 Local preview, October 27, 2026. **Not pushed or deployed.** Public V8 is unchanged.
 
 ## Try it
