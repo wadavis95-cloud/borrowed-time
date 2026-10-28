@@ -4,7 +4,7 @@ import {METRIC_BINS as BINS,PEAK_METRICS,SPIKE_THRESHOLDS} from '../metric-schem
 export {BINS};
 const RETENTION_MS=30*60*1000,MAX_HISTORY=1800,MAX_REPORTS=6000;
 const META_KEYS=['map','inputMode','mode','device'];
-const CLIENT_KEYS=new Set([...META_KEYS,'peaks','bufferUnderruns','bufferDelay','bufferHold','frame','gap','rtt','input','load','mapFirst','mapRepeat','longTasks','errors','graphicsErrors','contextLosses','disconnects','slowFrames','frames']);
+const CLIENT_KEYS=new Set([...META_KEYS,...Object.keys(BINS),'peaks','bufferUnderruns','bufferDelay','bufferHold','frame','gap','rtt','input','load','mapFirst','mapRepeat','longTasks','errors','graphicsErrors','contextLosses','disconnects','slowFrames','frames']);
 const COUNTERS=['connections','connectionRejects','roomRejects','disconnects','slowClients','invalidMessages','rateLimits','messagesIn','bytesIn','messagesOut','bytesOut','snapshots','httpRequests','httpErrors','http4xx','http5xx','monitorBytes','telemetryBytesIn','assetBytes','pageBytes','otherBytes','httpAborts','telemetryAccepted','telemetryRejected'];
 export function validReport(report){
  if(!report||typeof report!=='object'||Array.isArray(report))return false;
@@ -24,7 +24,7 @@ export function validReport(report){
  return Object.keys(report).length>0;
 }
 function quantile(hist,p=.95){const count=hist.reduce((a,b)=>a+b,0);if(!count)return null;let total=0;for(let i=0;i<hist.length;i++){total+=hist[i];if(total>=Math.ceil(count*p))return i;}return hist.length-1;}
-export function createMonitoring({token='',state=()=>({}),now=Date.now,autoStart=true}={}){
+export function createMonitoring({token='',state=()=>({}),now=Date.now,autoStart=true,allowedOrigins=[]}={}){
  const enabled=typeof token==='string'&&token.length>=32;
  const started=now(),totals=Object.fromEntries(COUNTERS.map(k=>[k,0])),history=[],reports=[];
  const httpLatency=[];let previous={...totals},last=now(),cpu=process.cpuUsage(),cpuAt=performance.now(),timer,lag,lastCapAt=null;
@@ -47,7 +47,7 @@ export function createMonitoring({token='',state=()=>({}),now=Date.now,autoStart
   for(let i=0;i<older.length;i+=10){
    const bucket=older.slice(i,i+10),last=bucket.at(-1),duration=bucket.reduce((n,p)=>n+p.intervalSeconds,0),point={...last,intervalSeconds:duration};
    for(const key of Object.keys(last).filter(k=>k.endsWith('PerSec')))point[key]=bucket.reduce((n,p)=>n+(p[key]||0)*p.intervalSeconds,0)/duration;
-   for(const key of ['cpuPct','rssMB','heapMB','eventLoopP95Ms','eventLoopMaxMs','simulationBacklogMs','bufferedBytes','httpP95Ms']){
+   for(const key of ['cpuPct','rssMB','heapMB','eventLoopP95Ms','eventLoopMaxMs','simulationBacklogMs','bufferedBytes','httpP95Ms','updateScheduleLagMs','updateBroadcastWorkMs']){
     const values=bucket.map(p=>p[key]).filter(v=>typeof v==='number');point[key]=values.length?Math.max(...values):null;
    }
    result.push(point);
@@ -76,7 +76,7 @@ export function createMonitoring({token='',state=()=>({}),now=Date.now,autoStart
   }
   const group=field=>[...new Set(reports.map(r=>r.report[field]).filter(Boolean))].map(value=>{
    const selected=reports.filter(r=>r.report[field]===value),frame=summary(selected,'frame');
-   return {name:value,reports:selected.length,frames:frame.count,frameP95UpperMs:frame.p95UpperMs,frameP95OverMs:frame.p95OverMs,load:summary(selected,'load'),mapFirst:summary(selected,'mapFirst'),mapRepeat:summary(selected,'mapRepeat'),gap:summary(selected,'gap'),rtt:summary(selected,'rtt'),input:summary(selected,'input'),bufferHold:summary(selected,'bufferHold'),bufferDelay:summary(selected,'bufferDelay')};
+   return {name:value,reports:selected.length,frames:frame.count,frameP95UpperMs:frame.p95UpperMs,frameP95OverMs:frame.p95OverMs,load:summary(selected,'load'),mapFirst:summary(selected,'mapFirst'),mapRepeat:summary(selected,'mapRepeat'),gap:summary(selected,'gap'),rtt:summary(selected,'rtt'),input:summary(selected,'input'),bufferHold:summary(selected,'bufferHold'),bufferDelay:summary(selected,'bufferDelay'),scheduleLag:summary(selected,'scheduleLag'),sendGap:summary(selected,'sendGap'),arrivalExcess:summary(selected,'arrivalExcess')};
   });
   client.byMap=group('map');client.byInput=group('inputMode');client.byMode=group('mode');client.byDevice=group('device');
   return {enabled,startedAt:started,uptimeSeconds:(now()-started)/1000,totals:{...totals},current:history.at(-1)||null,history:chartHistory(),serverSpikes:history.filter(p=>p.eventLoopMaxMs>50||p.simulationBacklogMs>100).slice(-24).map(({at,eventLoopMaxMs,simulationBacklogMs,cpuPct})=>({at,eventLoopMaxMs,simulationBacklogMs,cpuPct})),client,notes:['Application JSON and declared completed HTTP body bytes; excludes TLS/WS/HTTP headers, aborted partial bodies and provider accounting.','Browser metrics are untrusted aggregate samples from up to the last thirty minutes (report-count cap can shorten coverage), not unique people. Histogram p95 values are bucket upper bounds; the last bucket includes overflow.','History and totals reset on process restart. No persistence, external alerts, billing integration or cold-start measurement.']};
@@ -97,7 +97,7 @@ export function createMonitoring({token='',state=()=>({}),now=Date.now,autoStart
   }
   if(req.method!=='POST'){response(res,405);return true;}
   let origin;try{origin=new URL(req.headers.origin);}catch{}
-  if(!origin||!['http:','https:'].includes(origin.protocol)||origin.host!==req.headers.host){count('telemetryRejected');response(res,403);return true;}
+  if(!origin||!['http:','https:'].includes(origin.protocol)||(origin.host!==req.headers.host&&!allowedOrigins.includes(origin.origin))){count('telemetryRejected');response(res,403);return true;}
   if(++ingressCount>600){count('telemetryRejected');response(res,429);return true;}
   if(!String(req.headers['content-type']||'').startsWith('application/json')||Number(req.headers['content-length'])>2048){count('telemetryRejected');response(res,413);req.resume();return true;}
   let bytes=0,parts=[],done=false;

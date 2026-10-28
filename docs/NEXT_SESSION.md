@@ -180,3 +180,32 @@ for phone (race not started). Phone same Wi-Fi link http://192.168.0.104:4173/.
 Mac awake; refresh phone to ensure new build. This local address may change.
 No push, deployment or submission for prediction change. Public mode remains
 previous buffer and user-reported lag remains unresolved until real retest.
+
+## Latest local: split delivery and update timing
+
+Branch codex/split-delivery-timing follows 624ce9a. See docs/SPLIT_DELIVERY.md.
+Backups pre-split-delivery-20261028.bundle verified and
+pre-split-workspace-20261028.zip saved before edits. No push/deploy/submission.
+Public remains ee90384. Separate local assets :4173 / race+protected monitoring
+:4174, two child processes launched by npm run dev:split (session 89807).
+Game URL unchanged http://192.168.0.104:4173/ (same Wi-Fi, Mac awake).
+Dashboard moved to http://localhost:4174/monitor#experience, tab4 unlocked with
+existing local key; tab3 new build waiting lobby UPN432. Guest tab2 smoke ended
+and old socket closed on restart. Lobby code expires after five idle minutes.
+
+Browser runtime config carries only public race origin. Strict exact-origin
+CORS/WS configuration; combined default retained. Static export ready in
+build/static-Q1z9L6, LAN test config only; no real CDN provisioned. Timing adds
+server schedule/preparation lag, periodic send gap and excess arrival interval
+without clock synchronization; dashboard plus device breakdowns. Metrics still
+protected/bounded. Race-origin download totals now exclude static traffic.
+
+227 regular tests (21 gated skips),60 network checks,syntax/whitespace,10-file
+compressed build and static export checks passed. Real two-browser race and
+both purchases worked. Final raw79-packet timing sample max send gap51.8ms,
+zero invalid early metadata. Local browser smoke before final timer fix is
+marked non-baseline. Latest baseline local-split-baseline-20261028.json may
+include stale browser flushes from prior process lifetime; next test compare
+only new reports. Fresh review found malformed-request crash and early-timer
+measurement bug, both reproduced/fixed, no remaining important findings.
+Phone acceptance and public deployment remain pending explicit authorization.

@@ -1,3 +1,5 @@
+import {raceEndpoint} from './endpoints.js';
+import {createDeliveryTiming} from './delivery-timing.js';
 // Transport sends intentions; it never decides whether an ability or movement succeeds.
 import {createMovementBuffer} from './movement-buffer.js';
 import {createSnapshotDecoder} from './race-protocol.js';
@@ -5,7 +7,7 @@ import {telemetry} from './telemetry.js';
 import { CONFIG, ABILITIES, createGame } from './game.js';
 
 export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
-  const url = new URL('/race', window.location.href);
+  const url = new URL(raceEndpoint('/race'));
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
   const socket = new WebSocket(url);
   const decode=createSnapshotDecoder();
@@ -15,7 +17,8 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
   let lastMessage = performance.now(),lastSnapshotAt=null,probeAt=null;
   let wasVisible=!document.hidden;
   let probing=false;const pendingInputs=new Map();
-  const resetTiming=()=>{lastSnapshotAt=null;probeAt=null;pendingInputs.clear();wasVisible=!document.hidden;};
+  const delivery=createDeliveryTiming((key,ms)=>telemetry.observe(key,ms));
+  const resetTiming=()=>{delivery.reset();lastSnapshotAt=null;probeAt=null;pendingInputs.clear();wasVisible=!document.hidden;};
   document.addEventListener('visibilitychange',resetTiming);
   const probeTimer=setInterval(()=>{if(probing&&socket.readyState===WebSocket.OPEN&&(probeAt===null||performance.now()-probeAt>10000)){probeAt=performance.now();send({type:'probe',at:probeAt});}},5000);
   const watchdog = setInterval(() => {
@@ -44,8 +47,8 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
     if(message.type==='probe'&&message.at===probeAt){telemetry.observe('rtt',performance.now()-probeAt);probeAt=null;}
     if (message.type === 'snapshot') {
       try{message=decode(message);}catch(error){onError(error.message);socket.close();return;}
-      const visible=!document.hidden;if(!visible||!wasVisible){lastSnapshotAt=null;pendingInputs.clear();}wasVisible=visible;
-      const at=performance.now();if(lastSnapshotAt!==null)telemetry.observe('gap',at-lastSnapshotAt);lastSnapshotAt=at;
+      const visible=!document.hidden;if(!visible||!wasVisible){delivery.reset();lastSnapshotAt=null;pendingInputs.clear();}wasVisible=visible;
+      const at=performance.now();if(visible&&wasVisible)delivery.sample(message.timing,at);if(lastSnapshotAt!==null)telemetry.observe('gap',at-lastSnapshotAt);lastSnapshotAt=at;
       if (roundId !== message.room.roundId) { roundId = message.room.roundId; sequence = 0;pendingInputs.clear(); }
       for(const [seq,sentAt]of pendingInputs){if(seq<=message.you.inputSeq){telemetry.observe('input',performance.now()-sentAt);pendingInputs.delete(seq);}}
       onSnapshot(message);

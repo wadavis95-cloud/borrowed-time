@@ -1,3 +1,4 @@
+import {performance} from 'node:perf_hooks';
 import {readClientBuild,chooseEncoding} from './client-build.js';
 import {createSnapshotEncoder} from '../race-protocol.js';
 import {ASSET_VERSIONS} from '../asset-versions.js';
@@ -23,7 +24,7 @@ const types = {
 };
 // This allowlist keeps server code, repository files, and secrets off HTTP.
 const publicFiles = new Set([
-  '/src/metric-schema.js', '/src/movement-buffer.js', '/src/race-protocol.js', '/src/asset-versions.js', '/src/racer-ai.js', '/src/telemetry.js', '/monitor/index.html', '/monitor/dashboard.js', '/monitor/dashboard.css',
+  '/src/endpoints.js', '/src/delivery-timing.js', '/src/metric-schema.js', '/src/movement-buffer.js', '/src/race-protocol.js', '/src/asset-versions.js', '/src/racer-ai.js', '/src/telemetry.js', '/monitor/index.html', '/monitor/dashboard.js', '/monitor/dashboard.css',
   '/src/music.js', '/assets/music/CREDITS.txt', ...Object.values(MUSIC_TRACKS).map(track=>track.src),
   '/index.html', '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js',
   '/src/renderer.js', '/src/network.js', '/src/movement-feedback.js', '/src/race-presentation.js', '/src/race-ui.js', '/src/loading.js', '/src/finish-destinations.js', '/src/graphics/finish.js', '/src/graphics/readability.js', '/src/graphics/motion-effects.js', '/src/maps.js', '/src/graphics/worlds.js', '/src/graphics/map-obstacles.js',
@@ -53,8 +54,11 @@ const vendorFiles = new Map([
   ['/vendor/utils/SkeletonUtils.js', 'node_modules/three/examples/jsm/utils/SkeletonUtils.js'],
 ]);
 
-export function createStaticFileHandler({ publicRoot = root } = {}) {
-  const build=readClientBuild(publicRoot);
+export function staticFileEntries(){return [...publicFiles].map(path=>[path,'.'+path]).concat([...vendorFiles]);}
+function validateOrigin(value){const url=new URL(value);if(!['http:','https:'].includes(url.protocol)||url.username||url.password||url.pathname!=='/'||url.search||url.hash)throw new Error('Use an HTTP(S) origin without credentials or path');return url.origin;}
+export function createStaticFileHandler({ publicRoot = root, raceOrigin='', useBuild=true } = {}) {
+  const config=JSON.stringify(raceOrigin?{raceOrigin:validateOrigin(raceOrigin)}:{});
+  const build=useBuild?readClientBuild(publicRoot):null;
   return async function serveFile(request, response) {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       response.writeHead(405, { Allow: 'GET, HEAD' });
@@ -66,6 +70,10 @@ export function createStaticFileHandler({ publicRoot = root } = {}) {
       response.writeHead(400);
       response.end(request.method === 'HEAD' ? undefined : 'Invalid request');
       return;
+    }
+    if(pathname==='/runtime-config.js'){
+      response.writeHead(200,{'Content-Type':'text/javascript; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
+      response.end(request.method==='HEAD'?undefined:'globalThis.BORROWED_TIME_CONFIG='+config+';');return;
     }
     if (pathname === '/health') {
       response.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' });
@@ -133,19 +141,36 @@ export function createStaticFileHandler({ publicRoot = root } = {}) {
 }
 
 export function createGameServer({
-  now = Date.now, roomOptions = {}, maxConnections = 128, heartbeatMs = 30000, monitorToken = process.env.MONITOR_TOKEN || '',
+  now = Date.now, roomOptions = {}, maxConnections = 128, heartbeatMs = 30000, monitorToken = process.env.MONITOR_TOKEN || '', raceOnly=false, allowedOrigins=[],
 } = {}) {
+  const origins=new Set(allowedOrigins.map(validateOrigin));
+  let lastScheduleLagMs=0,lastBroadcastWorkMs=0;
   const rooms = createRoomManager({ ...roomOptions, now });
   const sockets = new Map();
-  const monitor=createMonitoring({token:monitorToken,now,state:()=>{
+  const monitor=createMonitoring({token:monitorToken,now,allowedOrigins:[...origins],state:()=>{
     const list=[...rooms.rooms.values()];
-    return {sockets:sockets.size,maxConnections,rooms:list.length,maxRooms:roomOptions.maxRooms??25,racingRooms:list.filter(r=>r.phase==='racing').length,
+    return {updateScheduleLagMs:lastScheduleLagMs,updateBroadcastWorkMs:lastBroadcastWorkMs,sockets:sockets.size,maxConnections,rooms:list.length,maxRooms:roomOptions.maxRooms??25,racingRooms:list.filter(r=>r.phase==='racing').length,
       racingPlayers:list.reduce((sum,r)=>sum+[...r.players.values()].filter(p=>p.connected&&p.game.phase==='running').length,0),
       bufferedBytes:[...sockets.values()].reduce((sum,s)=>sum+s.bufferedAmount,0),
       simulationBacklogMs:Math.max(0,...list.filter(r=>r.phase==='racing').map(r=>now()-r.lastStepAt))};
   }});
-  const serve=createStaticFileHandler();
-  const server=createServer((request,response)=>{if(monitor.handle(request,response))return;monitor.http(request,response);return serve(request,response);});
+  const serve=createStaticFileHandler({useBuild:!raceOnly});
+  const server=createServer((request,response)=>{
+    const origin=request.headers.origin;
+    if(origin){
+      const own=origin===`http://${request.headers.host}`||origin===`https://${request.headers.host}`;
+      if(!own&&!origins.has(origin)){response.writeHead(403);response.end();return;}
+      if(origins.has(origin)){response.setHeader('Access-Control-Allow-Origin',origin);response.setHeader('Vary','Origin');}
+      if(request.method==='OPTIONS'){
+        if(!['/ops/client','/ops/config'].includes(request.url)){response.writeHead(403);response.end();return;}
+        response.writeHead(204,{'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Content-Type','Access-Control-Max-Age':'600'});response.end();return;
+      }
+    }
+    if(monitor.handle(request,response))return;monitor.http(request,response);
+    let path;try{path=new URL(request.url,'http://local').pathname;}catch{response.writeHead(400);response.end('Invalid request');return;}
+    if(raceOnly&&path!=='/health'&&!['/monitor','/monitor/','/monitor/index.html','/monitor/dashboard.js','/monitor/dashboard.css'].includes(path)){response.writeHead(404);response.end('Not found');return;}
+    return serve(request,response);
+  });
   const websocketServer = new WebSocketServer({ noServer: true, maxPayload: 4096, perMessageDeflate: false });
   let closing = false;
   let closePromise;
@@ -156,15 +181,22 @@ export function createGameServer({
       monitor.count('slowClients');socket.terminate();
       return;
     }
+    if(message.timing)message.timing.sentAt=performance.now();
     const payload=JSON.stringify(message);monitor.count('messagesOut');monitor.count('bytesOut',Buffer.byteLength(payload));if(message.type==='snapshot')monitor.count('snapshots');
     socket.send(payload, (error) => { if (error) socket.terminate(); });
   }
 
-  function broadcast() {
+  function broadcast(scheduledAt=performance.now(),periodic=false) {
+    const began=performance.now();scheduledAt=Math.min(scheduledAt,began);
+    if(periodic)lastScheduleLagMs=Math.max(0,began-scheduledAt);
     for (const [id, socket] of sockets) {
       const snapshot = rooms.snapshot(id);
-      if (snapshot) send(socket, socket.encodeSnapshot ? socket.encodeSnapshot(snapshot) : snapshot);
+      if (snapshot) {
+        if(monitor.enabled)snapshot.timing={scheduledAt,sentAt:performance.now(),periodic};
+        send(socket, socket.encodeSnapshot ? socket.encodeSnapshot(snapshot) : snapshot);
+      }
     }
+    if(periodic)lastBroadcastWorkMs=performance.now()-began;
   }
 
   function rejectUpgrade(socket, status, message) {
@@ -185,7 +217,7 @@ export function createGameServer({
     if (request.headers.origin) {
       let origin;
       try { origin = new URL(request.headers.origin); } catch { /* Rejected below. */ }
-      if (!origin || !['http:', 'https:'].includes(origin.protocol) || origin.host !== request.headers.host) {
+      if (!origin || !['http:', 'https:'].includes(origin.protocol) || (origin.host !== request.headers.host&&!origins.has(origin.origin))) {
         rejectUpgrade(socket, 403, 'Forbidden');
         return;
       }
@@ -268,7 +300,8 @@ export function createGameServer({
       }
     }
   }, 1000 / 60);
-  const snapshotTimer = setInterval(broadcast, 50);
+  let previousTick=performance.now();
+  const snapshotTimer = setInterval(()=>{const scheduled=previousTick+50;previousTick=performance.now();broadcast(scheduled,true);}, 50);
   const heartbeatTimer = setInterval(() => {
     for (const socket of sockets.values()) socket.checkHeartbeat();
   }, heartbeatMs);
@@ -294,4 +327,17 @@ export function createGameServer({
   }
 
   return { server, close, rooms, monitor };
+}
+
+// Static-only process: no race timers, rooms, sockets, monitoring key or ops routes.
+export function createAssetServer({raceOrigin,publicRoot=root}={}){
+ if(!raceOrigin)throw new Error('Static-only mode requires RACE_ORIGIN');
+ const origin=validateOrigin(raceOrigin),serve=createStaticFileHandler({publicRoot,raceOrigin:origin});
+ const server=createServer((req,res)=>{
+  let path;try{path=new URL(req.url,'http://local').pathname;}catch{res.writeHead(400);res.end('Invalid request');return;}
+  if(path==='/monitor'||path==='/monitor/'){res.writeHead(302,{Location:origin+'/monitor','Cache-Control':'no-store'});res.end();return;}
+  if(path.startsWith('/ops/')||path.startsWith('/monitor/')){res.writeHead(404);res.end('Not found');return;}
+  return serve(req,res);
+ });
+ return {server,close:()=>new Promise((resolve,reject)=>{server.close(e=>e&&e.code!=='ERR_SERVER_NOT_RUNNING'?reject(e):resolve());server.closeAllConnections();})};
 }

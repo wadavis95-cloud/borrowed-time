@@ -1,3 +1,4 @@
+import {raceEndpoint} from './endpoints.js';
 // Fixed aggregate diagnostics only. No player IDs, names, URLs or error text leave the browser.
 import {METRIC_BINS,PEAK_METRICS} from './metric-schema.js';
 export {METRIC_BINS} from './metric-schema.js';
@@ -19,7 +20,7 @@ export function detectDevice(nav=globalThis.navigator){
 export function createTelemetry({request=globalThis.fetch,visible=()=>true,device=detectDevice(),now=Date.now}={}){
  let context={map:'tunnel',inputMode:'unknown',mode:'solo',device},report=makeReport(),enabled=false,loaded=false,sending=false;
  return {
-  async init(){try{const r=await request('/ops/config',{cache:'no-store',signal:AbortSignal.timeout(5000)});enabled=r.ok&&(await r.json()).enabled===true;}catch{}return enabled;},
+  async init(){try{const r=await request(globalThis.location?raceEndpoint('/ops/config'):'/ops/config',{cache:'no-store',signal:AbortSignal.timeout(5000)});enabled=r.ok&&(await r.json()).enabled===true;}catch{}return enabled;},
   get enabled(){return enabled;},
   context(map,inputMode,mode){if(context.map!==map||context.inputMode!==inputMode||context.mode!==mode){if(sending)report=makeReport();else void this.flush();context={map,inputMode,mode,device};}},
   observe(key,ms){if(enabled&&visible())addObservation(report,key,ms,now());},
@@ -29,7 +30,7 @@ export function createTelemetry({request=globalThis.fetch,visible=()=>true,devic
   async flush(){
    if(!enabled||sending||!Object.values(report).some(value=>Array.isArray(value)?value.some(n=>n>0):value>0))return;const current={...report,...context};report=makeReport();sending=true;
    // Failed samples are dropped; telemetry never retries into an outage.
-   try{await request('/ops/client',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(current),keepalive:true,signal:AbortSignal.timeout(5000)});}catch{}finally{sending=false;}
+   try{await request(globalThis.location?raceEndpoint('/ops/client'):'/ops/client',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(current),keepalive:true,signal:AbortSignal.timeout(5000)});}catch{}finally{sending=false;}
   },
  };
 }

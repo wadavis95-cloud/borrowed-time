@@ -19,7 +19,7 @@ export function createSnapshotEncoder() {
       const fingerprint=JSON.stringify(value);
       if(reset||fingerprints[section]!==fingerprint){updates[section]=value;fingerprints[section]=fingerprint;}
     }
-    return {type:'snapshot',wire:2,seq:++sequence,reset,serverTime,
+    return {...(snapshot.timing?{timing:snapshot.timing}:{}),type:'snapshot',wire:2,seq:++sequence,reset,serverTime,
       room:roomMotion,you:{inputSeq,game:gameMotion},
       players:players.map(({id,phase,lane,distance,jumpRemaining,jumpDuration})=>({id,phase,lane,distance,jumpRemaining,jumpDuration})),
       updates};
@@ -39,7 +39,7 @@ export function createSnapshotDecoder() {
       return {...roster.get(p.id),...p};
     });
     cache=next;sequence=packet.seq;
-    return {type:'snapshot',serverTime:packet.serverTime,room:{...next.room,...packet.room},
+    return {...(packet.timing?{timing:packet.timing}:{}),type:'snapshot',serverTime:packet.serverTime,room:{...next.room,...packet.room},
       you:{...next.you,...packet.you,game:{...packet.you.game,recentEvent:next.recentEvent}},
       players,debris:next.debris,standings:next.standings};
   };
