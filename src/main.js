@@ -7,6 +7,7 @@ import { MAPS, MAP_IDS, getMap } from './maps.js';
 import { createDemoRace } from './demo.js';
 import { createGameAudio } from './audio.js';
 import { createInputMode } from './input.js';
+import { loadClassicGraphics } from './loading.js';
 import { createRaceUI } from './race-ui.js';
 import { finishPresentation } from './race-presentation.js';
 import { createAbilityCoach } from './ability-coach.js';
@@ -17,7 +18,7 @@ const audio = createGameAudio();
 const abilityCoach = createAbilityCoach();
 const raceUI=createRaceUI({reducedMotion:window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   onCue:cue=>audio.cue(cue.kind,cue.value),
-  elements:{clock:$('time-value').closest('.clock-panel'),debit:$('clock-debit'),status:$('status-label'),trail:$('time-debit'),note:$('clock-feedback'),
+  elements:{card:document.querySelector('.intro-card'),clock:$('time-value').closest('.clock-panel'),debit:$('clock-debit'),status:$('status-label'),trail:$('time-debit'),note:$('clock-feedback'),
     boost:$('boost-button'),jump:$('long-jump-button'),go:$('race-go'),title:$('overlay-title'),overlay:$('screen-overlay'),finishMark:$('finish-mark'),finishBadge:$('finish-badge')}});
 let renderer = null, graphicsError = '', graphicsLoading = true;
 let graphicsProgress = 0;
@@ -95,10 +96,11 @@ async function prepareGraphics() {
     // Restore the last pre-Unity (V4) presentation as the normal game.
     // Keep the Unity study available only when explicitly requested.
     if (new URLSearchParams(location.search).get('graphics') !== 'unity') {
-      const [{ createRenderer }, { preloadAvatars }] = await Promise.all([
+      const createRenderer = await loadClassicGraphics(()=>Promise.all([
         import('./renderer.js'), import('./graphics/avatars.js'),
-      ]);
-      await preloadAvatars();
+      ]),progress=>{
+        graphicsProgress=Math.round(progress*100);updateOverlay();
+      });
       renderer = createRenderer(canvas);
     } else {
       renderer = await createUnityRenderer(canvas, { onProgress(progress) {
@@ -108,7 +110,7 @@ async function prepareGraphics() {
     }
   } catch (error) {
     console.error('Graphics initialization failed:', error);
-    graphicsError = 'The game graphics could not load. Check your connection and browser, then reload to try again.';
+    graphicsError = error?.message?.includes('taking too long') ? error.message : 'The game graphics could not load. Check your connection and browser, then reload to try again.';
   }
   graphicsLoading = false;
   updateHUD();
@@ -192,7 +194,9 @@ function joinRace(type) {
     onError(message, code) {
       if (generation !== connectionGeneration) return;
       if (['ACTION_UNAVAILABLE', 'RATE_LIMIT', 'NOT_RACING'].includes(code)) notify(message, 'warning');
-      else showNetworkError(message);
+      else if(!snapshot) {
+        returnToMenu();showNetworkError(message);$('join-code').focus();
+      } else showNetworkError(message);
     },
     onSnapshot(next) {
       if (generation !== connectionGeneration) return;
@@ -328,12 +332,15 @@ function overlay(kicker, title, description, button, disabled = false, hint = ''
   $('overlay-hint').textContent = hint;
   $('overlay-hint').hidden = !hint;
   $('overlay-kicker').hidden = !kicker;
+  if(!$('screen-overlay').hidden&&$('screen-overlay').dataset.stage!=='countdown')raceUI.screen([mode,game.phase,networkStatus,kicker].join(':'));
 }
 function updateOverlay() {
   const countdown=mode!=='solo'&&snapshot?.room.phase==='countdown'&&networkStatus==='open'&&!graphicsLoading&&!graphicsError;
   $('screen-overlay').dataset.stage=countdown?'countdown':['won','lost'].includes(game.phase)?'finish':'menu';
   $('screen-overlay').dataset.countdown=String(Math.max(1,Math.min(3,snapshot?.room.countdown||1)));
   $('start-lights').hidden=!countdown;
+  $('loading-progress').hidden=!graphicsLoading;
+  $('loading-progress').value=graphicsProgress;
   $('choose-map').hidden=mode!=='solo'||!['won','lost'].includes(game.phase)||Boolean(graphicsError);
   raceUI.result(graphicsLoading||graphicsError||networkStatus==='disconnected'?null:finishPresentation(game,snapshot,mode));
   const brief = !graphicsLoading && !graphicsError && (mode === 'solo' ? game.phase === 'ready'
@@ -378,7 +385,7 @@ function updateOverlay() {
   $('screen-overlay').hidden = game.phase === 'running';
   if (game.phase === 'ready') overlay(getMap(selectedMapId).name.toUpperCase(), 'Escape before zero.', 'Abilities cost seconds from your clock.', 'Play solo →', false, controlHint());
   else if (game.phase === 'paused') overlay('TAKE A BREATH', 'Time stands still.', '', 'Resume run →', false, 'Press P or ESC to resume');
-  else if (ended) { const result=finishPresentation(game,null,'solo');overlay(game.phase==='won'?'ESCAPE COMPLETE':'THE CLOCK RAN OUT',result.title,'','Race again →'); }
+  else if (ended) { const result=finishPresentation(game,null,'solo');overlay(game.phase==='won'?'ESCAPE COMPLETE':'THE CLOCK RAN OUT',result.title,result.detail,'Race again →'); }
 }
 function updateHUD() {
   updateMapPicker();
@@ -402,14 +409,15 @@ function updateHUD() {
   $('status-label').textContent = online && networkStatus === 'disconnected' ? 'OFFLINE' : ({ ready:'READY', running:'RUNNING', paused:'PAUSED', won:'ESCAPED', lost:'TIME OUT' })[game.phase];
   $('boost-button').disabled = !running || game.timeLeft <= ABILITIES.boost.cost || game.boostCooldown > 0;
   $('long-jump-button').disabled = !running || game.timeLeft <= ABILITIES.longJump.cost || game.jumpKind === 'long';
-  $('boost-button').classList.toggle('active', game.boostRemaining > 0);
-  $('long-jump-button').classList.toggle('active', game.jumpKind === 'long');
-  $('boost-button').classList.toggle('has-status', game.boostRemaining > 0 || game.boostCooldown > 0 || game.timeLeft <= ABILITIES.boost.cost);
-  $('long-jump-button').classList.toggle('has-status', game.jumpKind === 'long' || game.timeLeft <= ABILITIES.longJump.cost);
-  $('boost-description').textContent = game.boostRemaining > 0 ? `Boosting · ${Math.ceil(game.boostRemaining)}s left`
+  const showAbilityState=['running','paused'].includes(game.phase);
+  $('boost-button').classList.toggle('active', game.phase==='running' && game.boostRemaining > 0);
+  $('long-jump-button').classList.toggle('active', game.phase==='running' && game.jumpKind === 'long');
+  $('boost-button').classList.toggle('has-status', showAbilityState && (game.boostRemaining > 0 || game.boostCooldown > 0 || game.timeLeft <= ABILITIES.boost.cost));
+  $('long-jump-button').classList.toggle('has-status', showAbilityState && (game.jumpKind === 'long' || game.timeLeft <= ABILITIES.longJump.cost));
+  $('boost-description').textContent = !showAbilityState ? `${ABILITIES.boost.duration}s sprint` : game.boostRemaining > 0 ? `Boosting · ${Math.ceil(game.boostRemaining)}s left`
     : game.boostCooldown > 0 ? `Recharges in ${Math.ceil(game.boostCooldown)}s`
       : game.timeLeft <= ABILITIES.boost.cost ? 'Not enough time' : `${ABILITIES.boost.duration}s sprint`;
-  $('jump-description').textContent = game.jumpKind === 'long' ? 'Long jump active'
+  $('jump-description').textContent = !showAbilityState ? 'Clear barriers & gaps' : game.jumpKind === 'long' ? 'Long jump active'
     : game.timeLeft <= ABILITIES.longJump.cost ? 'Not enough time' : 'Clear barriers & gaps';
   const cue = abilityCoach.update(game, running);
   for (const [id, ability] of [['boost-button', 'boost'], ['long-jump-button', 'longJump']]) {

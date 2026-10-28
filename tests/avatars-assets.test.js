@@ -272,3 +272,13 @@ test('lane switches retain the forward run posture without sideways banking', as
   }
   straight.dispose();switching.dispose();
 });
+
+test('asset loading reports actual completion counts and cached readiness',async()=>{
+  const progress=[];
+  const library=createAvatarLibrary({loadAsset:readAsset});
+  await library.preloadAvatars(value=>progress.push(value));
+  assert.equal(progress[0],0);assert.equal(progress.at(-1),1);
+  assert.equal(progress.length,ALL_AVATAR_IDS.length+1);
+  assert.ok(progress.every((value,index)=>index===0||value>=progress[index-1]));
+  const cached=[];await library.preloadAvatars(value=>cached.push(value));assert.deepEqual(cached,[1]);
+});

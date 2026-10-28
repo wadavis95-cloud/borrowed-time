@@ -1,5 +1,14 @@
 # Changelog
 
+## 8.4.0-preview.1 — Local finish, transition and reliability polish
+
+- Preserved V8.3 and the visible self-label fix in a verified complete-history bundle; no push or deployment.
+- Added restrained card entrances and winner emphasis, consistent focus/touch states and honest asset-count loading progress.
+- Added six cosmetic rescue destinations beyond the finish, map-specific arrival copy and a bounded one-time local escape halo. Reduced motion disables optional effects.
+- A single 45-second deadline covers classic graphics imports and avatar preload; timeout/error offers Reload and late completion cannot create a renderer.
+- Failed initial room joins return to the menu/code field with the server error; ended races no longer show a frozen active ability glow.
+- Retained authoritative gameplay, courses, controls, prices and camera. See [V8.4 notes](docs/versions/V8_4_FINISH_RELIABILITY.md).
+
 ## 8.3.0-preview.1 — Local audio and atmosphere polish
 
 - Preserved V8.2 in a verified complete-history backup; no push or deployment.

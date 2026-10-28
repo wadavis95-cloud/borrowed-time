@@ -26,12 +26,20 @@ export function createAvatarLibrary({ loadAsset } = {}) {
   let assets = null;
   let pending = null;
 
-  function preloadAvatars() {
-    if (assets) return Promise.resolve();
+  const observers=new Set();let completed=0,attempt=0;
+  function report(callback,value){try{callback(value);}catch{/* UI progress cannot invalidate an asset. */}}
+  function preloadAvatars(onProgress=()=>{}) {
+    if (assets) {report(onProgress,1);return Promise.resolve();}
+    observers.add(onProgress);report(onProgress,completed/IDS.length);
     if (pending) return pending;
-    pending = Promise.all(IDS.map(async (id) => [id, validateAsset(await load(id), id)]))
-      .then((entries) => { assets = new Map(entries); })
-      .catch((error) => { pending = null; throw error; });
+    completed=0;const current=++attempt;
+    pending = Promise.all(IDS.map(async (id) => {
+      const asset=validateAsset(await load(id),id);
+      if(current===attempt){completed++;for(const callback of observers)report(callback,completed/IDS.length);}
+      return [id,asset];
+    }))
+      .then((entries) => { assets = new Map(entries);observers.clear(); })
+      .catch((error) => { attempt++;completed=0;observers.clear();pending = null;throw error; });
     return pending;
   }
 

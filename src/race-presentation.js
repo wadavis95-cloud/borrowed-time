@@ -1,4 +1,5 @@
 // Observes confirmed game/room state. Never advances a race or spends time.
+import { ESCAPE_DESTINATIONS } from './finish-destinations.js';
 import { ABILITIES } from './game.js';
 const finite=value=>Number.isFinite(value)?value:0;
 export function createRacePresentation() {
@@ -52,5 +53,5 @@ export function finishPresentation(game,snapshot,mode='solo') {
   }
   return {kind,title,waiting,mark:kind==='winner'?'1':escaped?'✓':'×',
     badge:mode==='demo'?(finished?'RACE COMPLETE':'RUN COMPLETE'):(escaped?'ESCAPED'+position:'DID NOT ESCAPE'),
-    detail:waiting?'Waiting for the remaining racers.':!escaped&&winner&&mode!=='demo'?`${winner.name} won the race.`:''};
+    detail:waiting?'Waiting for the remaining racers.':!escaped&&winner&&mode!=='demo'?`${winner.name} won the race.`:escaped?(ESCAPE_DESTINATIONS[game.mapId]||ESCAPE_DESTINATIONS.tunnel).arrival:''};
 }

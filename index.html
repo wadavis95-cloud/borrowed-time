@@ -14,7 +14,7 @@
   <div class="app">
     <header class="site-header">
       <a class="brand" href="/" aria-label="Borrowed Time home"><img src="/favicon.svg" alt="" width="30" height="30"><span>BORROWED <span class="brand-light">TIME</span></span></a>
-      <div class="header-actions"><span class="version">V8.3 · LOCAL</span><button id="sound-button" class="quiet-button" aria-pressed="false">Sound off</button><button id="guide-button" class="quiet-button">How to play ↗</button></div>
+      <div class="header-actions"><span class="version">V8.4 · LOCAL</span><button id="sound-button" class="quiet-button" aria-pressed="false">Sound off</button><button id="guide-button" class="quiet-button">How to play ↗</button></div>
     </header>
     <main>
       <div class="page-heading" id="page-heading"><div><h1>Race the clock.</h1></div><button id="demo-button" class="demo-button" disabled><span aria-hidden="true">▷</span> Watch demo</button></div>
@@ -50,6 +50,7 @@
               <span id="overlay-kicker" class="eyebrow">INTO THE LIGHT</span>
               <div id="start-lights" class="start-lights" aria-hidden="true" hidden><i></i><i></i><i></i></div>
               <h2 id="overlay-title" aria-live="polite" aria-atomic="true">Preparing your escape.</h2>
+              <progress id="loading-progress" class="loading-progress" max="100" value="0" aria-label="Loading characters"></progress>
               <p id="overlay-description">Loading the runners and tunnel…</p>
               <p id="finish-badge" class="finish-badge" hidden></p>
               <div id="results-standings-slot"></div>

@@ -1,5 +1,7 @@
 # Borrowed Time · V8 six-map release
 
+**V8.4 local playtest:** smoother screen entrances, six rescue destinations, clearer finish messages, consistent touch/focus states and loading/join recovery are ready at http://localhost:4173/. Prices/gameplay stay unchanged. [Finish and reliability notes](docs/versions/V8_4_FINISH_RELIABILITY.md). Local only; public V8 is unchanged.
+
 **V8.3 local playtest:** map-specific surface sounds, nearby hazard cues, a quiet original musical pattern, moving sails/foliage and restrained edge atmosphere are ready at http://localhost:4173/. Click **Sound off** to enable audio. Rules/prices stay unchanged; nothing pushed or deployed. [Audio and atmosphere notes](docs/versions/V8_3_AUDIO_ATMOSPHERE.md).
 
 **V8.2 local playtest:** confirmed ability spending now shows a brief clock debit and cost segment; multiplayer gets clearer countdown lights and GO, and results distinguish winning, escaping and timing out. Ready at http://localhost:4173/. Gameplay and prices remain unchanged; public V8 is unchanged. [Local feedback notes](docs/versions/V8_2_CLOCK_START_FINISH.md).

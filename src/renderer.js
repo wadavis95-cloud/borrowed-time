@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { getMap } from './maps.js';
 import { createAtmosphere } from './graphics/atmosphere.js';
+import { createFinish } from './graphics/finish.js';
 import { createWorld } from './graphics/worlds.js';
 import { createMapObstacle } from './graphics/map-obstacles.js';
 import { CONFIG, getJumpHeight } from './game.js';
@@ -118,6 +119,7 @@ export function createRenderer(canvas) {
   let currentMapId = 'tunnel';
   let world = createWorld(scene, currentMapId, CONFIG.courseLength);
   let atmosphere = createAtmosphere(scene,currentMapId);
+  let finish = createFinish(scene,currentMapId,CONFIG.courseLength);
 
   const hazardSurface = masonrySurface();
   const stone = new THREE.MeshStandardMaterial({ color: '#b6b8a6', ...hazardSurface, bumpScale: .045, roughness: .9 });
@@ -271,9 +273,10 @@ export function createRenderer(canvas) {
     if (state.phase === 'paused' && hasDrawn) { renderer.render(scene, camera); return; }
     const mapId = getMap(state.mapId).id;
     if (mapId !== currentMapId) {
-      reset(); world.dispose(); atmosphere.dispose(); currentMapId = mapId;
+      reset(); world.dispose(); atmosphere.dispose(); finish.dispose(); currentMapId = mapId;
       world = createWorld(scene, currentMapId, CONFIG.courseLength);
       atmosphere = createAtmosphere(scene,currentMapId);
+      finish = createFinish(scene,currentMapId,CONFIG.courseLength);
     }
     const distance = state.distance || 0;
     // Hazards, dust and actors freeze with solo pause. The online view provides
@@ -301,6 +304,7 @@ export function createRenderer(canvas) {
     } else scene.fog.near = 36;
     world.update(distance, elapsed, reducedMotion, state.debris || []);
     atmosphere.update(distance,elapsed,reducedMotion);
+    finish.update(state,dt,reducedMotion);
 
     const avatarKey = `${state.avatarId || 'courier'}:${state.playerColor || ''}`;
     if (localAvatarKey !== avatarKey) {
@@ -442,7 +446,7 @@ export function createRenderer(canvas) {
     group.clear();
   }
   function reset() {
-    motion.reset(); movementEffects.reset(); hasDrawn = false; boostTrails.visible = false;
+    motion.reset(); movementEffects.reset(); finish.reset(); hasDrawn = false; boostTrails.visible = false;
     localAvatar?.reset(); localAvatar?.group.position.set(0, 0, 0);
     contactShadow.position.x = 0; contactShadow.scale.setScalar(1); shadowMaterial.opacity = .63;
     camera.position.set(0, 3.45, camera.aspect < .9 ? 9.3 : 7.3);
@@ -458,7 +462,7 @@ export function createRenderer(canvas) {
   }
   function dispose() {
     if (disposed) return;
-    disposed = true; movementEffects.dispose(); world.dispose(); atmosphere.dispose(); resizeObserver.disconnect(); canvas.removeEventListener('webglcontextlost', onContextLost);
+    disposed = true; movementEffects.dispose(); world.dispose(); atmosphere.dispose(); finish.dispose(); resizeObserver.disconnect(); canvas.removeEventListener('webglcontextlost', onContextLost);
     // GLB geometry belongs to the reusable preload cache. Detach avatar clones
     // before disposing scene-owned graphics; each clone disposes its own materials.
     if (localAvatar) { scene.remove(localAvatar.group); localAvatar.dispose(); localAvatar = null; }

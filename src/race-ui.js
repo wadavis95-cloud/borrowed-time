@@ -3,7 +3,7 @@ import { createRacePresentation } from './race-presentation.js';
 import { CONFIG } from './game.js';
 export function createRaceUI({elements:el,reducedMotion=false,onCue=()=>{}}) {
   const controller=createRacePresentation(),animations=new Map();
-  let debitId=0,goVisible=false,resultKey='';
+  let debitId=0,goVisible=false,resultKey='',screenKey='';
   function animate(node,keyframes,duration) {
     animations.get(node)?.cancel();animations.delete(node);
     if(reducedMotion||!node.animate)return;
@@ -50,12 +50,17 @@ export function createRaceUI({elements:el,reducedMotion=false,onCue=()=>{}}) {
     if(resultKey!==key)animate(el.finishMark,[{opacity:0,transform:'translateY(7px) scale(.88)'},{opacity:1,transform:'translateY(0) scale(1)'}],320);
     resultKey=key;
   }
+  function screen(key) {
+    if(key===screenKey)return;
+    screenKey=key;
+    if(el.card)animate(el.card,[{opacity:.45,transform:'translateY(5px)'},{opacity:1,transform:'translateY(0)'}],180);
+  }
   function reset() {
     controller.reset();for(const animation of animations.values())animation.cancel();animations.clear();
-    debitId=0;goVisible=false;resultKey='';
+    debitId=0;goVisible=false;resultKey='';screenKey='';
     el.clock.classList.remove('spent');el.debit.hidden=el.trail.hidden=el.go.hidden=true;el.status.hidden=false;el.note.textContent='';
     result(null);
   }
   reset();
-  return {update,result,reset,startSolo:()=>controller.startSolo()};
+  return {update,result,screen,reset,startSolo:()=>controller.startSolo()};
 }

@@ -1402,3 +1402,21 @@ html[data-input="keyboard"] .game-footer { justify-content:space-between }
 .standing-name { display:flex; align-items:baseline; min-width:0; }
 .standing-role { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .standing-you { flex:none; white-space:pre; color:#fff; font-weight:800; }
+
+/* Final UI consistency: immediate controls, restrained transitions, clear focus. */
+button { touch-action:manipulation; }
+button:not(:disabled):active { filter:brightness(.94); }
+.quiet-button,.room-button,.primary-button,.demo-button { min-height:44px; }
+button:focus-visible,input:focus-visible { outline:3px solid #ffe0a0;outline-offset:3px; }
+.loading-progress { display:block;width:min(240px,100%);height:6px;margin:12px auto;accent-color:#eec88e;border:0;border-radius:6px;overflow:hidden; }
+.loading-progress::-webkit-progress-bar { background:#314548; }
+.loading-progress::-webkit-progress-value { background:#eec88e;transition:width .15s; }
+.screen-overlay[data-result="winner"] .intro-card { border-color:#e8c57f;box-shadow:0 0 30px #edcb7b24; }
+.screen-overlay[data-result="winner"] .finish-mark { box-shadow:0 0 0 6px #eac47d18,0 0 22px #eac47d33; }
+@media(prefers-reduced-motion:no-preference) {
+  .screen-overlay[data-result="winner"] .finish-mark::after { content:'✦';position:absolute;color:#ffe5aa;font-size:17px;transform:translate(30px,-10px);animation:winner-spark .9s ease-out both;pointer-events:none; }
+  @keyframes winner-spark { from { opacity:0;transform:translate(20px,0) scale(.5); } 40% { opacity:1; } to { opacity:0;transform:translate(38px,-18px) scale(1.1); } }
+}
+@media(max-height:480px) and (orientation:landscape) {
+ .screen-overlay[data-stage="finish"] #overlay-description { font-size:11px;margin:2px 0 5px; }
+}
