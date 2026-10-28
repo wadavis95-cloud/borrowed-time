@@ -439,6 +439,7 @@ function updateOverlay() {
   else if (ended) { const result=finishPresentation(game,currentRaceSnapshot(),'solo');overlay(game.phase==='won'?result.kind==='winner'?'RACE WON':'ESCAPE COMPLETE':'THE CLOCK RAN OUT',result.title,result.detail,'Race again →'); }
 }
 function updateHUD() {
+  updateSoundButton();
   updateMapPicker();
   updateCharacterPicker();
   $('guide-hazard').textContent = getMap(game.mapId).warning;
@@ -511,7 +512,8 @@ function updateSoundButton() {
   const button=$('sound-button');
   button.setAttribute('aria-pressed',String(audio.enabled));
   button.setAttribute('aria-label',audio.enabled?'Mute sound':'Enable sound');
-  button.title=audio.enabled?'Sound on — mute':'Sound muted — enable';
+  const title=audio.enabled?(audio.musicTrack?`Sound on · ${audio.musicTrack.title} — mute`:'Sound on — mute'):'Sound muted — enable';
+  if(button.title!==title)button.title=title;
 }
 async function unlockSound(event) {
   if(event.target.closest?.('#sound-button'))return;

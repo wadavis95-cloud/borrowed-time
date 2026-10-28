@@ -1,0 +1,74 @@
+[
+  {
+    "mapId": "tunnel",
+    "title": "Outrunners",
+    "source": "https://opengameart.org/content/outrunners",
+    "download": "https://opengameart.org/sites/default/files/outrunners.mp3",
+    "license": "CC0",
+    "original": "artifacts/music-source/tunnel.mp3",
+    "bytes": 1441371,
+    "artist": "OOG37 / Two Litre Falls Music",
+    "local": "assets/music/tunnel.mp3",
+    "sha256": "4cca927c697c36aaae642cfb4c76622aff6aaa7739993ba3291142215cae54b7"
+  },
+  {
+    "mapId": "pirate",
+    "title": "Pirate Indenture",
+    "source": "https://opengameart.org/content/pirate-indenture",
+    "download": "https://opengameart.org/sites/default/files/pirate_indenture_loop.wav",
+    "license": "CC0",
+    "original": "artifacts/music-source/pirate.wav",
+    "bytes": 232846,
+    "artist": "Eldritch Grim",
+    "local": "assets/music/pirate.mp3",
+    "sha256": "764e0af158a2a3f55b386f62431464359e408a6701d151f34463d47a358d5880"
+  },
+  {
+    "mapId": "jungle",
+    "title": "Bamboo Blitz",
+    "source": "https://opengameart.org/content/bamboo-blitz",
+    "download": "https://opengameart.org/sites/default/files/bamboo_blitz.flac",
+    "license": "CC0",
+    "original": "artifacts/music-source/jungle.flac",
+    "bytes": 1229678,
+    "artist": "Tsorthan Grove",
+    "local": "assets/music/jungle.mp3",
+    "sha256": "22cb1d5de0b335c7ed734f29187bb7e55f73304de52da0461974906b48d94ee3"
+  },
+  {
+    "mapId": "frozen",
+    "title": "Black Diamond",
+    "source": "https://opengameart.org/content/black-diamond",
+    "download": "https://opengameart.org/sites/default/files/Black%20Diamond.mp3",
+    "license": "CC0",
+    "original": "artifacts/music-source/frozen.mp3",
+    "bytes": 1441448,
+    "artist": "Joth",
+    "local": "assets/music/frozen.mp3",
+    "sha256": "4b07d602f4b7ed28fedafc41cecf9e4540ab9ac994eff406c08d5625b48415d0"
+  },
+  {
+    "mapId": "orbital",
+    "title": "Singularity",
+    "source": "https://opengameart.org/content/singularity-0",
+    "download": "https://opengameart.org/sites/default/files/singularity_action_0.mp3",
+    "license": "CC0",
+    "original": "artifacts/music-source/orbital.mp3",
+    "bytes": 1441228,
+    "artist": "vitalezzz",
+    "local": "assets/music/orbital.mp3",
+    "sha256": "1bcc9810fd790444fd430f940c42450502237c0cd6e87b2a5698a0a510fbe6ff"
+  },
+  {
+    "mapId": "desert",
+    "title": "Desert Loop",
+    "source": "https://opengameart.org/content/desert-loop",
+    "download": "https://opengameart.org/sites/default/files/desert_loop_0.mp3",
+    "license": "CC0",
+    "original": "artifacts/music-source/desert.mp3",
+    "bytes": 1024930,
+    "artist": "iamoneabe",
+    "local": "assets/music/desert.mp3",
+    "sha256": "938a87467769d405f1e38b858539206ea077efc3377588b7e7ea737991f90b16"
+  }
+]

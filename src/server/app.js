@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { resolve, extname } from 'node:path';
 import { WebSocket, WebSocketServer } from 'ws';
+import {MUSIC_TRACKS} from '../music.js';
 import { MAP_IDS } from '../maps.js';
 import { ALL_AVATAR_IDS } from '../avatars.js';
 import { createRoomManager } from './rooms.js';
@@ -13,10 +14,12 @@ const root = fileURLToPath(new URL('../../', import.meta.url));
 const types = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml; charset=utf-8',
+  '.mp3': 'audio/mpeg', '.txt': 'text/plain; charset=utf-8',
   '.glb': 'model/gltf-binary', '.wasm': 'application/wasm', '.data': 'application/octet-stream',
 };
 // This allowlist keeps server code, repository files, and secrets off HTTP.
 const publicFiles = new Set([
+  '/src/music.js', '/assets/music/CREDITS.txt', ...Object.values(MUSIC_TRACKS).map(track=>track.src),
   '/index.html', '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js',
   '/src/renderer.js', '/src/network.js', '/src/movement-feedback.js', '/src/race-presentation.js', '/src/race-ui.js', '/src/loading.js', '/src/finish-destinations.js', '/src/graphics/finish.js', '/src/graphics/readability.js', '/src/graphics/motion-effects.js', '/src/maps.js', '/src/graphics/worlds.js', '/src/graphics/map-obstacles.js',
   ...MAP_IDS.map(id => `/assets/maps/${id}.svg`),

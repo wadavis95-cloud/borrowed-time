@@ -1,5 +1,12 @@
 # Changelog
 
+## 8.9.0-preview.1 — Local recorded-music playtest
+
+- Added the six selected CC0 tracks with source/artist credits and normalized local MP3 clips.
+- Replaced generated background notes; load only the active map, retain one decoded track, and prevent late downloads from playing after mute/map changes.
+- Keep local clock/ability feedback, duck music during abilities and low time, and stop it on pause, hidden tabs and race end.
+- No gameplay changes, deployment or competition submission.
+
 ## 8.8.0-preview.1 — Local forward-leap playtest
 
 - Preserved V8.7 in a verified complete-history bundle; no push, deployment or submission.

@@ -32,15 +32,3 @@ test('clock ticks accelerate from one second toward a quarter second using only 
  assert.ok(interval(15)<interval(30));assert.ok(interval(5)<interval(15));
  assert.ok(interval(0)>=.2&&interval(0)<.3);
 });
-
-test('each map supplies a distinct restrained background sound palette',()=>{
- const scene=createAudioScene(),palettes=[];
- for(const mapId of Object.keys(AUDIO_SURFACES)){
-  const direction=scene.update({mapId,phase:'running',distance:0,elapsed:0,timeLeft:60});
-  assert.ok(direction.background.notes.length>=4);
-  assert.ok(direction.background.noteEvery>=.8);
-  assert.ok(direction.background.notes.every(n=>Number.isFinite(n)&&n>0));
-  palettes.push(JSON.stringify(direction.background));
- }
- assert.equal(new Set(palettes).size,6);
-});

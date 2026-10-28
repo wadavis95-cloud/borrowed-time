@@ -1,3 +1,4 @@
+import {createMusicPlayer} from './music.js';
 import { createAudioScene } from './audio-scene.js';
 // Local-runner feedback. AudioContext is created/resumed only by unlock()/toggle(),
 // which the caller must invoke from a user gesture. No sounds or assets load on import.
@@ -7,11 +8,11 @@ const finite = (value) => Number.isFinite(value) ? value : 0;
 const clock = () => globalThis.performance?.now() ?? Date.now();
 
 export function createGameAudio({enabledByDefault=false}={}) {
-  let context = null, master = null, noiseBuffer = null;
+  let context = null, master = null, noiseBuffer = null, music = null;
   let requested = enabledByDefault, disposed = false, toggleSequence = 0, previous = null;
   const voices = new Set();
   const scene = createAudioScene();
-  let nextBeat=0,tickIndex=0,nextBed=0,nextNote=0,noteIndex=0;
+  let nextBeat=0,tickIndex=0;
   const page = globalThis.document;
 
   function stopVoices() {
@@ -23,7 +24,7 @@ export function createGameAudio({enabledByDefault=false}={}) {
 
   function reset() {
     previous = null;
-    scene.reset();nextBeat=tickIndex=nextBed=nextNote=noteIndex=0;
+    scene.reset();nextBeat=tickIndex=0;music?.reset();
     stopVoices();
   }
 
@@ -41,6 +42,8 @@ export function createGameAudio({enabledByDefault=false}={}) {
       context = nextContext;
       master = nextMaster;
       noiseBuffer = nextNoise;
+      music?.dispose();
+      if(context.decodeAudioData)music=createMusicPlayer(context);
     } catch (error) {
       void nextContext.close().catch(() => {});
       throw error;
@@ -132,27 +135,6 @@ export function createGameAudio({enabledByDefault=false}={}) {
     nextBeat=now+direction.beatSeconds;
   }
 
-  function background(direction,state) {
-    const theme=direction.background,now=context.currentTime;
-    // Leave clock and local action feedback in front. This never reads opponents.
-    const focus=(state.boost>0||state.jump>0)?.45:1;
-    const gain=(.8-direction.urgency*.4)*focus;
-    if(now>=nextBed) {
-      play({noise:true,frequency:theme.air,endFrequency:theme.air*.8,filter:theme.filter,duration:2,gain:.027*gain,attack:.45});
-      if(theme.hum)play({frequency:theme.hum,endFrequency:theme.hum*1.005,duration:2,gain:.021*gain,attack:.4});
-      // Occasional wooden creaks underneath the original ship motif.
-      if(direction.mapId==='pirate'&&noteIndex%3===0)play({frequency:180,endFrequency:110,duration:.35,gain:.015*gain,wave:'triangle',attack:.09});
-      nextBed=now+1.6;
-    }
-    if(now>=nextNote) {
-      const frequency=theme.notes[noteIndex++%theme.notes.length];
-      play({frequency,duration:theme.noteLength,gain:.045*gain,wave:theme.wave,attack:direction.mapId==='jungle'?.004:.025});
-      if(direction.mapId==='tunnel')play({frequency,duration:.28,gain:.012*gain,delay:.22,attack:.04});
-      if(direction.mapId==='jungle')play({frequency:72,endFrequency:39,duration:.12,gain:.033*gain});
-      nextNote=now+theme.noteEvery;
-    }
-  }
-
   function cue(kind,value) {
     if(disposed||!requested||context?.state!=='running'||page?.hidden)return false;
     if(kind==='countdown') {
@@ -180,6 +162,9 @@ export function createGameAudio({enabledByDefault=false}={}) {
     };
     const before = previous;
     previous = next;
+    void music?.update({mapId:state.mapId,elapsed:next.elapsed,
+      playing:requested&&context?.state==='running'&&next.phase==='running',
+      duck:next.boost>0||next.jump>0,urgency:direction.urgency});
     if (!requested || context?.state !== 'running') return;
     if (!before) return; // Enabling sound or a new snapshot begins silently.
 
@@ -187,7 +172,7 @@ export function createGameAudio({enabledByDefault=false}={}) {
     const discontinuity = next.mapId !== before.mapId || next.elapsed < before.elapsed - .001
       || next.distance < before.distance - .01 || next.hits < before.hits
       || next.elapsed - before.elapsed > .5 || now - before.now > 500;
-    if (discontinuity) { stopVoices(); nextBeat=nextBed=nextNote=0;noteIndex=0;return; }
+    if (discontinuity) { stopVoices(); nextBeat=0;music?.reset();return; }
     if (next.phase === 'won') {
       if (before.phase === 'running') { stopVoices(); escape(); }
       return;
@@ -202,9 +187,9 @@ export function createGameAudio({enabledByDefault=false}={}) {
       if(before.phase!==next.phase||next.phase==='paused')stopVoices();
       return;
     }
-    if (before.phase !== 'running') { nextBeat=nextBed=nextNote=0;noteIndex=0;return; }
+    if (before.phase !== 'running') { nextBeat=0;return; }
     clockTick(direction);
-    background(direction,next);
+
 
     const hit = next.hits > before.hits;
     const launched = next.jump > 0 && (before.jump <= 0
@@ -272,10 +257,11 @@ export function createGameAudio({enabledByDefault=false}={}) {
     toggleSequence++;
     reset();
     page?.removeEventListener('visibilitychange', onVisibilityChange);
+    music?.dispose();music=null;
     master?.disconnect();
     noiseBuffer = null;
     if (context && context.state !== 'closed') void context.close().catch(() => {});
   }
 
-  return { toggle, unlock, update, cue, reset, dispose, get enabled() { return requested; } };
+  return { toggle, unlock, update, cue, reset, dispose, get enabled() { return requested; }, get musicTrack(){return music?.track??null;} };
 }

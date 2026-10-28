@@ -1,0 +1,41 @@
+Borrowed Time — local music playtest
+All six source pages identify the selected recordings as CC0 1.0.
+License: https://creativecommons.org/publicdomain/zero/1.0/
+Artists credited below; no endorsement implied.
+Edits: first up to 90 seconds, normalized loudness, MP3 conversion; ship uses the authored loop.
+
+tunnel: Outrunners
+OOG37 / Two Litre Falls Music
+https://opengameart.org/content/outrunners
+https://opengameart.org/sites/default/files/outrunners.mp3
+CC0 1.0
+
+pirate: Pirate Indenture
+Eldritch Grim
+https://opengameart.org/content/pirate-indenture
+https://opengameart.org/sites/default/files/pirate_indenture_loop.wav
+CC0 1.0
+
+jungle: Bamboo Blitz
+Tsorthan Grove
+https://opengameart.org/content/bamboo-blitz
+https://opengameart.org/sites/default/files/bamboo_blitz.flac
+CC0 1.0
+
+frozen: Black Diamond
+Joth
+https://opengameart.org/content/black-diamond
+https://opengameart.org/sites/default/files/Black%20Diamond.mp3
+CC0 1.0
+
+orbital: Singularity
+vitalezzz
+https://opengameart.org/content/singularity-0
+https://opengameart.org/sites/default/files/singularity_action_0.mp3
+CC0 1.0
+
+desert: Desert Loop
+iamoneabe
+https://opengameart.org/content/desert-loop
+https://opengameart.org/sites/default/files/desert_loop_0.mp3
+CC0 1.0

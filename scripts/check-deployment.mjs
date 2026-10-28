@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { WebSocket } from 'ws';
+import {MUSIC_TRACKS} from '../src/music.js';
 import { MAP_IDS } from '../src/maps.js';
 import { ALL_AVATAR_IDS } from '../src/avatars.js';
 import { ABILITIES } from '../src/game.js';
@@ -8,6 +9,7 @@ import { ABILITIES } from '../src/game.js';
 // the real transport, then removes the room. No browser or extra dependencies.
 const USAGE = 'Usage: node scripts/check-deployment.mjs https://your-game.onrender.com';
 const ASSETS = [
+  '/src/music.js', '/assets/music/CREDITS.txt', ...Object.values(MUSIC_TRACKS).map(track=>track.src),
   '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js', '/src/maps.js',
   '/src/graphics/worlds.js', '/src/graphics/map-obstacles.js', '/src/movement-feedback.js', '/src/race-presentation.js', '/src/race-ui.js', '/src/loading.js', '/src/finish-destinations.js', '/src/graphics/finish.js', '/src/graphics/readability.js', '/src/graphics/motion-effects.js',
   ...MAP_IDS.map(id => `/assets/maps/${id}.svg`),
@@ -192,7 +194,7 @@ async function main() {
     await Promise.all(ASSETS.slice(index, index + 4).map(async path => {
       const asset = await request(target, path, { method: 'HEAD' });
       const type = asset.headers.get('content-type') ?? '';
-      const expected = path.endsWith('.glb') ? 'model/gltf-binary' : path.endsWith('.js') ? 'text/javascript' : path.endsWith('.html') ? 'text/html' : path.endsWith('.css') ? 'text/css' : 'image/svg+xml';
+      const expected = path.endsWith('.mp3') ? 'audio/mpeg' : path.endsWith('.txt') ? 'text/plain' : path.endsWith('.glb') ? 'model/gltf-binary' : path.endsWith('.js') ? 'text/javascript' : path.endsWith('.html') ? 'text/html' : path.endsWith('.css') ? 'text/css' : 'image/svg+xml';
       assert.ok(type.includes(expected), `${path} has the wrong content type; check the public asset route.`);
     }));
   }

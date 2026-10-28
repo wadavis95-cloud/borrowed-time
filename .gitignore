@@ -13,3 +13,6 @@ unity/Builds/
 
 # Local safety snapshots
 backups/
+
+# Original music downloads and source-page snapshots; edited playtest clips live in assets/music.
+artifacts/music-source/

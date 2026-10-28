@@ -40,7 +40,7 @@ test('local feedback and clock voices stay bounded and stop on pause, hide, mute
     await audio.toggle();audio.update(state);
     audio.update({...state,elapsed:.01,distance:1}); // establishes the first clock tick
     const ticking=sources.length;
-    assert.ok(ticking>=4,'a running race starts a quiet background layer alongside its clock');
+    assert.ok(ticking>=2,'the local clock starts during a run');
     const debris=[{id:'other-lane',lane:0,z:40,warnAt:.015,impactAt:.025}];
     audio.update({...state,elapsed:.02,distance:10,debris});
     audio.update({...state,elapsed:.03,distance:20,debris});
