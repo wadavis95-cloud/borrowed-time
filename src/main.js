@@ -7,6 +7,7 @@ import { MAPS, MAP_IDS, getMap } from './maps.js';
 import { createSessionScores } from './session-scores.js';
 import { createSoloRace } from './solo-race.js';
 import { createDemoRace } from './demo.js';
+import {MUSIC_TRACKS} from './music.js';
 import { createGameAudio } from './audio.js';
 import { createInputMode } from './input.js';
 import { loadClassicGraphics } from './loading.js';
@@ -27,7 +28,7 @@ let graphicsProgress = 0;
 const graphicsMessage = '3D graphics are unavailable. Try an up-to-date browser with graphics acceleration enabled, then reload.';
 let selectedMapId = 'tunnel';
 let game = createGame({ mapId: selectedMapId });
-let mapPickerKey = '';
+let mapPickerKey = '',musicCreditMap='';
 let soloSeed = 42;
 let mode = 'solo';
 let soloRace = null;
@@ -438,7 +439,18 @@ function updateOverlay() {
   else if (game.phase === 'paused') overlay('TAKE A BREATH', 'Time stands still.', '', 'Resume run →', false, 'Press P or ESC to resume');
   else if (ended) { const result=finishPresentation(game,currentRaceSnapshot(),'solo');overlay(game.phase==='won'?result.kind==='winner'?'RACE WON':'ESCAPE COMPLETE':'THE CLOCK RAN OUT',result.title,result.detail,'Race again →'); }
 }
+function updateMusicCredit(){
+  const map=getMap(game.mapId);
+  if(musicCreditMap===map.id)return;
+  musicCreditMap=map.id;
+  const track=MUSIC_TRACKS[map.id];
+  $('music-credit-heading').textContent=`Music credit · ${map.name}`;
+  $('music-credit-track').textContent=track.title;
+  $('music-credit-track').href=track.source;
+  $('music-credit-artist').textContent=track.artist;
+}
 function updateHUD() {
+  updateMusicCredit();
   updateSoundButton();
   updateMapPicker();
   updateCharacterPicker();
