@@ -1,7 +1,7 @@
 // Frozen, orbital and desert presentation. Gameplay is the same seeded race.
 import * as THREE from 'three';
 import { DISTANCE_SCALE, radialTexture } from './tunnel.js';
-import { batchWorldGeometry, release } from './world-utils.js';
+import { batchWorldGeometry, release, surfaceRelief } from './world-utils.js';
 import { getMap } from '../maps.js';
 
 export function createExpansionWorld(scene, mapId, courseLength) {
@@ -9,7 +9,8 @@ export function createExpansionWorld(scene, mapId, courseLength) {
   const root=new THREE.Group();root.name=`world-${mapId}`;scene.add(root);
   const track=new THREE.Group(), backdrop=new THREE.Group();root.add(track,backdrop);
   const sections=[], moving=[], length=courseLength*DISTANCE_SCALE;
-  const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.82,...extra});
+  const terrainRelief=surfaceRelief(orbital?'metal':frozen?'snow':'stone');
+  const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.82,...terrainRelief,...extra});
   const ground=material(frozen?'#d7e9ed':orbital?'#35465e':'#d4a56c');
   const edge=material(frozen?'#80bbd0':orbital?'#bac8d5':'#a5633e');
   const dark=material(frozen?'#4d7185':orbital?'#202c42':'#8c543c');
@@ -19,7 +20,19 @@ export function createExpansionWorld(scene, mapId, courseLength) {
   const glow=material(orbital?'#8ae3f5':'#e6c67c',{emissive:orbital?'#39b9e8':'#7c562b',emissiveIntensity:orbital?1.4:.2,toneMapped:false});
   const mesh=(group,geometry,mat,x,y,z,sx=1,sy=1,sz=1)=>{const v=new THREE.Mesh(geometry,mat);v.position.set(x,y,z);v.scale.set(sx,sy,sz);group.add(v);return v;};
   const box=(g,m,x,y,z,w,h,d)=>mesh(g,new THREE.BoxGeometry(w,h,d),m,x,y,z);
-  const rockMesh=(g,m,x,y,z,w,h,d)=>{const v=mesh(g,new THREE.DodecahedronGeometry(1,0),m,x,y,z,w,h,d);v.rotation.y=x*.27+z*.11;return v;};
+  const rockMesh=(g,m,x,y,z,w,h,d)=>{
+    const geometry=new THREE.DodecahedronGeometry(1,1);
+    if(!(frozen&&m===light)) {
+      const p=geometry.attributes.position;
+      for(let i=0;i<p.count;i++) {
+        const a=p.getX(i),b=p.getY(i),c=p.getZ(i);
+        const fracture=1+.065*Math.sin(a*13+b*9+c*7)+.035*Math.cos(c*17-a*11);
+        p.setXYZ(i,a*fracture,b*fracture,c*fracture);
+      }
+      geometry.computeVertexNormals();
+    }
+    const v=mesh(g,geometry,m,x,y,z,w,h,d);v.rotation.y=x*.27+z*.11;return v;
+  };
   const cylinder=(g,m,x,y,z,r,h)=>mesh(g,new THREE.CylinderGeometry(r*.8,r,h,8),m,x,y,z);
 
   // A painted gradient remains behind the landmark and doesn't scroll with play.
@@ -99,6 +112,48 @@ export function createExpansionWorld(scene, mapId, courseLength) {
           rockMesh(g,light,side*14,-1,z-10,10,1.7,13);
           if(i%5===2){cylinder(g,dark,side*4.9,2,z-8,.12,4);box(g,glow,side*4.9,3.3,z-8,.15,.22,.15);}
         }
+      }
+    }
+    for(const side of [-1,1])for(let j=0;j<3;j++) {
+      const zz=z-3-j*6;
+      if(orbital) {
+        // Layered equipment casings, fasteners and vents, beyond the race deck.
+        box(g,dark,side*5.2,.38,zz,.85,.74,2.4);
+        box(g,edge,side*4.72,.4,zz,.06,.58,2.16);
+        box(g,dark,side*4.675,.4,zz,.025,.34,1.48);
+        for(let slat=0;slat<7;slat++)box(g,light,side*4.65,.4,zz-.62+slat*.2,.02,.28,.045);
+        for(const y of [.16,.64])for(const dz of [-.92,.92])mesh(g,new THREE.SphereGeometry(.026,6,4),light,side*4.67,y,zz+dz);
+        box(g,glow,side*4.64,.63,zz-.55,.022,.035,.16);
+        // Triangular rail supports show thickness and reinforce the structure.
+        const brace=box(g,edge,side*4.65,.46,zz,.10,1.2,.10);brace.rotation.x=.55;
+      } else if(frozen) {
+        // Irregular snow drifts and translucent-looking solid ice ridges.
+        const snow=rockMesh(g,light,side*5.25,.1,zz,1.25,.26,2.0);snow.rotation.y=i*.2+j*.7;
+        for(let shard=0;shard<3;shard++) {
+          const ice=mesh(g,new THREE.ConeGeometry(.13,.75+shard*.15,5),edge,side*(5.1+shard*.19),.46,zz-1.0+shard*.18);ice.rotation.z=side*(.13+shard*.09);
+        }
+        // Layered exposed fractures break up the smooth rock silhouette.
+        for(let ledge=0;ledge<3;ledge++)rockMesh(g,ledge%2?light:rock,side*(6.0+ledge*.12),.3+ledge*.31,zz+.5,.8-ledge*.14,.16,1.2);
+        for(let bough=0;bough<3;bough++) {
+          const a=bough*2.1+i*.3,xx=side*6.3;
+          const branch=mesh(g,new THREE.ConeGeometry(.34,1.35,7),green,xx+Math.cos(a)*.65,1.6,zz+Math.sin(a)*.65);branch.rotation.z=Math.cos(a)*.7;branch.rotation.x=Math.sin(a)*.7;
+          rockMesh(g,light,xx+Math.cos(a)*.58,1.85,zz+Math.sin(a)*.58,.42,.11,.55);
+        }
+      } else {
+        // Thin sediment shelves, eroded pockets and broken talus at the wall base.
+        for(let layer=0;layer<4;layer++) {
+          const shelf=rockMesh(g,layer%2?light:edge,side*(5.5+layer*.18),.35+layer*.38,zz,1.05-layer*.08,.11,1.65);shelf.rotation.y=.12*Math.sin(i+j+layer);
+        }
+        for(let pebble=0;pebble<4;pebble++) {
+          const d=.08+(pebble%3)*.035;
+          rockMesh(g,pebble%2?edge:rock,side*(4.55+pebble*.16),d*.4,zz+pebble*.48,d*1.4,d*.6,d);
+        }
+        // Ribbing and a small bud give the cactus a less geometric surface.
+        for(let rib=0;rib<5;rib++) {
+          const a=rib*Math.PI*2/5;
+          cylinder(g,green,side*5.1+Math.cos(a)*.143,.80,z-4+Math.sin(a)*.143,.018,1.45);
+        }
+        mesh(g,new THREE.SphereGeometry(.09,7,5),glow,side*5.1,1.64,z-4);
       }
     }
     batchWorldGeometry(g);track.add(g);sections.push({group:g,z});

@@ -1,7 +1,7 @@
 {
   "generator": "node scripts/build-avatars.mjs",
   "original": true,
-  "version": "3.1.0-preview.1",
+  "version": "8.12-detail-pass",
   "provenance": "Original code-authored geometry and animation; no external models, textures or Blender authoring",
   "rigBones": 24,
   "avatars": {
@@ -19,9 +19,9 @@
       "height": 1.91
     },
     "engineer": {
-      "bytes": 963784,
-      "triangles": 31056,
-      "vertices": 18363,
+      "bytes": 1248916,
+      "triangles": 35124,
+      "vertices": 20937,
       "materialDraws": 8,
       "animations": [
         "idle",
@@ -32,9 +32,9 @@
       "height": 1.99
     },
     "guard": {
-      "bytes": 1082932,
-      "triangles": 34976,
-      "vertices": 21037,
+      "bytes": 1393716,
+      "triangles": 39236,
+      "vertices": 23685,
       "materialDraws": 6,
       "animations": [
         "idle",
@@ -45,10 +45,10 @@
       "height": 2.12
     },
     "runner": {
-      "bytes": 832748,
-      "triangles": 26580,
-      "vertices": 15491,
-      "materialDraws": 6,
+      "bytes": 1099632,
+      "triangles": 30840,
+      "vertices": 18139,
+      "materialDraws": 7,
       "animations": [
         "idle",
         "run",
@@ -56,6 +56,266 @@
         "stumble"
       ],
       "height": 1.72
+    },
+    "captain": {
+      "bytes": 1351816,
+      "triangles": 37820,
+      "vertices": 22926,
+      "materialDraws": 6,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 2.08
+    },
+    "navigator": {
+      "bytes": 1128052,
+      "triangles": 31580,
+      "vertices": 18691,
+      "materialDraws": 6,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 1.88
+    },
+    "shipwright": {
+      "bytes": 1194848,
+      "triangles": 33580,
+      "vertices": 19918,
+      "materialDraws": 8,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 2.01
+    },
+    "deckhand": {
+      "bytes": 1091896,
+      "triangles": 30708,
+      "vertices": 17981,
+      "materialDraws": 7,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 1.75
+    },
+    "scout": {
+      "bytes": 1180752,
+      "triangles": 33056,
+      "vertices": 19679,
+      "materialDraws": 7,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 1.84
+    },
+    "botanist": {
+      "bytes": 1152372,
+      "triangles": 32328,
+      "vertices": 19125,
+      "materialDraws": 8,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 1.78
+    },
+    "ranger": {
+      "bytes": 1396676,
+      "triangles": 39204,
+      "vertices": 23747,
+      "materialDraws": 7,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 2.05
+    },
+    "volcanologist": {
+      "bytes": 1264824,
+      "triangles": 35524,
+      "vertices": 21235,
+      "materialDraws": 9,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 1.96
+    },
+    "mountaineer": {
+      "bytes": 1436536,
+      "triangles": 40356,
+      "vertices": 24496,
+      "materialDraws": 7,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 2
+    },
+    "medic": {
+      "bytes": 1256572,
+      "triangles": 35216,
+      "vertices": 21107,
+      "materialDraws": 7,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 1.86
+    },
+    "guide": {
+      "bytes": 1300920,
+      "triangles": 36724,
+      "vertices": 21901,
+      "materialDraws": 8,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 1.97
+    },
+    "snowranger": {
+      "bytes": 1184500,
+      "triangles": 33288,
+      "vertices": 19724,
+      "materialDraws": 8,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 1.8
+    },
+    "pilot": {
+      "bytes": 1221636,
+      "triangles": 34008,
+      "vertices": 20470,
+      "materialDraws": 8,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 1.79
+    },
+    "flightengineer": {
+      "bytes": 1339016,
+      "triangles": 37444,
+      "vertices": 22659,
+      "materialDraws": 9,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 2
+    },
+    "scientist": {
+      "bytes": 1266452,
+      "triangles": 35264,
+      "vertices": 21316,
+      "materialDraws": 8,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 1.9
+    },
+    "officer": {
+      "bytes": 1459704,
+      "triangles": 40692,
+      "vertices": 24968,
+      "materialDraws": 8,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 2.08
+    },
+    "explorer": {
+      "bytes": 1136892,
+      "triangles": 31944,
+      "vertices": 18825,
+      "materialDraws": 8,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 1.76
+    },
+    "archaeologist": {
+      "bytes": 1203408,
+      "triangles": 33776,
+      "vertices": 20095,
+      "materialDraws": 7,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 1.89
+    },
+    "caravanscout": {
+      "bytes": 1373748,
+      "triangles": 38544,
+      "vertices": 23316,
+      "materialDraws": 7,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 2.02
+    },
+    "mechanic": {
+      "bytes": 1245988,
+      "triangles": 35092,
+      "vertices": 20875,
+      "materialDraws": 8,
+      "animations": [
+        "idle",
+        "run",
+        "jump",
+        "stumble"
+      ],
+      "height": 1.98
     }
   }
 }

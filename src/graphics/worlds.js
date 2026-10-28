@@ -1,6 +1,6 @@
 // Original, map-specific set dressing. Simulation still owns metres and hazards.
 import * as THREE from 'three';
-import { batchWorldGeometry, release } from './world-utils.js';
+import { batchWorldGeometry, release, surfaceRelief } from './world-utils.js';
 import { createExpansionWorld } from './expansion-worlds.js';
 export { batchWorldGeometry } from './world-utils.js';
 import { createTunnel, DISTANCE_SCALE } from './tunnel.js';
@@ -44,11 +44,12 @@ export function createWorld(scene, mapId, courseLength) {
     const texture=new THREE.CanvasTexture(image);texture.colorSpace=THREE.SRGBColorSpace;texture.wrapS=texture.wrapT=THREE.RepeatWrapping;return texture;
   }
   const woodMap=surface('wood'), soilMap=surface('soil');
-  const wood = material('#b28a5a', {map:woodMap}), woodLight = material('#b9834c'), woodDark = material('#4d352a');
-  const iron = material('#34434a', { metalness: .55, roughness: .48 });
+  const timberRelief=surfaceRelief('wood'),stoneRelief=surfaceRelief('stone'),metalRelief=surfaceRelief('metal');
+  const wood = material('#b28a5a', {map:woodMap,...timberRelief}), woodLight = material('#bb9264',{...timberRelief,map:woodMap}), woodDark = material('#4d352a',timberRelief);
+  const iron = material('#34434a', { metalness: .55, roughness: .48,...metalRelief });
   const canvas = material('#e1d5b3', { side: THREE.DoubleSide });
-  const leaves = material('#237d4e'), leavesLight = material('#63a551'), bark = material('#70513a');
-  const soil = material('#c1b184', {map:soilMap}), rock = material('#41484b'), distantRock = material('#626d6b');
+  const leaves = material('#237d4e'), leavesLight = material('#63a551'), bark = material('#70513a',timberRelief);
+  const soil = material('#c1b184', {map:soilMap,...stoneRelief}), rock = material('#41484b',stoneRelief), distantRock = material('#626d6b');
   const glow = material('#ff692b', { fog:false, emissive: '#ff4d0c', emissiveIntensity: 2, toneMapped: false });
   if(ship) soilMap.dispose(); else woodMap.dispose();
   const ocean = material('#247f98', { metalness: .35, roughness: .35 });
@@ -64,15 +65,17 @@ export function createWorld(scene, mapId, courseLength) {
   };
   function palm(g,x,z,h,seed) {
     const trunk = cylinder(g,bark,x,h/2,z,.25,h); trunk.rotation.z = Math.sin(seed)*.09;
+    for(let ring=0;ring<h/.55;ring++)cylinder(g,woodDark,x,.3+ring*.55,z,.255-ring*.004,.035);
     for (let j=0;j<6;j++) {
       const angle = j*Math.PI/3+seed, points = [];
       // Broad tapered curved fronds, not stacked spheres.
       for (let k=0;k<7;k++) {
-        const t=k/6, d=t*3.5, width=Math.sin(t*Math.PI)*.55;
+        const t=k/6, d=t*3.5, width=Math.sin(t*Math.PI)*.55*(k%2?.78:1);
         for (const side of [-1,1]) points.push(x+Math.cos(angle)*d+Math.sin(angle)*width*side,h+.7*Math.sin(t*Math.PI)-t*.9,z+Math.sin(angle)*d-Math.cos(angle)*width*side);
       }
       const indices=[]; for(let k=0;k<6;k++){const a=k*2;indices.push(a,a+2,a+1,a+1,a+2,a+3);}
       const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(points,3));geo.setIndex(indices);geo.computeVertexNormals();
+      cable(g,bark,[x,h,z],[x+Math.cos(angle)*2.9,h-.45,z+Math.sin(angle)*2.9],.016);
       const mat=j%2?leaves:leavesLight; mat.side=THREE.DoubleSide; mesh(g,geo,mat,0,0,0);
     }
   }
@@ -80,7 +83,7 @@ export function createWorld(scene, mapId, courseLength) {
     const g=new THREE.Group(); // geometry is baked in course coordinates for scrolling/culling
     const z=-i*20;
     if (ship) {
-      for(let p=0;p<10;p++) box(g,p%3?wood:woodLight,0,-.19,z-p*2,8.9,.36,1.96);
+      for(let p=0;p<10;p++)for(let plank=0;plank<8;plank++)box(g,(p+plank)%5?wood:woodLight,-3.885+plank*1.11,-.19,z-p*2,1.09,.36,1.97);
       if(i===0)for(let p=1;p<=6;p++)box(g,p%3?wood:woodLight,0,-.19,p*2,8.9,.36,1.96);
       for(const side of [-1,1]) {
         box(g,woodDark,side*4.65,.6,z-10,.4,1.5,20);
@@ -127,10 +130,51 @@ export function createWorld(scene, mapId, courseLength) {
           const x=side*(5.7+((i+k)%3)*1.8), zz=z-k*6;
           palm(g,x+side*Math.sin(i*2+k)*.65,zz+Math.sin(i+k)*1.3,6.2+((i+k)%4)*1.1,i+k*.7);
           // Low ferns and dark basalt frame, rather than conceal, the route.
-          for(let j=0;j<4;j++) {
-            const fern=mesh(g,new THREE.ConeGeometry(.7,1.5,5),j%2?leaves:leavesLight,side*(4.9+j*.47),.55,zz+j*.6);fern.rotation.z=side*.4;
-          }
           const stone=mesh(g,new THREE.DodecahedronGeometry(1,0),rock,side*5.1,.25,zz-2,.8,.55,1.2);stone.rotation.y=i;
+        }
+      }
+    }
+    for(const side of [-1,1]) {
+      if(ship) {
+        for(let p=0;p<5;p++) {
+          const zz=z-p*4;
+          box(g,iron,side*4.42,1.2,zz,.055,.3,.15);
+          for(const yy of [1.1,1.3])mesh(g,new THREE.SphereGeometry(.028,6,4),iron,side*4.38,yy,zz);
+        }
+        for(const zz of [z-4,z-14]) {
+          for(const xx of [4.0,4.75]) {
+            const band=mesh(g,new THREE.TorusGeometry(.24,.028,6,14),iron,side*xx,.65,zz);band.rotation.y=Math.PI/2;
+          }
+          for(const dz of [-.48,.48]) {
+            mesh(g,new THREE.TorusGeometry(.24,.033,6,14),iron,side*3.93,.27,zz+dz);
+            for(let spoke=0;spoke<4;spoke++) {
+              const a=spoke*Math.PI/4;
+              cable(g,woodLight,[side*3.93-Math.cos(a)*.22,.27-Math.sin(a)*.22,zz+dz],[side*3.93+Math.cos(a)*.22,.27+Math.sin(a)*.22,zz+dz],.018);
+            }
+          }
+          for(let coil=0;coil<3;coil++) {
+            const rope=mesh(g,new THREE.TorusGeometry(.17+coil*.035,.014,5,20),canvas,side*4.03,.06,z-8);rope.rotation.x=Math.PI/2;
+          }
+        }
+      } else {
+        for(let j=0;j<3;j++) {
+          const zz=z-3-j*6,x=side*(5.1+j*.4);
+          // Root buttresses and split basalt shelves frame a clear running path.
+          for(let root=0;root<3;root++)cable(g,bark,[x,1.0,zz],[side*(4.55+root*.45),.05,zz+1.3-root],.10-root*.02);
+          for(let layer=0;layer<3;layer++) {
+            const shelf=mesh(g,new THREE.DodecahedronGeometry(1,1),layer%2?rock:distantRock,side*5.3,.18+layer*.24,zz-2,.95-layer*.14,.13,.9);shelf.rotation.y=j*.7+layer*.25;
+          }
+          // Curved, tapered fern leaflets replace the simple cones near the trail.
+          for(let leaf=0;leaf<7;leaf++) {
+            const a=leaf*Math.PI*2/7, points=[];
+            for(let k=0;k<=5;k++) {
+              const t=k/5,w=Math.sin(t*Math.PI)*.16;
+              for(const sign of [-1,1])points.push(x+Math.cos(a)*t*.85+Math.sin(a)*w*sign,.12+Math.sin(t*Math.PI*.75)*.9,zz+Math.sin(a)*t*.85-Math.cos(a)*w*sign);
+            }
+            const indices=[];for(let k=0;k<5;k++){const n=k*2;indices.push(n,n+2,n+1,n+1,n+2,n+3);}
+            const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(points,3));geometry.setIndex(indices);geometry.computeVertexNormals();
+            mesh(g,geometry,leaf%2?leaves:leavesLight,0,0,0);
+          }
         }
       }
     }

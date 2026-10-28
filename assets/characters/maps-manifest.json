@@ -1,8 +1,8 @@
 {
   "captain": {
-    "bytes": 1046992,
-    "triangles": 33560,
-    "vertices": 20278,
+    "bytes": 1351816,
+    "triangles": 37820,
+    "vertices": 22926,
     "materialDraws": 6,
     "animations": [
       "idle",
@@ -13,9 +13,9 @@
     "height": 2.08
   },
   "navigator": {
-    "bytes": 857112,
-    "triangles": 27320,
-    "vertices": 16043,
+    "bytes": 1128052,
+    "triangles": 31580,
+    "vertices": 18691,
     "materialDraws": 6,
     "animations": [
       "idle",
@@ -26,9 +26,9 @@
     "height": 1.88
   },
   "shipwright": {
-    "bytes": 917872,
-    "triangles": 29512,
-    "vertices": 17344,
+    "bytes": 1194848,
+    "triangles": 33580,
+    "vertices": 19918,
     "materialDraws": 8,
     "animations": [
       "idle",
@@ -39,10 +39,10 @@
     "height": 2.01
   },
   "deckhand": {
-    "bytes": 826296,
-    "triangles": 26448,
-    "vertices": 15333,
-    "materialDraws": 6,
+    "bytes": 1091896,
+    "triangles": 30708,
+    "vertices": 17981,
+    "materialDraws": 7,
     "animations": [
       "idle",
       "run",
@@ -52,9 +52,9 @@
     "height": 1.75
   },
   "scout": {
-    "bytes": 885008,
-    "triangles": 28220,
-    "vertices": 16658,
+    "bytes": 1180752,
+    "triangles": 33056,
+    "vertices": 19679,
     "materialDraws": 7,
     "animations": [
       "idle",
@@ -65,10 +65,10 @@
     "height": 1.84
   },
   "botanist": {
-    "bytes": 860648,
-    "triangles": 27492,
-    "vertices": 16104,
-    "materialDraws": 7,
+    "bytes": 1152372,
+    "triangles": 32328,
+    "vertices": 19125,
+    "materialDraws": 8,
     "animations": [
       "idle",
       "run",
@@ -78,9 +78,9 @@
     "height": 1.78
   },
   "ranger": {
-    "bytes": 1068448,
-    "triangles": 34368,
-    "vertices": 20726,
+    "bytes": 1396676,
+    "triangles": 39204,
+    "vertices": 23747,
     "materialDraws": 7,
     "animations": [
       "idle",
@@ -91,9 +91,9 @@
     "height": 2.05
   },
   "volcanologist": {
-    "bytes": 960408,
-    "triangles": 30880,
-    "vertices": 18288,
+    "bytes": 1264824,
+    "triangles": 35524,
+    "vertices": 21235,
     "materialDraws": 9,
     "animations": [
       "idle",

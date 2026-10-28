@@ -298,8 +298,9 @@ test('paid leap uses a forward torso and split-leg reach without accumulating po
  paid.dispose();hop.dispose();
 });
 
-test('detailed Courier has finite surface coordinates and owns its material textures', async () => {
-  const asset=await readAsset('courier');
+test('detailed cast has finite surface coordinates and owns its material textures', async () => {
+  for(const id of ALL_AVATAR_IDS) {
+  const asset=await readAsset(id);
   asset.scene.traverse(object=>{
     if(!object.isMesh)return;
     const uv=object.geometry.getAttribute('uv');
@@ -307,12 +308,15 @@ test('detailed Courier has finite surface coordinates and owns its material text
     assert.equal(uv.count,object.geometry.getAttribute('position').count);
     assert.ok([...uv.array].every(Number.isFinite));
   });
+  }
   const library=createAvatarLibrary({loadAsset:readAsset});await library.preloadAvatars();
-  const courier=library.createAvatar('courier'),ghost=library.createAvatar('courier',{ghost:true});
+  for(const id of ['courier','engineer','captain','volcanologist','medic','pilot','mechanic']) {
+  const courier=library.createAvatar(id),ghost=library.createAvatar(id,{ghost:true});
   const textures=new Set();
   courier.group.traverse(object=>{for(const material of [object.material].flat().filter(Boolean))if(material.bumpMap)textures.add(material.bumpMap);});
   assert.equal(textures.size,2,'separate cloth weave and leather grain');
   ghost.group.traverse(object=>{for(const material of [object.material].flat().filter(Boolean))assert.ok(!material.bumpMap,'transparent opponents remain uncluttered');});
   let disposed=0;for(const texture of textures)texture.addEventListener('dispose',()=>disposed++);
   courier.dispose();courier.dispose();assert.equal(disposed,2,'owned textures released once');ghost.dispose();
+  }
 });

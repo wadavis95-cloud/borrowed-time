@@ -1,8 +1,8 @@
 {
   "mountaineer": {
-    "bytes": 1079852,
-    "triangles": 34704,
-    "vertices": 20986,
+    "bytes": 1436536,
+    "triangles": 40356,
+    "vertices": 24496,
     "materialDraws": 7,
     "animations": [
       "idle",
@@ -13,9 +13,9 @@
     "height": 2
   },
   "medic": {
-    "bytes": 926900,
-    "triangles": 29564,
-    "vertices": 17597,
+    "bytes": 1256572,
+    "triangles": 35216,
+    "vertices": 21107,
     "materialDraws": 7,
     "animations": [
       "idle",
@@ -26,9 +26,9 @@
     "height": 1.86
   },
   "guide": {
-    "bytes": 968696,
-    "triangles": 31264,
-    "vertices": 18465,
+    "bytes": 1300920,
+    "triangles": 36724,
+    "vertices": 21901,
     "materialDraws": 8,
     "animations": [
       "idle",
@@ -39,10 +39,10 @@
     "height": 1.97
   },
   "snowranger": {
-    "bytes": 865484,
-    "triangles": 27636,
-    "vertices": 16214,
-    "materialDraws": 7,
+    "bytes": 1184500,
+    "triangles": 33288,
+    "vertices": 19724,
+    "materialDraws": 8,
     "animations": [
       "idle",
       "run",
@@ -52,9 +52,9 @@
     "height": 1.8
   },
   "pilot": {
-    "bytes": 880232,
-    "triangles": 28020,
-    "vertices": 16549,
+    "bytes": 1221636,
+    "triangles": 34008,
+    "vertices": 20470,
     "materialDraws": 8,
     "animations": [
       "idle",
@@ -65,9 +65,9 @@
     "height": 1.79
   },
   "flightengineer": {
-    "bytes": 983896,
-    "triangles": 31648,
-    "vertices": 18812,
+    "bytes": 1339016,
+    "triangles": 37444,
+    "vertices": 22659,
     "materialDraws": 9,
     "animations": [
       "idle",
@@ -78,9 +78,9 @@
     "height": 2
   },
   "scientist": {
-    "bytes": 918280,
-    "triangles": 29276,
-    "vertices": 17395,
+    "bytes": 1266452,
+    "triangles": 35264,
+    "vertices": 21316,
     "materialDraws": 8,
     "animations": [
       "idle",
@@ -91,9 +91,9 @@
     "height": 1.9
   },
   "officer": {
-    "bytes": 1082424,
-    "triangles": 34704,
-    "vertices": 21047,
+    "bytes": 1459704,
+    "triangles": 40692,
+    "vertices": 24968,
     "materialDraws": 8,
     "animations": [
       "idle",
@@ -104,10 +104,10 @@
     "height": 2.08
   },
   "explorer": {
-    "bytes": 847572,
-    "triangles": 27108,
-    "vertices": 15804,
-    "materialDraws": 7,
+    "bytes": 1136892,
+    "triangles": 31944,
+    "vertices": 18825,
+    "materialDraws": 8,
     "animations": [
       "idle",
       "run",
@@ -117,9 +117,9 @@
     "height": 1.76
   },
   "archaeologist": {
-    "bytes": 904336,
-    "triangles": 28940,
-    "vertices": 17074,
+    "bytes": 1203408,
+    "triangles": 33776,
+    "vertices": 20095,
     "materialDraws": 7,
     "animations": [
       "idle",
@@ -130,9 +130,9 @@
     "height": 1.89
   },
   "caravanscout": {
-    "bytes": 1048904,
-    "triangles": 33708,
-    "vertices": 20295,
+    "bytes": 1373748,
+    "triangles": 38544,
+    "vertices": 23316,
     "materialDraws": 7,
     "animations": [
       "idle",
@@ -143,9 +143,9 @@
     "height": 2.02
   },
   "mechanic": {
-    "bytes": 944472,
-    "triangles": 30448,
-    "vertices": 17928,
+    "bytes": 1245988,
+    "triangles": 35092,
+    "vertices": 20875,
     "materialDraws": 8,
     "animations": [
       "idle",

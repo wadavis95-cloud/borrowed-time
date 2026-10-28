@@ -52,7 +52,7 @@ export function createAvatarLibrary({ loadAsset } = {}) {
     const model = cloneSkeleton(asset.scene); group.add(model);
     const bones = {};
     // Tiny deterministic height maps add material response, not painted lighting.
-    // Only the Courier study has UVs; other characters keep their authored look.
+    // All refined casts have rest-space UVs; role colors stay in vertex colors.
     const detailTextures = new Map();
     function surfaceDetail(kind) {
       if (detailTextures.has(kind)) return detailTextures.get(kind);
@@ -82,7 +82,7 @@ export function createAvatarLibrary({ loadAsset } = {}) {
       const copyMaterial = (original) => {
         if (materials.has(original)) return materials.get(original);
         const material = original.clone();
-        if (id === 'courier' && !ghost && object.geometry.getAttribute('uv')) {
+        if (!ghost && object.geometry.getAttribute('uv')) {
           if (['woven cloth','heavy canvas','worn leather'].includes(original.name)) {
             const leather=original.name==='worn leather';
             material.bumpMap=surfaceDetail(leather?'leather':'cloth');material.bumpScale=leather?.003:.002;

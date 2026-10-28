@@ -348,9 +348,9 @@ export function createTunnel(scene, courseLength) {
         instance(rubbleGeometry, n % 2 ? worn : trim, side * (4.08 + rng() * .5), s * .4, -rng() * 18, s * 1.5, s, s, rng(), rng() * 3);
       }
     }
-    // Opening detail study only: real relief and fittings, kept outside the lanes.
+    // Full-course detail: real relief and fittings, kept outside the lanes.
     // Use an independent deterministic stream so later scenery stays unchanged.
-    if (index < 4) {
+    {
       const detailRandom = random(811 + index);
       for (const side of [-1, 1]) {
         // Staggered masonry leaves recessed mortar, small chips and uneven faces.

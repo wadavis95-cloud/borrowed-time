@@ -40,3 +40,24 @@ export function batchWorldGeometry(root) {
   }
 }
 
+
+// Small deterministic height textures: shared per map, disposed with its materials.
+// Surface color stays authored; lighting supplies the relief, without baked shadows.
+export function surfaceRelief(kind='stone') {
+  const size=64,data=new Uint8Array(size*size*4);
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++) {
+    const grain=Math.sin(x*12.9898+y*78.233)*43758.5453;
+    const noise=(grain-Math.floor(grain))-.5;
+    let height=.5+noise*.18;
+    if(kind==='wood')height+=Math.sin(x*.7+Math.sin(y*.13)*1.8)*.14+Math.sin(x*2.2+y*.03)*.06;
+    else if(kind==='metal')height+=Math.sin(y*2.1)*.025;
+    else if(kind==='snow')height+=Math.sin(x*.17)*Math.sin(y*.2)*.08;
+    else height+=Math.sin(x*.24+y*.13)*Math.cos(y*.31)*.10;
+    const value=Math.round(THREE.MathUtils.clamp(height,0,1)*255),i=(y*size+x)*4;
+    data[i]=data[i+1]=data[i+2]=value;data[i+3]=255;
+  }
+  const texture=new THREE.DataTexture(data,size,size);texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+  texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps=true;texture.repeat.set(kind==='wood'?4:6,kind==='wood'?8:6);texture.needsUpdate=true;
+  return {bumpMap:texture,bumpScale:kind==='metal'?.008:kind==='wood'?.018:kind==='snow'?.025:.045};
+}

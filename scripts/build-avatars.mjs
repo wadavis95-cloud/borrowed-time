@@ -546,6 +546,58 @@ function refineCourier(p, r, b) {
   b.bevelBox(p.metal,4,torso,[-.065,cy-.19,.196],[.061,.048,.012],.005,[0,0,.65]);
 }
 
+// Shared tailoring, then role-specific equipment finishing; silhouettes stay themed.
+function refineRole(id,p,r,b) {
+  const h=r.hipY,cy=r.chestY,style=p.style||id;
+  const space=['pilot','flightengineer','scientist','officer'].includes(id);
+  const fittings=['pilot','flightengineer'].includes(id)?5:4;
+  const snow=['mountaineer','medic','guide','snowranger'].includes(id);
+  const packed=expansionIds.has(id)||['scout','botanist','ranger','volcanologist'].includes(id);
+  const torso=b.blendY('pelvis','chest',h+.1,cy-.05);
+  const edge=p.coatLight, seam=new THREE.Color(p.coat).multiplyScalar(.65);
+  // The back yoke is scaled to each character's existing shoulder shape.
+  b.panel(edge,0,'chest',[[-p.shoulder*.88,cy-.015,.08],[-p.shoulder*.74,cy-.12,.13],[0,cy-.16,.16],[p.shoulder*.74,cy-.12,.13],[p.shoulder*.88,cy-.015,.08],[0,cy+.01,.11]],.012);
+  if(!packed)b.tube(seam,0,torso,[[0,cy-.18,.16],[0,h+.24,.147],[0,h+.09,.135]],.004,14);
+  for(const [side,sign] of [['L',-1],['R',1]]) {
+    const arm=r.points[`foreArm${side}`],hand=r.points[`hand${side}`],foot=r.points[`foot${side}`];
+    if(style!=='engineer') {
+      b.ellipsoid(space?p.trim:p.shoes,space?fittings:3,`foreArm${side}`,[arm.x,arm.y-.015,.059],[.043,.069,.018]);
+      b.loft(edge,0,`foreArm${side}`,[[hand.y+.05,.044,.045,hand.x],[hand.y+.08,.046,.047,hand.x]],{steps:3,segments:16});
+    } else {
+      // Rolled sleeves remain above the bare forearm; the wrist gets a work strap.
+      b.loft(p.shoes,3,`foreArm${side}`,[[hand.y+.05,.035,.038,hand.x],[hand.y+.08,.036,.039,hand.x]],{steps:3,segments:16});
+      b.bevelBox(p.metal,fittings,`foreArm${side}`,[hand.x,hand.y+.066,.04],[.026,.022,.012],.004);
+    }
+    b.tube(edge,0,torso,[[sign*p.waist*.7,cy-.20,.135],[sign*p.waist*.6,h+.22,.145],[sign*p.waist*.85,h+.09,.12]],.005,13);
+    b.ribbon(p.trim,3,`foot${side}`,[[foot.x-.05,.055,.035],[foot.x,.055,.095],[foot.x+.05,.055,.035]],.007,.003);
+    // Small exposed fasteners and shoulder tabs create readable layering.
+    b.bevelBox(p.coat,0,'chest',[sign*p.shoulder*.78,cy+.005,.07],[.09,.022,.11],.008);
+    b.ellipsoid(p.metal,fittings,'chest',[sign*p.shoulder*.76,cy+.018,.11],[.012,.009,.008]);
+  }
+  if(packed) {
+    // Finishing wraps the existing pack instead of hiding its medical/role markings.
+    const z=space?.32:.325;
+    for(const sign of [-1,1]) {
+      b.ribbon(space?'#334858':p.shoes,3,'chest',[[sign*.125,cy-.045,.27],[sign*.135,cy-.20,z],[sign*.11,cy-.35,.28]],.021,.006);
+      b.bevelBox(p.metal,fittings,'chest',[sign*.125,cy-.27,z+.012],[.032,.04,.012],.005);
+    }
+    b.tube(p.trim,0,'chest',[[-.13,cy-.34,.30],[0,cy-.375,.305],[.13,cy-.34,.30]],.004,16);
+    if(snow) {
+      // Lash a sleeping-mat roll below the pack, with two retaining straps.
+      b.tube('#9aaea6',8,'chest',[[-.17,cy-.43,.23],[.17,cy-.43,.23]],.055,2,12);
+      for(const x of [-.105,.105])b.ribbon(p.shoes,3,'chest',[[x,cy-.38,.24],[x,cy-.43,.29],[x,cy-.48,.24]],.018,.004);
+    } else if(space) {
+      b.bevelBox('#33485e',fittings,'chest',[0,cy-.12,.325],[.23,.043,.015],.006);
+      for(let i=0;i<5;i++)b.bevelBox('#91aebb',fittings,'chest',[-.085+i*.042,cy-.12,.338],[.02,.022,.008],.003);
+    }
+  } else {
+    // Marine and tunnel uniforms get pocket flaps and a waist adjustment belt.
+    for(const sign of [-1,1])b.panel(edge,0,torso,[[sign*.07,h+.20,.14],[sign*.16,h+.20,.11],[sign*.16,h+.14,.12],[sign*.07,h+.13,.145]],.009);
+    b.ribbon(p.shoes,3,'pelvis',[[-p.waist,h+.04,.075],[0,h+.045,.153],[p.waist,h+.04,.075]],.025,.006);
+    b.bevelBox(p.metal,fittings,'pelvis',[.05,h+.045,.165],[.037,.035,.009],.004);
+  }
+}
+
 function clipsFor(rig, id) {
   const p = profiles[id], clips = [];
   for (const [name, duration, frames] of [['idle', 3.4, 32], ['run', .72, 36], ['jump', 1, 30], ['stumble', .65, 20]]) {
@@ -700,14 +752,16 @@ function themedEquipment(id, p, r, b) {
 }
 
 export function authorAvatar(id) {
-  const p = id === 'courier' ? { ...profiles[id], refined: true } : profiles[id]; if (!p) throw new Error(`Unknown avatar: ${id}`);
-  const rig = makeSkeleton(p), builder = createBuilder(rig, id === 'courier');
+  if (!profiles[id]) throw new Error(`Unknown avatar: ${id}`);
+  const p = { ...profiles[id], refined: true };
+  const rig = makeSkeleton(p), builder = createBuilder(rig, true);
   const style = p.style || id;
   bodyAndLegs(style, p, rig, builder); arms(style, p, rig, builder); faceAndHair(style, p, rig, builder);
   if (p.style) themedEquipment(id, p, rig, builder); else equipment(id, p, rig, builder);
   if (id === 'courier') refineCourier(p, rig, builder);
+  else refineRole(id,p,rig,builder);
   const mesh = builder.finish(); rig.root.name = `${id}_original_v3_1`;
-  rig.root.userData = { id, authoring: 'Original procedural Three.js contoured profiles, tailored panels and skinned meshes; not Blender-authored', license: 'Project original asset', height: p.height, version: id === 'courier' ? '8.11-detail-study' : '3.1.0-preview.1' };
+  rig.root.userData = { id, authoring: 'Original procedural Three.js contoured profiles, tailored panels and skinned meshes; not Blender-authored', license: 'Project original asset', height: p.height, version: '8.12-detail-pass' };
   return { scene: rig.root, animations: clipsFor(rig, id), triangles: mesh.geometry.index.count / 3, vertices: mesh.geometry.attributes.position.count, materialDraws: mesh.material.length };
 }
 
@@ -741,6 +795,8 @@ async function main() {
     await writeFile(new URL('maps-manifest.json', directory), JSON.stringify(manifest, null, 2) + '\n');
     return;
   }
-  await writeFile(new URL('manifest.json', directory), JSON.stringify({ generator: 'node scripts/build-avatars.mjs', original: true, version: '3.1.0-preview.1', provenance: 'Original code-authored geometry and animation; no external models, textures or Blender authoring', rigBones: 24, avatars: manifest }, null, 2) + '\n');
+  await writeFile(new URL('maps-manifest.json', directory), JSON.stringify(Object.fromEntries(Object.entries(manifest).filter(([id])=>themedProfiles[id]&&!expansionIds.has(id))),null,2)+'\n');
+  await writeFile(new URL('expansion-manifest.json', directory), JSON.stringify(Object.fromEntries(Object.entries(manifest).filter(([id])=>expansionIds.has(id))),null,2)+'\n');
+  await writeFile(new URL('manifest.json', directory), JSON.stringify({ generator: 'node scripts/build-avatars.mjs', original: true, version: '8.12-detail-pass', provenance: 'Original code-authored geometry and animation; no external models, textures or Blender authoring', rigBones: 24, avatars: manifest }, null, 2) + '\n');
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) await main();
