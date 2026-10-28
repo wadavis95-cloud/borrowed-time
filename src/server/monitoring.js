@@ -1,6 +1,7 @@
 import {timingSafeEqual} from 'node:crypto';
 import {monitorEventLoopDelay,performance} from 'node:perf_hooks';
 export const BINS=Object.freeze({frame:[8.4,16.8,25,33.4,50,100,250,1000],gap:[20,40,50,60,100,200,500,10000],rtt:[10,25,50,100,200,500,1000,10000],input:[10,25,50,100,150,250,500,5000],load:[500,1000,2000,5000,10000,20000,45000,120000],mapFirst:[50,100,200,500,1000,2000,5000,45000],mapRepeat:[50,100,200,500,1000,2000,5000,45000]});
+const RETENTION_MS=30*60*1000,MAX_HISTORY=1800,MAX_REPORTS=6000;
 const META_KEYS=['map','inputMode','mode','device'];
 const CLIENT_KEYS=new Set([...META_KEYS,'frame','gap','rtt','input','load','mapFirst','mapRepeat','longTasks','errors','graphicsErrors','contextLosses','disconnects','slowFrames','frames']);
 const COUNTERS=['connections','connectionRejects','roomRejects','disconnects','slowClients','invalidMessages','rateLimits','messagesIn','bytesIn','messagesOut','bytesOut','snapshots','httpRequests','httpErrors','http4xx','http5xx','monitorBytes','telemetryBytesIn','assetBytes','pageBytes','otherBytes','httpAborts','telemetryAccepted','telemetryRejected'];
@@ -18,7 +19,7 @@ function quantile(hist,p=.95){const count=hist.reduce((a,b)=>a+b,0);if(!count)re
 export function createMonitoring({token='',state=()=>({}),now=Date.now,autoStart=true}={}){
  const enabled=typeof token==='string'&&token.length>=32;
  const started=now(),totals=Object.fromEntries(COUNTERS.map(k=>[k,0])),history=[],reports=[];
- const httpLatency=[];let previous={...totals},last=now(),cpu=process.cpuUsage(),cpuAt=performance.now(),timer,lag;
+ const httpLatency=[];let previous={...totals},last=now(),cpu=process.cpuUsage(),cpuAt=performance.now(),timer,lag,lastCapAt=null;
  let rateStart=now(),ingressCount=0,adminCount=0;
  if(enabled){lag=monitorEventLoopDelay({resolution:10});lag.enable();if(autoStart){timer=setInterval(sample,1000);timer.unref();}}
  function count(name,value=1){if(enabled&&Object.hasOwn(totals,name)&&Number.isFinite(value))totals[name]+=value;}
@@ -27,12 +28,26 @@ export function createMonitoring({token='',state=()=>({}),now=Date.now,autoStart
   const point={at:time,intervalSeconds:elapsed,...state(),cpuPct:(usage.user+usage.system)/Math.max(1,(at-cpuAt)*1000)*100,rssMB:memory.rss/1e6,heapMB:memory.heapUsed/1e6,eventLoopP95Ms:lag?lag.percentile(95)/1e6:0,eventLoopMaxMs:lag?lag.max/1e6:0};
   for(const key of ['bytesOut','bytesIn','monitorBytes','assetBytes','pageBytes','otherBytes','snapshots','httpRequests','httpErrors','connectionRejects','roomRejects','disconnects','slowClients'])point[key+'PerSec']=(totals[key]-previous[key])/elapsed;
   point.httpP95Ms=httpLatency.length?[...httpLatency].sort((a,b)=>a-b)[Math.ceil(httpLatency.length*.95)-1]:null;
-  httpLatency.length=0;history.push(point);if(history.length>180)history.shift();
+  httpLatency.length=0;history.push(point);while(history.length>MAX_HISTORY||history.length&&history[0].at<time-RETENTION_MS)history.shift();
   previous={...totals};last=time;cpu=process.cpuUsage();cpuAt=at;lag?.reset();return point;
  }
- function prune(){while(reports.length&&reports[0].at<now()-120000)reports.shift();}
+ function prune(){while(reports.length&&reports[0].at<now()-RETENTION_MS)reports.shift();}
+ // Preserve the latest minute at one-second detail for rates/pressure. Older
+ // charts use ten-sample buckets: rate averages and peak CPU/memory/delay.
+ function chartHistory(){
+  const cutoff=now()-60000,older=history.filter(p=>p.at<cutoff),recent=history.filter(p=>p.at>=cutoff),result=[];
+  for(let i=0;i<older.length;i+=10){
+   const bucket=older.slice(i,i+10),last=bucket.at(-1),duration=bucket.reduce((n,p)=>n+p.intervalSeconds,0),point={...last,intervalSeconds:duration};
+   for(const key of Object.keys(last).filter(k=>k.endsWith('PerSec')))point[key]=bucket.reduce((n,p)=>n+(p[key]||0)*p.intervalSeconds,0)/duration;
+   for(const key of ['cpuPct','rssMB','heapMB','eventLoopP95Ms','eventLoopMaxMs','simulationBacklogMs','bufferedBytes','httpP95Ms']){
+    const values=bucket.map(p=>p[key]).filter(v=>typeof v==='number');point[key]=values.length?Math.max(...values):null;
+   }
+   result.push(point);
+  }
+  return [...result,...recent];
+ }
  function snapshot(){
-  prune();const client={reports:reports.length,windowSeconds:120};
+  prune();const client={reports:reports.length,windowSeconds:RETENTION_MS/1000,retainedReportLimit:MAX_REPORTS,reportLimitReached:lastCapAt!==null&&lastCapAt>=now()-RETENTION_MS};
   for(const [key,bins]of Object.entries(BINS)){
    const values=Array(8).fill(0);for(const r of reports)r.report[key]?.forEach((v,i)=>values[i]+=v);
    const index=quantile(values);client[key]={count:values.reduce((a,b)=>a+b,0),p95UpperMs:index===null||index===bins.length-1?null:bins[index],p95OverMs:index===bins.length-1?bins[index-1]:null};
@@ -44,7 +59,7 @@ export function createMonitoring({token='',state=()=>({}),now=Date.now,autoStart
    return {name:value,reports:selected.length,frames:frame.count,frameP95UpperMs:frame.p95UpperMs,frameP95OverMs:frame.p95OverMs,load:summary(selected,'load'),mapFirst:summary(selected,'mapFirst'),mapRepeat:summary(selected,'mapRepeat')};
   });
   client.byMap=group('map');client.byInput=group('inputMode');client.byMode=group('mode');client.byDevice=group('device');
-  return {enabled,startedAt:started,uptimeSeconds:(now()-started)/1000,totals:{...totals},current:history.at(-1)||null,history:[...history],client,notes:['Application JSON and declared completed HTTP body bytes; excludes TLS/WS/HTTP headers, aborted partial bodies and provider accounting.','Browser metrics are untrusted aggregate samples from the last two minutes, not unique people. Histogram p95 values are bucket upper bounds; the last bucket includes overflow.','History and totals reset on process restart. No persistence, external alerts, billing integration or cold-start measurement.']};
+  return {enabled,startedAt:started,uptimeSeconds:(now()-started)/1000,totals:{...totals},current:history.at(-1)||null,history:chartHistory(),client,notes:['Application JSON and declared completed HTTP body bytes; excludes TLS/WS/HTTP headers, aborted partial bodies and provider accounting.','Browser metrics are untrusted aggregate samples from up to the last thirty minutes (report-count cap can shorten coverage), not unique people. Histogram p95 values are bucket upper bounds; the last bucket includes overflow.','History and totals reset on process restart. No persistence, external alerts, billing integration or cold-start measurement.']};
  }
  function response(res,status,body){const text=body===undefined?'':JSON.stringify(body);count('monitorBytes',Buffer.byteLength(text));res.writeHead(status,{'Content-Length':Buffer.byteLength(text),'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'});res.end(text);}
  function handle(req,res){
@@ -70,7 +85,7 @@ export function createMonitoring({token='',state=()=>({}),now=Date.now,autoStart
   req.on('end',()=>{
    if(done)return;done=true;let report;try{report=JSON.parse(Buffer.concat(parts).toString());}catch{}
    if(!validReport(report)){count('telemetryRejected');response(res,400);return;}
-   count('telemetryBytesIn',bytes);prune();reports.push({at:now(),report});if(reports.length>1200)reports.shift();count('telemetryAccepted');response(res,204);
+   count('telemetryBytesIn',bytes);prune();reports.push({at:now(),report});if(reports.length>MAX_REPORTS){reports.shift();lastCapAt=now();}count('telemetryAccepted');response(res,204);
   });
   req.on('error',()=>{if(!done){done=true;count('telemetryRejected');if(!res.destroyed)response(res,400);}});
   return true;

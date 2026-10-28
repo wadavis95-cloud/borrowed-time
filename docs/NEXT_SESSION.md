@@ -36,3 +36,11 @@ Branch `codex/map-loading-cache` builds on the browser-only demo checkpoint. See
 ### Phone follow-up captured
 
 The user completed the races on a physical phone over the temporary Wi-Fi/LAN setup. See the follow-up in `docs/MAP_LOADING_CACHE.md` and `artifacts/performance/phone-wifi-20261028.json`. Retained mobile/touch reports: initial readiness <=1000 ms, first/repeat map p95 ceilings <=500 ms, 4,415 running frames with p95 <=25 ms and zero >50 ms, no reported graphics/browser errors. Two-minute expiry means frame evidence covers only the last two maps. Phone model/browser and cellular/multiplayer readiness remain untested. Temporary LAN server is running for the test; normal `npm run monitor` still binds to loopback. No deployment.
+
+### Outstanding phone-loading issue
+
+User reports first Orbital selection waited 5–7 seconds before the map appeared. This fails the latency target despite faster retained aggregates; do not treat phone loading as accepted. Diagnose end-to-end selection/presentation and preserve full-test bounded worst-case summaries; the current timer ends at draw submission and the monitor expires observations after two minutes. Root cause is not yet established. Keep trial local.
+
+### Monitoring retention extended
+
+Browser reports and server charts now cover up to 30 minutes (6,000 report / 1,800 one-second server-sample caps). Older server-chart points compact into ten-sample peak/average buckets; latest minute stays at one-second resolution. The dashboard warns on report-cap eviction. No gameplay timer, loading deadline or polling interval was changed. Restart clears memory; historical phone evidence remains in saved artifacts. The slow first Orbital load remains unresolved; extending retention alone does not close the end-to-end presentation measurement gap. LAN test setup remains temporary and local, no deployment.
