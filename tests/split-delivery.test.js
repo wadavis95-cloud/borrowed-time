@@ -38,3 +38,8 @@ networkTest('malformed absolute request targets return 400 without crashing eith
   const {stdout}=await promisify(execFile)(process.execPath,['--input-type=module','-e',code],{timeout:5000});assert.match(stdout,/400/);
  }
 });
+
+networkTest('race-only front door redirects to configured static origin without serving assets',async t=>{
+ const app=createGameServer({raceOnly:true,frontendOrigin:'https://play.example'});t.after(()=>app.close());const origin=await listen(app);
+ const response=await fetch(origin+'/',{redirect:'manual'});assert.equal(response.status,302);assert.equal(response.headers.get('location'),'https://play.example/');assert.equal(response.headers.get('cache-control'),'no-store');
+});

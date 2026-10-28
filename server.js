@@ -10,7 +10,7 @@ if (!Number.isInteger(port) || port < 0 || port > 65535) {
 } else {
   const role=process.env.GAME_ROLE||'combined';
   if(!['combined','race','assets'].includes(role))throw new Error('GAME_ROLE must be combined, race or assets');
-  const app = role==='assets'?createAssetServer({raceOrigin:process.env.RACE_ORIGIN}):createGameServer({raceOnly:role==='race',allowedOrigins:(process.env.ALLOWED_ORIGINS||'').split(',').filter(Boolean)});
+  const app = role==='assets'?createAssetServer({raceOrigin:process.env.RACE_ORIGIN}):createGameServer({raceOnly:role==='race',frontendOrigin:process.env.GAME_FRONTEND_ORIGIN||'',allowedOrigins:(process.env.ALLOWED_ORIGINS||'').split(',').filter(Boolean)});
   app.server.on('error', async (error) => {
     const reason = error.code === 'EADDRINUSE'
       ? `Port ${port} is already in use. Stop the other server or set another PORT.`

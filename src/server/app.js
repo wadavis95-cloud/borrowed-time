@@ -141,8 +141,9 @@ export function createStaticFileHandler({ publicRoot = root, raceOrigin='', useB
 }
 
 export function createGameServer({
-  now = Date.now, roomOptions = {}, maxConnections = 128, heartbeatMs = 30000, monitorToken = process.env.MONITOR_TOKEN || '', raceOnly=false, allowedOrigins=[],
+  now = Date.now, roomOptions = {}, maxConnections = 128, heartbeatMs = 30000, monitorToken = process.env.MONITOR_TOKEN || '', raceOnly=false, allowedOrigins=[], frontendOrigin='',
 } = {}) {
+  const front=frontendOrigin?validateOrigin(frontendOrigin):null;
   const origins=new Set(allowedOrigins.map(validateOrigin));
   let lastScheduleLagMs=0,lastBroadcastWorkMs=0;
   const rooms = createRoomManager({ ...roomOptions, now });
@@ -168,6 +169,7 @@ export function createGameServer({
     }
     if(monitor.handle(request,response))return;monitor.http(request,response);
     let path;try{path=new URL(request.url,'http://local').pathname;}catch{response.writeHead(400);response.end('Invalid request');return;}
+    if(raceOnly&&path==='/'&&front){response.writeHead(302,{Location:front+'/','Cache-Control':'no-store'});response.end();return;}
     if(raceOnly&&path!=='/health'&&!['/monitor','/monitor/','/monitor/index.html','/monitor/dashboard.js','/monitor/dashboard.css'].includes(path)){response.writeHead(404);response.end('Not found');return;}
     return serve(request,response);
   });
