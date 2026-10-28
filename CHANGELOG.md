@@ -1,5 +1,14 @@
 # Changelog
 
+## 8.8.0-preview.1 — Local forward-leap playtest
+
+- Preserved V8.7 in a verified complete-history bundle; no push, deployment or submission.
+- Long jump remains 4s, with airtime reduced 1.4→1.2s, apex 3→2.6 and an actual 1.9× forward movement burst while airborne.
+- Combined Boost/leap uses the stronger multiplier, with normal stun penalties; free hop and sustained Boost are unchanged.
+- Added forward torso/split-leg pose and a stronger short launch sound; collision height and visible height still share the same arc.
+- Unified CPU/hint travel projection with the physics factors and updated shared hazard approach prediction for leap speed/endpoints.
+- Retained character selection, session wins, course layout and controls. See [V8.8 notes](docs/versions/V8_8_FORWARD_LEAP.md).
+
 ## 8.7.0-preview.1 — Local character choices and session wins
 
 - Preserved V8.6 in a verified complete-history bundle; no push/deployment/submission.

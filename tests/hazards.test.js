@@ -46,12 +46,12 @@ test('approaching roof collapse lands ahead of normal and boosted arrivals, incl
 });
 
 test('falling masonry hits at its impact time even during a paid jump', () => {
-  const game = run([chunk]);
+  const game = run([{...chunk,z:45.752}]);
   buyAbility(game, 'longJump');
   updateGame(game, 1);
   assert.equal(game.hits, 1);
   near(game.timeLeft, 52);
-  assert.ok(game.speed < 18);
+  near(game.stunRemaining,.8);
 });
 
 test('a runner can pass a warning before impact without being hit', () => {
@@ -94,8 +94,8 @@ test('an impact and its rubble charge at most once per runner and never alter th
   assert.equal(another.hits, 1);
 });
 
-test('solo pause freezes impact time and purchases do not retime the debris schedule', () => {
-  const game = run([chunk]);
+test('solo pause freezes fixed fixture impact time while a forward leap can still be struck', () => {
+  const game = run([{...chunk,z:28.42592}]);
   updateGame(game, .8);
   buyAbility(game, 'longJump');
   const events = structuredClone(game.debris);
@@ -177,4 +177,14 @@ test('extra roof falls preserve the connecting route through tighter ground rows
     }
     assert.ok(extraFalls >= 1, `seed ${seed}: missing extra falls`);
   }
+});
+
+test('a forward leap bought during warning cannot outrun the shared impact schedule',()=>{
+ const game=createGame({seed:42});game.obstacles=[];game.checkpoints=[];game.debris=[game.debris[0]];
+ const event=game.debris[0];game.lane=(event.lane+1)%3;startGame(game);let bought=false;
+ for(let i=0;i<2400&&game.distance<event.z;i++){
+  if(!bought&&game.elapsed>=event.warnAt){buyAbility(game,'longJump');bought=true;}
+  updateGame(game,1/120);
+ }
+ assert.equal(bought,true);assert.ok(game.distance>=event.z);assert.ok(event.impactAt<=game.elapsed);assert.ok(game.elapsed-event.impactAt<.3);
 });

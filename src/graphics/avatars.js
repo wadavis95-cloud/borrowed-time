@@ -156,6 +156,18 @@ export function createAvatarLibrary({ loadAsset } = {}) {
       // remains; only flexible accessories trail sideways changes.
       bones.spine.rotation.x -= boostFeel * .11 * motion + stumbleFeel * .04;
       bones.head.rotation.x += boostFeel * .065 * motion;
+      // A paid leap reaches ahead with a leading leg and a trailing leg, rather
+      // than holding the two-knee tuck of the free hop. Public timing gives
+      // opponents the same silhouette without exposing private ability state.
+      const forwardLeap=jumping&&duration>.65?Math.sin(jumpProgress*Math.PI):0;
+      bones.spine.rotation.x -= forwardLeap*.22;
+      bones.head.rotation.x += forwardLeap*.10;
+      bones.thighL.rotation.x += forwardLeap*.16;
+      bones.shinL.rotation.x += forwardLeap*.72;
+      bones.thighR.rotation.x -= forwardLeap*.62;
+      bones.shinR.rotation.x += forwardLeap*.43;
+      bones.upperArmL.rotation.x -= forwardLeap*.32;
+      bones.upperArmR.rotation.x += forwardLeap*.14;
       // Authored distance-matched gait supplies the oscillation. These restrained
       // offsets let flexible accessories trail a turn or acceleration coherently.
       bones.bag.rotation.z -= lean * .35 * motion;

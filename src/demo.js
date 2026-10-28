@@ -1,4 +1,4 @@
-import { ABILITIES, CONFIG, createGame, getJumpHeight } from './game.js';
+import { ABILITIES, CONFIG, createGame, getJumpHeight, projectTravel } from './game.js';
 import { connectRace } from './network.js';
 
 // Each runner spends its own clock on a different plan. The first runner is the camera's
@@ -14,23 +14,7 @@ const RECOVERABLE_ERRORS = new Set(['ACTION_UNAVAILABLE', 'NOT_RACING', 'STALE_I
 
 // Predict only the runner's own motion to time ordinary inputs. This does not
 // change or simulate any authoritative state, and never reads another balance.
-function travelDistance(game, duration) {
-  const boundaries = [0, duration];
-  for (const time of [game.boostRemaining, game.stunRemaining, CONFIG.accelerationDuration - game.elapsed]) {
-    if (time > 0 && time < duration) boundaries.push(time);
-  }
-  boundaries.sort((a, b) => a - b);
-  const speed = time => CONFIG.baseSpeed + (CONFIG.topSpeed - CONFIG.baseSpeed)
-    * Math.min(1, (game.elapsed + time) / CONFIG.accelerationDuration);
-  let distance = 0;
-  for (let i = 1; i < boundaries.length; i += 1) {
-    const start = boundaries[i - 1], end = boundaries[i], middle = (start + end) / 2;
-    const boost = game.boostRemaining > middle ? ABILITIES.boost.multiplier : 1;
-    const stun = game.stunRemaining > middle ? CONFIG.stunMultiplier : 1;
-    distance += (speed(start) + speed(end)) / 2 * (end - start) * boost * stun;
-  }
-  return distance;
-}
+const travelDistance = projectTravel;
 
 // Every strategy uses the same rules and reacts to its own hazards first.
 // Different spending times create natural separation, catches and overtakes.
@@ -82,8 +66,8 @@ export function chooseDemoAction(game, index) {
       // conserving runners deliberately move to its free-hop route instead.
       if (row.length === 3 && current.type !== 'rubble' && index % 2 === 0
         && !game.jumpRemaining && game.timeSpent < 4 && game.timeLeft > ABILITIES.longJump.cost + 5) {
-        if (distance > travelDistance(game, .8)) return null;
-        if (distance >= travelDistance(game, .42)) return 'longJump';
+        if (distance > travelDistance(game, .75,'longJump')) return null;
+        if (distance >= travelDistance(game, .4,'longJump')) return 'longJump';
       }
       const candidates = [0, 1, 2].filter(lane => !overhead(lane)
         && (!row.some(obstacle => obstacle.lane === lane)
@@ -102,12 +86,12 @@ export function chooseDemoAction(game, index) {
   if (obstacle && !denseRow) {
     const distance = obstacle.z - game.distance;
     if (obstacle.type === 'barrier' || obstacle.type === 'gap') {
-      if (distance <= travelDistance(game, .82)) {
+      if (distance <= travelDistance(game, .75,'longJump')) {
         if (game.jumpKind === 'long' && game.jumpRemaining > 0) {
-          const clearance = obstacle.type === 'barrier' ? .37 : .05;
+          const clearance = obstacle.type === 'barrier' ? .4 : .05;
           if (distance > travelDistance(game, Math.max(0, game.jumpRemaining - clearance))) return dodge();
         } else if (game.timeLeft > ABILITIES.longJump.cost + 3 && game.timeSpent < 14
-          && (obstacle.type === 'gap' || distance > travelDistance(game, .52))) {
+          && (obstacle.type === 'gap' || distance >= travelDistance(game, .4,'longJump'))) {
           return 'longJump';
         } else return dodge();
       }

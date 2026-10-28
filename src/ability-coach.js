@@ -1,26 +1,14 @@
-import { ABILITIES, CONFIG } from './game.js';
+import { ABILITIES, CONFIG, getJumpHeight, projectTravel } from './game.js';
 
 // Predict only the local runner's travel, including boost/stun endpoints.
-function travel(game, seconds, buyBoost = false) {
-  const ends = [0, seconds, game.boostRemaining, game.stunRemaining, CONFIG.accelerationDuration - game.elapsed]
-    .filter(t => Number.isFinite(t) && t >= 0 && t <= seconds).sort((a, b) => a - b);
-  const base = t => CONFIG.baseSpeed + (CONFIG.topSpeed - CONFIG.baseSpeed)
-    * Math.min(1, (game.elapsed + t) / CONFIG.accelerationDuration);
-  let distance = 0;
-  for (let i = 1; i < ends.length; i++) {
-    const a = ends[i - 1], b = ends[i], mid = (a + b) / 2;
-    const boost = buyBoost || game.boostRemaining > mid ? ABILITIES.boost.multiplier : 1;
-    const stun = game.stunRemaining > mid ? CONFIG.stunMultiplier : 1;
-    distance += (base(a) + base(b)) / 2 * (b - a) * boost * stun;
-  }
-  return distance;
-}
+const travel=(game,seconds,buyBoost=false)=>projectTravel(game,seconds,buyBoost?'boost':null);
 function arrival(game, distance, horizon = ABILITIES.longJump.duration) {
-  if (distance > travel(game, horizon)) return Infinity;
+  const proposed={...game,jumpKind:'long',jumpRemaining:ABILITIES.longJump.duration};
+  if (distance > projectTravel(proposed, horizon)) return Infinity;
   let low = 0, high = horizon;
   for (let i = 0; i < 14; i++) {
     const mid = (low + high) / 2;
-    if (travel(game, mid) < distance) low = mid; else high = mid;
+    if (projectTravel(proposed, mid) < distance) low = mid; else high = mid;
   }
   return high;
 }
@@ -30,14 +18,15 @@ function opportunity(game, used) {
   const ahead = (game.obstacles || []).filter(o => !o.resolved && o.z > game.distance);
   const inLane = ahead.filter(o => o.lane === game.lane).sort((a, b) => a.z - b.z);
   const overhead = (game.debris || []).some(e => e.lane === game.lane && e.impactAt >= game.elapsed
-    && e.impactAt - game.elapsed <= 1.6 && Math.abs(e.z - game.distance - travel(game, e.impactAt - game.elapsed)) < 8);
+    && e.impactAt - game.elapsed <= 1.6 && (Math.abs(e.z - game.distance - travel(game, e.impactAt - game.elapsed)) < 8
+      || Math.abs(e.z-game.distance-projectTravel(game,e.impactAt-game.elapsed,'longJump'))<8));
   if (overhead) return null; // An ability doesn't protect against a roof impact.
   const next = inLane[0];
   if (!used.longJump && game.timeLeft > ABILITIES.longJump.cost + 8 && next && ['barrier', 'gap'].includes(next.type)) {
     const time = arrival(game, next.z - game.distance);
-    const height = t => CONFIG.longJumpHeight * Math.sin(Math.PI * t / ABILITIES.longJump.duration);
+    const height = t => getJumpHeight({jumpDuration:ABILITIES.longJump.duration,jumpRemaining:ABILITIES.longJump.duration-t});
     const clear = next.type === 'barrier'
-      ? time >= .65 && height(time) >= CONFIG.barrierClearanceHeight && height(time - .2) >= CONFIG.barrierClearanceHeight
+      ? time >= .55 && height(time) >= CONFIG.barrierClearanceHeight && height(time - .15) >= CONFIG.barrierClearanceHeight
       : time >= .4 && time <= 1 && arrival(game, next.z + (next.length || 8) - game.distance) < ABILITIES.longJump.duration - .05;
     if (clear) return { ability: 'longJump', label: 'Jump now', key: next.id };
   }

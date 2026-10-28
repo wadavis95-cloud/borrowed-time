@@ -24,7 +24,7 @@ test('an unused boost is highlighted on a clear stretch without changing the gam
 });
 
 test('long-jump highlight occurs inside a usable barrier window and a purchase clears it', () => {
-  const game = running([{ id: 'wall', z: 37, lane: 1, type: 'barrier', length: 2 }]);
+  const game = running([{ id: 'wall', z: 50, lane: 1, type: 'barrier', length: 2 }]);
   const coach = createAbilityCoach();
   assert.equal(coach.update(game)?.ability, 'longJump');
   assert.equal(buyAbility(game, 'longJump').ok, true);
@@ -34,7 +34,7 @@ test('long-jump highlight occurs inside a usable barrier window and a purchase c
 });
 
 test('the gap suggestion accounts for its far edge and clears it after purchase', () => {
-  const game = running([{ id: 'gap', z: 36, lane: 1, type: 'gap', length: 8 }]);
+  const game = running([{ id: 'gap', z: 44, lane: 1, type: 'gap', length: 8 }]);
   assert.equal(createAbilityCoach().update(game)?.ability, 'longJump');
   buyAbility(game, 'longJump'); updateGame(game, 1.3);
   assert.equal(game.hits, 0);

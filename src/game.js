@@ -12,7 +12,8 @@ export const CONFIG = Object.freeze({
   laneCount: 3,
   normalJumpDuration: 0.65,
   normalJumpHeight: 1.15,
-  longJumpHeight: 3,
+  longJumpHeight: 2.6,
+  longJumpMultiplier: 1.9,
   barrierClearanceHeight: 2.2,
   hitTimePenalty: 3,
   stunDuration: 0.8,
@@ -32,7 +33,7 @@ export const CONFIG = Object.freeze({
 
 export const ABILITIES = Object.freeze({
   boost: Object.freeze({ cost: 5, duration: 4, cooldown: 7, multiplier: 1.85 }),
-  longJump: Object.freeze({ cost: 4, duration: 1.4 }),
+  longJump: Object.freeze({ cost: 4, duration: 1.2, multiplier: CONFIG.longJumpMultiplier }),
 });
 
 const EPSILON = 0.00000001;
@@ -141,12 +142,31 @@ export function createGame({
 function speedMultiplier(game) {
   const boost = game.boostRemaining > 0 ? ABILITIES.boost.multiplier : 1;
   const stumble = game.stunRemaining > 0 ? CONFIG.stunMultiplier : 1;
-  return boost * stumble;
+  const leap = game.jumpKind === 'long' && game.jumpRemaining > 0 ? ABILITIES.longJump.multiplier : 1;
+  return Math.max(boost, leap) * stumble;
 }
 
 function baseSpeedAt(elapsed) {
   const progress = Math.min(1, elapsed / CONFIG.accelerationDuration);
   return CONFIG.baseSpeed + (CONFIG.topSpeed - CONFIG.baseSpeed) * progress;
+}
+
+// Analytic projection used by CPU decisions and contextual hints. It shares the
+// same movement factors and acceleration curve as actual simulation.
+export function projectTravel(game,seconds,purchase=null){
+  if(!Number.isFinite(seconds)||seconds<=0)return 0;
+  const boost=purchase==='boost'?ABILITIES.boost.duration:(game.boostRemaining||0);
+  const leap=purchase==='longJump'?ABILITIES.longJump.duration:(game.jumpKind==='long'?game.jumpRemaining||0:0);
+  const ends=[0,seconds,boost,leap,game.stunRemaining,CONFIG.accelerationDuration-game.elapsed]
+    .filter(t=>Number.isFinite(t)&&t>=0&&t<=seconds).sort((a,b)=>a-b);
+  let distance=0;
+  for(let i=1;i<ends.length;i++){
+    const a=ends[i-1],b=ends[i],middle=(a+b)/2;
+    const factor=Math.max(boost>middle?ABILITIES.boost.multiplier:1,leap>middle?ABILITIES.longJump.multiplier:1)
+      *(game.stunRemaining>middle?CONFIG.stunMultiplier:1);
+    distance+=(baseSpeedAt(game.elapsed+a)+baseSpeedAt(game.elapsed+b))/2*(b-a)*factor;
+  }
+  return distance;
 }
 
 function refreshSpeed(game) {

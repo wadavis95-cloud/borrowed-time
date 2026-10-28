@@ -55,13 +55,14 @@ export function scheduleApproachingDebris(events, racers, config, boostMultiplie
     let earliest = Infinity;
     for (const racer of racers) {
       if (racer.phase !== 'running' || racer.distance >= event.z || racer.elapsed >= event.impactAt) continue;
-      const boundaries = [0, 2.55, racer.boostRemaining, racer.stunRemaining, accelerationDuration - racer.elapsed]
+      const boundaries = [0, 2.55, racer.boostRemaining, racer.jumpRemaining, racer.stunRemaining, accelerationDuration - racer.elapsed]
         .filter(t => Number.isFinite(t) && t >= 0 && t <= 2.55).sort((a, b) => a - b);
       let distance = event.z - racer.distance;
       for (let i = 1; i < boundaries.length; i++) {
         const start = boundaries[i - 1], end = boundaries[i], middle = (start + end) / 2;
         if (end === start) continue;
-        const factor = (racer.boostRemaining > middle ? boostMultiplier : 1)
+        const factor = Math.max(racer.boostRemaining > middle ? boostMultiplier : 1,
+          racer.jumpKind === 'long' && racer.jumpRemaining > middle ? (config.longJumpMultiplier||1) : 1)
           * (racer.stunRemaining > middle ? config.stunMultiplier : 1);
         const speed = (baseSpeed + (topSpeed - baseSpeed) * Math.min(1, (racer.elapsed + start) / accelerationDuration)) * factor;
         const acceleration = racer.elapsed + middle < accelerationDuration ? (topSpeed - baseSpeed) / accelerationDuration * factor : 0;

@@ -1,5 +1,7 @@
 # Borrowed Time · V8.4 polished six-map release
 
+**V8.8 local playtest:** Long jump now has a shorter/lower arc and a brief 1.9× forward burst, with a forward-reaching pose. Still costs 4 seconds; Boost remains 5 seconds. Try it at http://localhost:4173/. [Forward-leap tuning](docs/versions/V8_8_FORWARD_LEAP.md). Not deployed or submitted; public V8.4 is unchanged.
+
 **V8.7 local preview:** optional map-specific character portraits/choice and first-place session totals are ready at http://localhost:4173/. All characters have identical stats. Totals show in lobby/results; the cover now says solo + multiplayer, 1–4 players. [Character/session notes](docs/versions/V8_7_CHARACTERS_SESSION.md). Public V8.4 is unchanged; nothing submitted.
 
 **V8.6 local preview:** solo now races three computer opponents on all six maps. Choose **Race computers** at http://localhost:4173/. CPU role labels, (you), live standings/results, whole-race pause and immediate replay are included. No server connection is needed for the solo race. [Solo racer notes](docs/versions/V8_6_SOLO_RIVALS.md). Public V8.4 and unsubmitted presentation drafts are unchanged.

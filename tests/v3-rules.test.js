@@ -79,18 +79,18 @@ test('collision time is solved inside the acceleration curve before a stun start
   }
 });
 
-test('the public jump arc has a three metre paid apex and a lower free hop', () => {
+test('the public jump arc has a lower forward-leap apex and a lower free hop', () => {
   assert.equal(typeof rules.getJumpHeight, 'function');
-  near(rules.getJumpHeight({ jumpDuration: 1.4, jumpRemaining: .7 }), 3);
+  near(rules.getJumpHeight({ jumpDuration: 1.2, jumpRemaining: .6 }), 2.6);
   near(rules.getJumpHeight({ jumpDuration: .65, jumpRemaining: .325 }), 1.15);
-  near(rules.getJumpHeight({ jumpDuration: 1.4, jumpRemaining: 1.4 }), 0);
-  near(rules.getJumpHeight({ jumpDuration: 1.4, jumpRemaining: 0 }), 0);
+  near(rules.getJumpHeight({ jumpDuration: 1.2, jumpRemaining: 1.2 }), 0);
+  near(rules.getJumpHeight({ jumpDuration: 1.2, jumpRemaining: 0 }), 0);
 });
 
-// The barrier appears at t=.5, t=.7 or t=.9. All are inside the visible
+// The barrier appears at t=.4, t=.6 or t=.8 with the actual forward burst. All are inside the visible
 // paid arc's clearance window, but the free hop can never rise high enough.
 test('a paid jump has a usable barrier clearance window matching its rendered height', () => {
-  for (const z of [12.02, 16.8392, 21.6648]) {
+  for (const z of [.4,.6,.8].map(t=>1.9*(24*t+.08*t*t))) {
     const game = running([{ z, lane: 1, type: 'barrier' }]);
     rules.buyAbility(game, 'longJump');
     rules.updateGame(game, 2);
@@ -103,7 +103,7 @@ test('a paid jump has a usable barrier clearance window matching its rendered he
 });
 
 test('a paid jump below the barrier on ascent or descent still collides', () => {
-  for (const z of [2.4008, 28.9152]) {
+  for (const z of [.1,1.1].map(t=>1.9*(24*t+.08*t*t))) {
     const game = running([{ z, lane: 1, type: 'barrier' }]);
     rules.buyAbility(game, 'longJump');
     rules.updateGame(game, 2);

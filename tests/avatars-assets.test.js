@@ -282,3 +282,18 @@ test('asset loading reports actual completion counts and cached readiness',async
   assert.ok(progress.every((value,index)=>index===0||value>=progress[index-1]));
   const cached=[];await library.preloadAvatars(value=>cached.push(value));assert.deepEqual(cached,[1]);
 });
+
+test('paid leap uses a forward torso and split-leg reach without accumulating pose offsets',async()=>{
+ const library=createAvatarLibrary({loadAsset:readAsset});await library.preloadAvatars();
+ const paid=library.createAvatar('courier'),hop=library.createAvatar('courier');
+ const long={phase:'running',distance:20,jumpDuration:1.2,jumpRemaining:.6};
+ const normal={phase:'running',distance:20,jumpDuration:.65,jumpRemaining:.325};
+ paid.update(long,1/60);hop.update(normal,1/60);
+ const bone=(avatar,name)=>avatar.group.getObjectByName(name).rotation.x;
+ assert.ok(bone(paid,'spine')<bone(hop,'spine')-.2);
+ assert.ok(bone(paid,'shinL')>bone(hop,'shinL')+.65,'lead lower leg reaches out of the knee tuck');
+ assert.ok(bone(paid,'thighR')<bone(hop,'thighR')-.55,'trailing leg reaches back');
+ const first=bone(paid,'spine');for(let i=0;i<100;i++)paid.update(long,1/60);
+ assert.ok(Math.abs(bone(paid,'spine')-first)<1e-6);
+ paid.dispose();hop.dispose();
+});

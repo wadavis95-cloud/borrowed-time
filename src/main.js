@@ -470,8 +470,8 @@ function updateHUD() {
   $('boost-description').textContent = !showAbilityState ? `${ABILITIES.boost.duration}s sprint` : game.boostRemaining > 0 ? `Boosting · ${Math.ceil(game.boostRemaining)}s left`
     : game.boostCooldown > 0 ? `Recharges in ${Math.ceil(game.boostCooldown)}s`
       : game.timeLeft <= ABILITIES.boost.cost ? 'Not enough time' : `${ABILITIES.boost.duration}s sprint`;
-  $('jump-description').textContent = !showAbilityState ? 'Clear barriers & gaps' : game.jumpKind === 'long' ? 'Long jump active'
-    : game.timeLeft <= ABILITIES.longJump.cost ? 'Not enough time' : 'Clear barriers & gaps';
+  $('jump-description').textContent = !showAbilityState ? 'Leap forward. Clear gaps.' : game.jumpKind === 'long' ? 'Long jump active'
+    : game.timeLeft <= ABILITIES.longJump.cost ? 'Not enough time' : 'Leap forward. Clear gaps.';
   const cue = abilityCoach.update(game, running);
   for (const [id, ability] of [['boost-button', 'boost'], ['long-jump-button', 'longJump']]) {
     $(id).classList.toggle('coach-cue', cue?.ability === ability);

@@ -99,7 +99,7 @@ export function createGameAudio() {
   }
 
   function launch(long) {
-    play({ noise: true, frequency: 500, endFrequency: 1250, duration: .11, gain: .12 });
+    play({ noise: true, frequency: 500, endFrequency: long ? 1900 : 1250, duration: long ? .17 : .11, gain: long ? .17 : .12 });
     play({ frequency: long ? 180 : 210, endFrequency: long ? 350 : 290, duration: .13, gain: .09 });
   }
 

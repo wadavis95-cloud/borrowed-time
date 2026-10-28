@@ -187,7 +187,7 @@ test('a normal hop cannot clear a gap but a paid long jump can', () => {
 });
 
 test('a long jump that ends before the gap does not grant permanent protection', () => {
-  const game = running([{ id: 'gap', z: 36, lane: 1, type: 'gap' }]);
+  const game = running([{ id: 'gap', z: 70, lane: 1, type: 'gap' }]);
   buyAbility(game, 'longJump');
   updateGame(game, 3);
   assert.equal(game.hits, 1);

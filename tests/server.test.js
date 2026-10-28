@@ -161,7 +161,7 @@ test('public transforms cannot disclose another runner’s balance, purchases, o
   assert.deepEqual(Object.keys(snapshot.players[1]).sort(), [
     'avatarId', 'color', 'connected', 'distance', 'id', 'jumpDuration', 'jumpRemaining', 'lane', 'name', 'phase', 'wins',
   ]);
-  assert.equal(snapshot.players[1].jumpRemaining, 1.4);
+  assert.equal(snapshot.players[1].jumpRemaining, 1.2);
   assert.equal(manager.snapshot('guest').you.game.timeLeft, 56);
   const room = manager.rooms.get(snapshot.room.code);
   assert.deepEqual(room.players.get('host').game.obstacles, room.players.get('guest').game.obstacles);

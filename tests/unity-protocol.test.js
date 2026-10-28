@@ -14,10 +14,10 @@ test('Unity receives the rules-owned jump arc and shared race clock without chan
   assert.ok(Math.abs(packet.frame.player.jumpProgress - .5) < 1e-9);
   assert.equal(packet.frame.elapsed, 9.75);
   assert.deepEqual(game, before);
-  buyAbility(game, 'longJump'); updateGame(game, .7);
+  buyAbility(game, 'longJump'); updateGame(game, .6);
   packet = bridge.sample(game, 1 / 60, []);
-  assert.ok(Math.abs(packet.frame.player.jumpHeight - 3) < 1e-9);
-  assert.equal(packet.frame.player.jumpDuration, 1.4);
+  assert.ok(Math.abs(packet.frame.player.jumpHeight - 2.6) < 1e-9);
+  assert.equal(packet.frame.player.jumpDuration, 1.2);
 });
 
 test('only the local runner carries boost and hit effects; ghosts expose movement alone', () => {
