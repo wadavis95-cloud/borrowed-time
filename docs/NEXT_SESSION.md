@@ -93,3 +93,15 @@ no browser/graphics errors; WAN gap p95 bucket <=100 ms, echo <=500 ms, input ac
 All test lobbies/sockets cleaned up. Ready for phone test and later explicit
 manual-submission authorization. Earlier Orbital 5–7 second report remains a cold
 phone investigation if it recurs; desktop cached checks do not close it.
+
+### Owner accepted mobile feel
+
+User reports "mobile feels clean just played". Captured mobile/touch/solo sample
+in artifacts/readiness/phone-owner-test-20261028.json:27 reports across all six
+maps,19,884 frames,p95 frame bucket <=25 ms,5 frames >50 ms,zero browser/graphics
+errors/context losses/disconnect reports. Initial ready sample <=2,000 ms;five
+first map switches <=500 ms (including Orbital),two revisits <=200 ms. Phone,
+browser,network and cache condition unspecified. This is solo evidence;zero
+online RTT/gap/input observations. Overall phone feel accepted. Physical phone
+online latency remains unmeasured unless a later phone+Mac race is done. No entry
+or submission; account eligibility/form sign-in/final authorization remain open.

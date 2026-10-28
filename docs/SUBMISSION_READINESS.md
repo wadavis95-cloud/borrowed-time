@@ -1,7 +1,8 @@
 # Borrowed Time submission readiness
 
-October 28, 2026. Public game https://borrowed-time.onrender.com/ is ready for the
-owner's final phone test. Desktop, functional network and asset checks passed.
+October 28, 2026. Public game https://borrowed-time.onrender.com/ passed desktop and functional
+network checks. The owner subsequently reported that mobile feels clean; a saved
+mobile/touch sample covers solo play across all six maps.
 Nothing has been submitted. No new product code or public deployment was needed.
 
 ## Completed checks
@@ -120,3 +121,26 @@ https://go.joinhandshake.com/rs/390-ZTF-353/images/%5BAI_Skills_Studio_Challenge
 
 Readiness does not establish fresh-player comprehension or public peak capacity.
 Render remains one Free instance with ephemeral rooms and sleeping behavior.
+
+## Owner phone test result
+
+The owner reported "mobile feels clean just played". Snapshot saved in
+../artifacts/readiness/phone-owner-test-20261028.json before retention expiry.
+All 27 retained reports are estimated mobile/touch and solo mode, with running
+frames on all six maps. Reports are not unique people or completed race counts.
+
+- 19,884 visible running frames; p95 frame bucket at or below 25 ms.
+- Five frames exceeded 50 ms (approximately 0.025 percent).
+- No reported browser/graphics errors, context losses or disconnects.
+- One initial ready-view sample at or below 2,000 ms.
+- Five first-in-tab map-switch samples at or below 500 ms, including Orbital.
+- Two repeat-switch samples at or below 200 ms.
+
+These are histogram bounds from this session; browser cache state, exact phone,
+browser and Wi-Fi/cellular network are unspecified. The earlier Orbital 5–7 second
+wait did not appear in the captured preparation samples, but these samples do not
+establish the cause of that earlier wait. General mobile feel is accepted by the
+owner. Specific audio/app-switch/orientation checks have not been individually
+confirmed. No online phone samples were captured: network RTT, update gaps and
+input acknowledgments have zero observations. A phone-to-Mac race remains the
+focused optional follow-up for physical-phone online latency. No submission.
