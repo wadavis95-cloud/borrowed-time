@@ -9,3 +9,9 @@ No physics, prices, map placement, AI or network changes. Local only; not pushed
 Backup: `backups/pre-in-game-controls-20261028.bundle`, complete Git history at `1c25d8b`.
 
 Verification: syntax checks; 163 passing unit tests (11 network tests skipped); browser checks at 390×844, 320×740 and 844×390. Verified movement, Hop, paid Leap, Boost, pause/resume, and layout bounds. Responsive browser testing is not a physical phone test.
+
+## PC layout follow-up
+
+Keyboard/mouse players now see two short rectangular ability cards side by side, with Q/E badges, and a small W-over-A/D movement guide. Touch-only players retain the thumb controls. Actual keyboard or touch input switches the presentation on hybrid devices using the existing input detector. The solo launch button is now “Solo race”.
+
+Verified keyboard movement, Hop, Q Boost and E Long jump in the browser at 1280×800, checked a narrow PC layout, and passed all three input-mode tests. No gameplay or price changes.

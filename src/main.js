@@ -434,7 +434,7 @@ function updateOverlay() {
     return;
   }
   $('screen-overlay').hidden = game.phase === 'running';
-  if (game.phase === 'ready') overlay(getMap(selectedMapId).name.toUpperCase(), 'Escape before zero.', 'Race 3 computer runners. Spend seconds on abilities.', 'Race computers →', false, controlHint());
+  if (game.phase === 'ready') overlay(getMap(selectedMapId).name.toUpperCase(), 'Escape before zero.', 'Race 3 computer runners. Spend seconds on abilities.', 'Solo race →', false, controlHint());
   else if (game.phase === 'paused') overlay('TAKE A BREATH', 'Time stands still.', '', 'Resume run →', false, 'Press P or ESC to resume');
   else if (ended) { const result=finishPresentation(game,currentRaceSnapshot(),'solo');overlay(game.phase==='won'?result.kind==='winner'?'RACE WON':'ESCAPE COMPLETE':'THE CLOCK RAN OUT',result.title,result.detail,'Race again →'); }
 }

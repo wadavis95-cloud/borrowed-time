@@ -1479,8 +1479,7 @@ html[data-input="touch"] .arena .touch-controls { display:grid; }
  .arena .abilities-panel { width:188px;grid-template-columns:1fr 1fr;gap:10px; }
  .arena .ability-button { min-height:68px; }
 }
-/* Keep visible controls available to mouse and touch alike; WASD/Q/E still work. */
-html[data-input="keyboard"] .arena .touch-controls { display:grid; }
+
 /* One full-width course in every orientation; no leftover sidebar column. */
 .game-layout { display:block; }
 .arena .abilities-panel { width:88px;gap:9px; }
@@ -1513,3 +1512,39 @@ html[data-input="keyboard"] .arena .touch-controls { display:grid; }
  .arena .leaderboard-heading strong { font-size:14px;white-space:nowrap; }
  .arena .leaderboard-heading>span { font-size:6px;letter-spacing:0; }
 }
+
+
+/* Keyboard HUD: short action cards and a quiet movement legend, not thumb pads.
+   Follow real input capabilities so a narrow PC stays a PC and tablets can switch. */
+html[data-input="keyboard"] .arena .touch-controls { display:none; }
+html[data-input="keyboard"] .arena .keyboard-hint { position:absolute;left:18px;bottom:18px;z-index:2;display:inline-flex;align-items:center;gap:5px;padding:9px 11px;border:1px solid #ffffff30;border-radius:8px;background:#0a1922ad;color:#e5eef1;font-size:10px;pointer-events:none; }
+html[data-input="keyboard"] .arena .keyboard-hint b { margin:0 3px;color:#9aafb8; }
+html[data-input="keyboard"] .arena .abilities-panel { width:300px;grid-template-columns:1fr 1fr;gap:9px; }
+html[data-input="keyboard"] .arena .ability-button { grid-template-columns:1fr auto;gap:4px 6px;min-height:48px;padding:9px 10px;border-radius:8px;text-align:left; }
+html[data-input="keyboard"] .arena .ability-copy strong { font-size:11px; }
+html[data-input="keyboard"] .arena .ability-copy kbd { display:inline-block;font-size:11px;padding:2px 5px;border-radius:4px; }
+html[data-input="keyboard"] .arena .ability-button .cost { grid-column:2;grid-row:1;align-self:center;font-size:14px; }
+html[data-input="keyboard"] .arena .ability-button .cost span { font-size:7px; }
+html[data-input="keyboard"] .arena .ability-copy small,html[data-input="keyboard"] .arena .ability-hint { grid-column:1/-1;text-align:center; }
+@media(max-width:650px) {
+ html[data-input="keyboard"] .arena .abilities-panel { width:210px;right:12px;gap:6px; }
+ html[data-input="keyboard"] .arena .ability-button { grid-template-columns:1fr;padding:7px 6px;gap:4px;text-align:center; }
+ html[data-input="keyboard"] .arena .ability-button .cost { grid-column:1;grid-row:auto; }
+ html[data-input="keyboard"] .arena .ability-copy strong { font-size:10px; }
+ html[data-input="keyboard"] .arena .ability-copy kbd { font-size:9px;padding:1px 3px; }
+ html[data-input="keyboard"] .arena .keyboard-hint { left:12px;padding:7px;max-width:100px;flex-wrap:wrap;gap:3px; }
+ html[data-input="keyboard"] .arena .keyboard-hint kbd { padding:2px 4px;font-size:10px; }
+}
+@media(max-width:380px) {
+ html[data-input="keyboard"] .arena .abilities-panel { width:176px; }
+ html[data-input="keyboard"] .arena .ability-button { grid-template-columns:1fr;text-align:center; }
+ html[data-input="keyboard"] .arena .ability-button .cost { grid-column:1;grid-row:auto; }
+ html[data-input="keyboard"] .arena .keyboard-hint { max-width:75px; }
+}
+
+/* Match the physical WASD arrangement: hop above the two lane keys. */
+html[data-input="keyboard"] .arena .keyboard-hint { display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;width:90px;max-width:90px;padding:8px; }
+.arena .keyboard-hint>span { display:flex;flex-direction:column;align-items:center;gap:2px; }
+.arena .keyboard-hint .key-hop { grid-column:1/-1; }
+html[data-input="keyboard"] .arena .keyboard-hint kbd { display:grid;place-items:center;width:24px;height:24px;padding:0;font-size:11px; }
+.arena .keyboard-hint small { font-size:8px;color:#c9d7dd; }
