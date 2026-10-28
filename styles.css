@@ -1437,3 +1437,79 @@ button:focus-visible,input:focus-visible { outline:3px solid #ffe0a0;outline-off
 .character-card img { width:100%;height:150px;object-fit:contain; }
 .character-card strong { font-size:12px;text-align:center; }
 @media(max-width:600px){.character-cards{grid-template-columns:repeat(2,minmax(0,1fr));}.character-dialog{padding:16px;}.character-card img{height:120px;}.character-picker small{display:none;}}
+
+
+/* In-course controls: only the buttons capture taps; the road stays open. */
+.arena .dashboard { position:absolute;inset:0;display:block;padding:0;border:0;background:none;pointer-events:none;z-index:2; }
+.arena .clock-panel { position:absolute;top:12px;left:50%;transform:translateX(-50%);width:100px;max-width:none;display:block;padding:6px 9px;border:1px solid #ffffff26;border-radius:12px;background:#0a1922b8; }
+.arena .clock-panel .panel-label { justify-content:center;font-size:8px;gap:3px; }
+.arena .clock-panel .status-label { display:none; }
+.arena .clock { justify-content:center;gap:4px;margin:2px 0; }
+.arena .clock #time-value { font-size:29px; }
+.arena .clock .unit { font-size:8px; }
+.arena .time-track { margin-top:3px;height:3px; }
+.arena .abilities-panel { position:absolute;right:max(16px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));width:100px;display:grid;grid-template-columns:1fr;gap:12px;pointer-events:none; }
+.arena .ability-heading { display:none; }
+.arena .ability-button { pointer-events:auto;display:grid;grid-template-columns:22px 1fr;align-content:center;gap:2px 4px;min-height:76px;padding:8px;border-radius:22px;text-align:center;box-shadow:0 3px 12px #07122160; }
+.arena .ability-icon { grid-row:1/3;font-size:28px;align-self:center; }
+.arena .ability-copy { display:contents; }
+.arena .ability-copy strong { font-size:11px;line-height:1.2; }
+.arena .ability-copy kbd { font-size:9px;padding:1px 3px; }
+.arena .ability-button .cost { grid-column:2;font-size:17px;background:none;padding:0;line-height:1.1; }
+.arena .ability-button .cost span { font-size:8px; }
+.arena .ability-copy small,.arena .ability-hint { grid-column:1/-1;font-size:9px;margin:0; }
+.arena .touch-controls { position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(18px,env(safe-area-inset-bottom));width:116px;grid-template-columns:52px 52px;grid-template-rows:52px 52px;gap:10px 12px;margin:0;z-index:2;pointer-events:none; }
+.arena .touch-controls button { pointer-events:auto;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;width:52px;height:52px;min-height:52px;padding:0;gap:0;border:1px solid #ffffff80;border-radius:50%;background:#102c42a6;color:#fff;box-shadow:0 2px 10px #07122140;font-size:24px;backdrop-filter:blur(5px); }
+.arena .touch-controls span { display:block;font-size:8px;margin:0; }
+.arena #hop-button { grid-column:1/3;grid-row:1;justify-self:center; }
+.arena #left-button { grid-column:1;grid-row:2; }
+.arena #right-button { grid-column:2;grid-row:2; }
+html[data-input="touch"] .arena .touch-controls { display:grid; }
+.arena .touch-controls button:active:enabled { background:#436c8cda;transform:scale(.94); }
+@media(max-width:600px) {
+ .arena { height:clamp(440px,76dvh,780px); }
+ .arena .clock-panel { top:8px;width:90px; }
+ .arena .abilities-panel { width:86px;right:max(12px,env(safe-area-inset-right));gap:10px; }
+ .arena .ability-button { min-height:70px;border-radius:20px;padding:7px 5px;grid-template-columns:18px 1fr; }
+ .arena .ability-icon { font-size:24px; }
+ .arena .touch-controls { left:max(12px,env(safe-area-inset-left)); }
+}
+@media(max-height:500px) and (orientation:landscape) {
+ .arena { height:calc(100dvh - 12px);min-height:280px; }
+ .arena .abilities-panel { width:188px;grid-template-columns:1fr 1fr;gap:10px; }
+ .arena .ability-button { min-height:68px; }
+}
+/* Keep visible controls available to mouse and touch alike; WASD/Q/E still work. */
+html[data-input="keyboard"] .arena .touch-controls { display:grid; }
+/* One full-width course in every orientation; no leftover sidebar column. */
+.game-layout { display:block; }
+.arena .abilities-panel { width:88px;gap:9px; }
+.arena .ability-button { min-height:64px;padding:6px;border-radius:18px; }
+.arena .ability-button .cost { font-size:15px; }
+@media(max-width:600px) {
+ .arena .abilities-panel { width:78px;gap:8px; }
+ .arena .ability-button { min-height:60px;padding:6px 4px;grid-template-columns:14px 1fr;gap:2px; }
+ .arena .ability-copy strong { font-size:10px; }
+}
+@media(max-height:500px) and (orientation:landscape) {
+ .arena .abilities-panel { width:170px;gap:8px; }
+ .arena .ability-button { min-height:60px; }
+}
+@media(max-width:360px) {
+ .arena .leaderboard { width:92px; }
+ .arena .clock-panel { width:76px; }
+ .arena .clock #time-value { font-size:25px; }
+ .arena .mode-label { display:none; }
+}
+/* Compact labels leave more of the course visible than large decorative icons. */
+.arena .ability-button { grid-template-columns:1fr; }
+.arena .ability-icon { display:none; }
+.arena .ability-button .cost { grid-column:1;min-width:0; }
+.arena .ability-button .cost span { display:inline;margin:0 0 0 3px; }
+.arena .ability-copy strong { white-space:nowrap; }
+.arena .ability-copy kbd { margin-left:2px;padding:0 2px;font-size:8px; }
+.arena .event-toast { top:112px; }
+@media(max-width:360px) {
+ .arena .leaderboard-heading strong { font-size:14px;white-space:nowrap; }
+ .arena .leaderboard-heading>span { font-size:6px;letter-spacing:0; }
+}
