@@ -1420,3 +1420,5 @@ button:focus-visible,input:focus-visible { outline:3px solid #ffe0a0;outline-off
 @media(max-height:480px) and (orientation:landscape) {
  .screen-overlay[data-stage="finish"] #overlay-description { font-size:11px;margin:2px 0 5px; }
 }
+
+.standing-cpu { flex:none;white-space:pre;color:#aec6c9;font-size:.85em;font-weight:650; }

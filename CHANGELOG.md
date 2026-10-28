@@ -1,5 +1,13 @@
 # Changelog
 
+## 8.6.0-preview.1 — Local solo computer racers
+
+- Preserved V8.5 in a verified complete-history backup; no push, deployment or submission.
+- Solo starts one human plus three map-themed CPUs immediately, with separate budgets/abilities and normal movement/collision rules.
+- Reused the demo decision strategies, a shared local course/impact schedule and existing translucent rival rendering.
+- Added CPU labels, persistent (you), live positions and escape/DNF results to solo. Replay stays available while other racers finish.
+- Solo pause/tab-hide freezes racing; fresh restart/map selection discards all prior CPUs and results. Online rooms remain unchanged.
+
 ## 8.5.0-preview.1 — Local starting grid and presentation drafts
 
 - Preserved V8.4 in a verified complete-history bundle. No push, deployment or competition submission.

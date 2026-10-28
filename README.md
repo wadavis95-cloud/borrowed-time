@@ -1,5 +1,7 @@
 # Borrowed Time · V8.4 polished six-map release
 
+**V8.6 local preview:** solo now races three computer opponents on all six maps. Choose **Race computers** at http://localhost:4173/. CPU role labels, (you), live standings/results, whole-race pause and immediate replay are included. No server connection is needed for the solo race. [Solo racer notes](docs/versions/V8_6_SOLO_RIVALS.md). Public V8.4 and unsubmitted presentation drafts are unchanged.
+
 **V8.5 local preview:** stable multiplayer starting lanes and immediate first-snapshot placement remove the opening lane shuffle. A cover, silent gameplay video and submission-description draft are in [artifacts/submission](artifacts/submission/SUBMISSION_DRAFT.md). Nothing submitted or deployed; the public link remains V8.4.
 
 **V8.4 phone playtest:** clearer obstacle and movement feedback, confirmed ability debits, countdown/result polish, map-specific sound and atmosphere, rescue destinations, visible “(you)” labels and better loading/join recovery. Boost remains 5 seconds and Long jump 4 seconds. [Public release record](docs/versions/V8_4_PUBLIC_PLAYTEST.md).

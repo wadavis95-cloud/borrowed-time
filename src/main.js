@@ -1,9 +1,10 @@
 // The coordinator: browser inputs, solo rules, multiplayer snapshots, 3D scene, and HUD.
-import { CONFIG, ABILITIES, createGame, freshCourseSeed, startGame, pauseGame, resumeGame, moveLane, jump, buyAbility, updateGame } from './game.js';
+import { CONFIG, ABILITIES, createGame, freshCourseSeed, pauseGame, resumeGame, moveLane, jump, buyAbility, updateGame } from './game.js';
 import { createUnityRenderer } from './unity-renderer.js';
 import { connectRace, createRaceView } from './network.js';
 import { AVATARS } from './avatars.js';
 import { MAPS, MAP_IDS, getMap } from './maps.js';
+import { createSoloRace } from './solo-race.js';
 import { createDemoRace } from './demo.js';
 import { createGameAudio } from './audio.js';
 import { createInputMode } from './input.js';
@@ -28,6 +29,7 @@ let game = createGame({ mapId: selectedMapId });
 let mapPickerKey = '';
 let soloSeed = 42;
 let mode = 'solo';
+let soloRace = null;
 let connection = null, snapshot = null, raceView = createRaceView();
 let networkStatus = '', connectionGeneration = 0, rosterKey = '';
 let lastOverlay = '', lastEvent = 0, toastUntil = 0;
@@ -62,7 +64,7 @@ for (const id of MAP_IDS) {
       if (snapshot?.room.phase === 'lobby' && mode !== 'demo') connection?.send({ type: 'vote', mapId: id });
       return;
     }
-    selectedMapId = id; game = createGame({ mapId: id }); resetVisuals(); updateHUD();
+    selectedMapId = id; soloRace = null; game = createGame({ mapId: id }); resetVisuals(); updateHUD();
   });
   $('map-cards').append(button);
 }
@@ -149,6 +151,7 @@ function returnToMenu() {
   connection = null;
   snapshot = null;
   mode = 'solo';
+  soloRace = null;
   networkStatus = '';
   game = createGame({ mapId: selectedMapId });
   resetVisuals();
@@ -158,8 +161,9 @@ function returnToMenu() {
 function beginRun() {
   if (mode !== 'solo' || !renderer || graphicsError) return;
   soloSeed = freshCourseSeed(soloSeed);
-  game = createGame({ seed: soloSeed, mapId: selectedMapId });
-  startGame(game);
+  soloRace = createSoloRace({ seed: soloSeed, mapId: selectedMapId });
+  soloRace.start();
+  game = soloRace.player;
   resetVisuals();
   raceUI.startSolo();
   showNetworkError();
@@ -176,6 +180,7 @@ function joinRace(type) {
   }
   connection?.close();
   const generation = ++connectionGeneration;
+  soloRace = null;
   mode = type === 'demo' ? 'demo' : 'online';
   networkStatus = 'connecting';
   snapshot = null;
@@ -247,8 +252,9 @@ function updateRoom() {
   $('room-players').hidden = ['racing', 'finished'].includes(snapshot?.room.phase);
 }
 
-function updateLeaderboard() {
-  const visible = mode !== 'solo' && Boolean(snapshot?.standings) && ['racing', 'finished'].includes(snapshot.room.phase);
+function currentRaceSnapshot(){return mode==='solo' ? soloRace?.snapshot() : snapshot;}
+function updateLeaderboard(snapshot = currentRaceSnapshot()) {
+  const visible = Boolean(snapshot?.standings) && ['racing', 'finished'].includes(snapshot.room.phase);
   $('leaderboard').hidden = !visible;
   canvas.closest('.arena').classList.toggle('race-hud', visible);
   if (!visible) { standingsKey = ''; return; }
@@ -259,14 +265,14 @@ function updateLeaderboard() {
   const target = results ? $('results-standings-slot') : canvas.closest('.arena');
   if ($('leaderboard').parentElement !== target) target.append($('leaderboard'));
   const own = snapshot.standings.find(p => p.id === snapshot.you.id);
-  const stale = networkStatus !== 'open';
+  const stale = mode !== 'solo' && networkStatus !== 'open';
   $('leaderboard-title').textContent = results ? finished ? 'Race results' : 'Still racing' : `${own?.position ?? '—'} / ${snapshot.standings.length}`;
   $('leaderboard-note').textContent = stale ? 'Offline · last positions'
     : results ? 'DNF = did not escape' : 'POSITION';
   const rows = snapshot.standings.map(entry => ({ ...entry, ...snapshot.players.find(p => p.id === entry.id) }));
   // Only touch the DOM when order, identity or result changes, not every frame.
   const displayKey = JSON.stringify([snapshot.room.roundId, snapshot.you.id, mode, view,
-    rows.map(p => [p.id, p.position, p.status, p.name, p.color])]);
+    rows.map(p => [p.id, p.position, p.status, p.name, p.color, p.isComputer])]);
   if (displayKey === standingsKey) return;
   standingsKey = displayKey;
   $('leaderboard-rows').replaceChildren(...rows.map(player => {
@@ -287,6 +293,8 @@ function updateLeaderboard() {
       you.className = 'standing-you';
       you.textContent = ' (you)';
       name.append(you);
+    } else if(player.isComputer) {
+      const cpu=document.createElement('span');cpu.className='standing-cpu';cpu.textContent=' CPU';name.append(cpu);
     }
     name.title = name.textContent;
     const dot = document.createElement('i');
@@ -342,7 +350,7 @@ function updateOverlay() {
   $('loading-progress').hidden=!graphicsLoading;
   $('loading-progress').value=graphicsProgress;
   $('choose-map').hidden=mode!=='solo'||!['won','lost'].includes(game.phase)||Boolean(graphicsError);
-  raceUI.result(graphicsLoading||graphicsError||networkStatus==='disconnected'?null:finishPresentation(game,snapshot,mode));
+  raceUI.result(graphicsLoading||graphicsError||networkStatus==='disconnected'?null:finishPresentation(game,currentRaceSnapshot(),mode));
   const brief = !graphicsLoading && !graphicsError && (mode === 'solo' ? game.phase === 'ready'
     : snapshot?.room.phase === 'lobby');
   $('ability-brief').hidden = !brief;
@@ -383,15 +391,16 @@ function updateOverlay() {
     return;
   }
   $('screen-overlay').hidden = game.phase === 'running';
-  if (game.phase === 'ready') overlay(getMap(selectedMapId).name.toUpperCase(), 'Escape before zero.', 'Abilities cost seconds from your clock.', 'Play solo →', false, controlHint());
+  if (game.phase === 'ready') overlay(getMap(selectedMapId).name.toUpperCase(), 'Escape before zero.', 'Race 3 computer runners. Spend seconds on abilities.', 'Race computers →', false, controlHint());
   else if (game.phase === 'paused') overlay('TAKE A BREATH', 'Time stands still.', '', 'Resume run →', false, 'Press P or ESC to resume');
-  else if (ended) { const result=finishPresentation(game,null,'solo');overlay(game.phase==='won'?'ESCAPE COMPLETE':'THE CLOCK RAN OUT',result.title,result.detail,'Race again →'); }
+  else if (ended) { const result=finishPresentation(game,currentRaceSnapshot(),'solo');overlay(game.phase==='won'?result.kind==='winner'?'RACE WON':'ESCAPE COMPLETE':'THE CLOCK RAN OUT',result.title,result.detail,'Race again →'); }
 }
 function updateHUD() {
   updateMapPicker();
   $('guide-hazard').textContent = getMap(game.mapId).warning;
   canvas.setAttribute('aria-label', `${getMap(game.mapId).name}. Three lanes. Dodge hazards, hop small obstacles, spend seconds on Boost and Long jump.`);
-  updateLeaderboard();
+  const raceSnapshot=currentRaceSnapshot();
+  updateLeaderboard(raceSnapshot);
   const online = mode !== 'solo';
   const running = Boolean(renderer) && !graphicsError && mode !== 'demo' && game.phase === 'running' && (!online || networkStatus === 'open');
   $('race-menu').hidden = online || game.phase !== 'ready';
@@ -399,7 +408,7 @@ function updateHUD() {
   $('room-panel').hidden = !online;
   $('room-panel').classList.toggle('live-room', online && ['racing', 'finished'].includes(snapshot?.room.phase));
   $('restart-button').hidden = online;
-  $('race-mode-label').textContent = mode === 'demo' ? 'DEMO' : online ? 'MULTIPLAYER' : 'SOLO';
+  $('race-mode-label').textContent = mode === 'demo' ? 'DEMO' : online ? 'MULTIPLAYER' : soloRace ? 'VS CPU' : 'SOLO';
   $('avatar-label').textContent = AVATARS[game.avatarId]?.name || 'Runner';
   for (const id of ['create-room', 'join-room', 'restart-button']) $(id).disabled = !renderer || Boolean(graphicsError);
   $('demo-button').disabled = !renderer || Boolean(graphicsError) || online;
@@ -434,7 +443,7 @@ function updateHUD() {
     lastEvent = game.recentEvent.id;
     notify(game.recentEvent.text, game.recentEvent.kind);
   }
-  const key = [graphicsLoading, graphicsError, mode, networkStatus, game.phase, snapshot?.room.phase, snapshot?.room.countdown, snapshot?.room.hostId, snapshot?.room.winnerId, rosterKey].join(':');
+  const key = [graphicsLoading, graphicsError, mode, networkStatus, game.phase, snapshot?.room.phase, snapshot?.room.countdown, snapshot?.room.hostId, snapshot?.room.winnerId, raceSnapshot?.room.phase, raceSnapshot?.room.winnerId, rosterKey].join(':');
   if (key !== lastOverlay) { updateOverlay(); lastOverlay = key; }
   raceUI.update(game,{mode,room:networkStatus==='disconnected'?undefined:snapshot?.room},performance.now());
 }
@@ -510,12 +519,12 @@ $('close-guide').addEventListener('click', () => $('guide-dialog').close());
 function frame(now) {
   const dt = Math.min((now - lastFrame) / 1000, .1);
   lastFrame = now;
-  if (!graphicsError && mode === 'solo' && game.phase === 'running') {
+  if (!graphicsError && mode === 'solo' && !document.hidden && (game.phase === 'running' || soloRace && !soloRace.finished && game.phase !== 'paused')) {
     accumulator += dt;
-    while (accumulator >= STEP) { updateGame(game, STEP); accumulator -= STEP; }
+    while (accumulator >= STEP) { if(soloRace)soloRace.update(STEP);else updateGame(game, STEP); accumulator -= STEP; }
   } else accumulator = 0;
   updateHUD();
-  const view = mode !== 'solo' && snapshot ? raceView.sample(now) : null;
+  const view = mode !== 'solo' && snapshot ? raceView.sample(now) : soloRace ? {game:soloRace.view(),opponents:soloRace.opponents()} : null;
   if (renderer && !graphicsError) {
     try {
       renderer.draw(view?.game || game, now / 1000, dt, view?.opponents || []);
@@ -527,6 +536,7 @@ function frame(now) {
       connection = null;
       snapshot = null;
       mode = 'solo';
+      soloRace = null;
       pauseGame(game);
       try { renderer.dispose?.(); } catch { /* Context may already be gone. */ }
       renderer = null;
