@@ -18,3 +18,10 @@ Sound now defaults on, unlocking on the first interaction. A speaker icon/slashe
 The camera/rear-destruction experiment was rejected and fully reverted before these changes. Nothing deployed or submitted.
 
 Final verification: 168 unit tests passed (11 network tests skipped), syntax/whitespace checks passed, browser speaker/mute icons toggled correctly, and the updated real four-connection demo ran without browser errors. The local game is ready for listening/playtesting.
+
+
+## Thematic background audio
+
+Added six original procedural ambience/motif palettes: low tunnel echoes, ship waves/wood creaks with a light melody, jungle rumble/percussive notes, summit wind/chimes, station hum/synth notes, and canyon wind/plucked tones. No music files or external services are downloaded. Fixed background ambience is separate from opponent activity; footsteps and shared hazard-event audio remain absent.
+
+Backgrounds play only during the local run, below clock/action feedback, and soften during Boost/jumps or low remaining time. All share the speaker toggle and 24-voice ceiling, stop on pause/hide/finish/mute, reset on replay/map changes, and dispose normally. Syntax checks and 169 unit tests passed (11 network skips).

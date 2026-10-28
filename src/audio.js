@@ -11,7 +11,7 @@ export function createGameAudio({enabledByDefault=false}={}) {
   let requested = enabledByDefault, disposed = false, toggleSequence = 0, previous = null;
   const voices = new Set();
   const scene = createAudioScene();
-  let nextBeat=0,tickIndex=0;
+  let nextBeat=0,tickIndex=0,nextBed=0,nextNote=0,noteIndex=0;
   const page = globalThis.document;
 
   function stopVoices() {
@@ -23,7 +23,7 @@ export function createGameAudio({enabledByDefault=false}={}) {
 
   function reset() {
     previous = null;
-    scene.reset();nextBeat=tickIndex=0;
+    scene.reset();nextBeat=tickIndex=nextBed=nextNote=noteIndex=0;
     stopVoices();
   }
 
@@ -49,7 +49,7 @@ export function createGameAudio({enabledByDefault=false}={}) {
 
   // Every voice has a scheduled end and disconnects its entire graph afterward.
   // The hard cap also bounds resources if a browser delays its ended callbacks.
-  function play({ noise = false, frequency, endFrequency = frequency, duration, gain, delay = 0, filter = 'bandpass', pan = 0, attack = .006 }) {
+  function play({ noise = false, frequency, endFrequency = frequency, duration, gain, delay = 0, filter = 'bandpass', pan = 0, attack = .006, wave = 'sine' }) {
     if (voices.size >= MAX_VOICES) return;
     const source = noise ? context.createBufferSource() : context.createOscillator();
     const envelope = context.createGain();
@@ -67,7 +67,7 @@ export function createGameAudio({enabledByDefault=false}={}) {
       shaping.connect(envelope);
       nodes.push(shaping);
     } else {
-      source.type = 'sine';
+      source.type = wave;
       source.frequency.setValueAtTime(frequency, start);
       source.frequency.exponentialRampToValueAtTime(endFrequency, end);
       source.connect(envelope);
@@ -132,6 +132,27 @@ export function createGameAudio({enabledByDefault=false}={}) {
     nextBeat=now+direction.beatSeconds;
   }
 
+  function background(direction,state) {
+    const theme=direction.background,now=context.currentTime;
+    // Leave clock and local action feedback in front. This never reads opponents.
+    const focus=(state.boost>0||state.jump>0)?.45:1;
+    const gain=(.8-direction.urgency*.4)*focus;
+    if(now>=nextBed) {
+      play({noise:true,frequency:theme.air,endFrequency:theme.air*.8,filter:theme.filter,duration:2,gain:.027*gain,attack:.45});
+      if(theme.hum)play({frequency:theme.hum,endFrequency:theme.hum*1.005,duration:2,gain:.021*gain,attack:.4});
+      // Occasional wooden creaks underneath the original ship motif.
+      if(direction.mapId==='pirate'&&noteIndex%3===0)play({frequency:180,endFrequency:110,duration:.35,gain:.015*gain,wave:'triangle',attack:.09});
+      nextBed=now+1.6;
+    }
+    if(now>=nextNote) {
+      const frequency=theme.notes[noteIndex++%theme.notes.length];
+      play({frequency,duration:theme.noteLength,gain:.045*gain,wave:theme.wave,attack:direction.mapId==='jungle'?.004:.025});
+      if(direction.mapId==='tunnel')play({frequency,duration:.28,gain:.012*gain,delay:.22,attack:.04});
+      if(direction.mapId==='jungle')play({frequency:72,endFrequency:39,duration:.12,gain:.033*gain});
+      nextNote=now+theme.noteEvery;
+    }
+  }
+
   function cue(kind,value) {
     if(disposed||!requested||context?.state!=='running'||page?.hidden)return false;
     if(kind==='countdown') {
@@ -152,7 +173,7 @@ export function createGameAudio({enabledByDefault=false}={}) {
     const direction=scene.update(state);
     // Copy scalar fields: solo mutates the same state object between frames.
     const next = {
-      phase: state.phase,
+      phase: state.phase,mapId:state.mapId,
       elapsed: finite(state.elapsed), distance: finite(state.distance),
       jump: finite(state.jumpRemaining), jumpKind: state.jumpKind,
       boost: finite(state.boostRemaining), hits: finite(state.hits), now,
@@ -163,10 +184,10 @@ export function createGameAudio({enabledByDefault=false}={}) {
     if (!before) return; // Enabling sound or a new snapshot begins silently.
 
     // Reconnects, rewinds, and long background gaps must not replay old events.
-    const discontinuity = next.elapsed < before.elapsed - .001
+    const discontinuity = next.mapId !== before.mapId || next.elapsed < before.elapsed - .001
       || next.distance < before.distance - .01 || next.hits < before.hits
       || next.elapsed - before.elapsed > .5 || now - before.now > 500;
-    if (discontinuity) { stopVoices(); nextBeat=0;return; }
+    if (discontinuity) { stopVoices(); nextBeat=nextBed=nextNote=0;noteIndex=0;return; }
     if (next.phase === 'won') {
       if (before.phase === 'running') { stopVoices(); escape(); }
       return;
@@ -181,8 +202,9 @@ export function createGameAudio({enabledByDefault=false}={}) {
       if(before.phase!==next.phase||next.phase==='paused')stopVoices();
       return;
     }
-    if (before.phase !== 'running') { nextBeat=0;return; }
+    if (before.phase !== 'running') { nextBeat=nextBed=nextNote=0;noteIndex=0;return; }
     clockTick(direction);
+    background(direction,next);
 
     const hit = next.hits > before.hits;
     const launched = next.jump > 0 && (before.jump <= 0

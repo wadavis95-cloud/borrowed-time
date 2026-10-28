@@ -40,13 +40,14 @@ test('local feedback and clock voices stay bounded and stop on pause, hide, mute
     await audio.toggle();audio.update(state);
     audio.update({...state,elapsed:.01,distance:1}); // establishes the first clock tick
     const ticking=sources.length;
+    assert.ok(ticking>=4,'a running race starts a quiet background layer alongside its clock');
     const debris=[{id:'other-lane',lane:0,z:40,warnAt:.015,impactAt:.025}];
-    audio.update({...state,elapsed:.02,distance:2,debris});
-    audio.update({...state,elapsed:.03,distance:3,debris});
+    audio.update({...state,elapsed:.02,distance:10,debris});
+    audio.update({...state,elapsed:.03,distance:20,debris});
     assert.equal(sources.length,ticking,'walking and shared hazard events add no sound');
-    audio.update({...state,elapsed:.04,distance:4,boostRemaining:4});
+    audio.update({...state,elapsed:.04,distance:21,boostRemaining:4});
     const boosted=sources.length;assert.ok(boosted>ticking,'the local Boost has a sound');
-    audio.update({...state,elapsed:.05,distance:5,boostRemaining:4,jumpKind:'long',jumpRemaining:1.2});
+    audio.update({...state,elapsed:.05,distance:22,boostRemaining:4,jumpKind:'long',jumpRemaining:1.2});
     assert.ok(sources.length>boosted,'the local Long jump has a sound');
     for(let i=1;i<=600;i++) {
       ctx.currentTime=i/60;
