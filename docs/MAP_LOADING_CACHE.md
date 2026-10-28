@@ -55,3 +55,15 @@ Open `/monitor#experience` to compare first page render, first map preparation a
 184 default checks pass (15 network-gated skips); 48 local asset/network/monitoring checks pass. Syntax and whitespace checks pass. Local release check verifies 84 public assets, protected metrics, two-player movement, private purchases, shared hazards, standings and cleanup. Browser checks verified all six first/repeat map loads, zero asset-body bytes on a fresh cached return, and a second tab joining the pirate lobby with only tunnel models initially decoded, then countdown/race/results/exit without console errors. Review fixes cover hidden-tab timing cancellation, keyboard actions during preparation, progress refresh and tablet estimation.
 
 ![Loading dashboard](images/map-loading-dashboard.png)
+
+## Actual phone follow-up — 2026-10-28
+
+The user completed the map races on a physical phone using the temporary LAN server at the Mac's Wi-Fi address. Device/browser model was not recorded. Captured aggregate report: `artifacts/performance/phone-wifi-20261028.json` at 14:26:08 UTC. All 18 retained reports were classified mobile/touch/solo.
+
+- First page readiness: one sample in the >500 to <=1000 ms bucket.
+- First-in-tab map preparation: six samples, aggregate p95 ceiling 500 ms. Pirate, jungle, frozen and orbital each had a <=200 ms ceiling; desert's two samples had a <=500 ms ceiling. Initial tunnel readiness is recorded as page loading, not a first-switch sample.
+- In-memory revisits: seven samples, aggregate p95 ceiling 500 ms. Pirate/jungle/frozen/orbital were <=200 ms; tunnel's two revisits were <=500 ms. No desert-revisit timing remained in the captured window.
+- Running frames: 4,415 samples, p95 bucket ceiling 25 ms; zero reported frames >50 ms. These are frame intervals, not an average FPS or GPU timings.
+- Zero reported browser errors, graphics errors, context losses or disconnects in the retained phone window. Long-task reporting may be unsupported on the phone, so a zero is not evidence of no long tasks.
+
+The dashboard retains only the last two minutes. Running-frame samples from this capture cover Orbital Escape and Sandstorm Canyon, not every completed race; older race samples had already expired. Map-preparation observations cover all six themes through page/first/revisit categories. This verifies a useful phone/Wi-Fi sample, not all-device, cellular, thermal-soak or multiplayer asset-readiness performance. No server race sockets were active because the observed races were solo. Keep the selective loading/cache trial; continue checking slower connections and coordinated online readiness before claiming a production guarantee. The physical-phone follow-up supersedes the earlier note that no phone test had yet occurred, without changing the historical desktop observations.
