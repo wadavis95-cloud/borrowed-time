@@ -1,12 +1,6 @@
-# Borrowed Time · V8 six-map release
+# Borrowed Time · V8.4 polished six-map release
 
-**V8.4 local playtest:** smoother screen entrances, six rescue destinations, clearer finish messages, consistent touch/focus states and loading/join recovery are ready at http://localhost:4173/. Prices/gameplay stay unchanged. [Finish and reliability notes](docs/versions/V8_4_FINISH_RELIABILITY.md). Local only; public V8 is unchanged.
-
-**V8.3 local playtest:** map-specific surface sounds, nearby hazard cues, a quiet original musical pattern, moving sails/foliage and restrained edge atmosphere are ready at http://localhost:4173/. Click **Sound off** to enable audio. Rules/prices stay unchanged; nothing pushed or deployed. [Audio and atmosphere notes](docs/versions/V8_3_AUDIO_ATMOSPHERE.md).
-
-**V8.2 local playtest:** confirmed ability spending now shows a brief clock debit and cost segment; multiplayer gets clearer countdown lights and GO, and results distinguish winning, escaping and timing out. Ready at http://localhost:4173/. Gameplay and prices remain unchanged; public V8 is unchanged. [Local feedback notes](docs/versions/V8_2_CLOCK_START_FINISH.md).
-
-**V8.1 local playtest:** obstacle contrast, hop/long-jump cues, clearer impact countdowns and local contact effects are ready at http://localhost:4173/. Gameplay and prices are unchanged; the public link below remains V8. [Local polish notes](docs/versions/V8_1_READABILITY_FEEDBACK.md).
+**V8.4 phone playtest:** clearer obstacle and movement feedback, confirmed ability debits, countdown/result polish, map-specific sound and atmosphere, rescue destinations, visible “(you)” labels and better loading/join recovery. Boost remains 5 seconds and Long jump 4 seconds. [Public release record](docs/versions/V8_4_PUBLIC_PLAYTEST.md).
 
 Six escape maps for solo practice and private races with 2–4 players: **Tunnel Escape, The Last Voyage, Volcanic Jungle, Frozen Summit, Orbital Escape, and Sandstorm Canyon**. Pick a thumbnail or vote with friends in the lobby. Your character and role name are assigned automatically from the winning map's four-person cast.
 
