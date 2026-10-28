@@ -51,6 +51,23 @@ export function createAvatarLibrary({ loadAsset } = {}) {
     const group = new THREE.Group(); group.name = `${id}${ghost ? '-ghost' : ''}`;
     const model = cloneSkeleton(asset.scene); group.add(model);
     const bones = {};
+    // Tiny deterministic height maps add material response, not painted lighting.
+    // Only the Courier study has UVs; other characters keep their authored look.
+    const detailTextures = new Map();
+    function surfaceDetail(kind) {
+      if (detailTextures.has(kind)) return detailTextures.get(kind);
+      const size=64, data=new Uint8Array(size*size*4);
+      for(let y=0;y<size;y++)for(let x=0;x<size;x++) {
+        const grain=kind==='cloth' ? Math.sin(x*Math.PI/4)*Math.cos(y*Math.PI/4)*.35 + Math.sin((x+y)*Math.PI/4)*.12
+          : Math.sin(x*2.31+y*5.17)*Math.sin(x*7.19-y*3.71)*.33;
+        const value=Math.round(128+grain*90), i=(y*size+x)*4;
+        data[i]=data[i+1]=data[i+2]=value;data[i+3]=255;
+      }
+      const texture=new THREE.DataTexture(data,size,size);texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+      texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;
+      texture.generateMipmaps=true;texture.repeat.set(kind==='cloth'?12:18,kind==='cloth'?12:18);texture.needsUpdate=true;
+      detailTextures.set(kind,texture);return texture;
+    }
     const materials = new Map();
     const skeletons = new Set();
     const tint = new THREE.Color(color);
@@ -65,6 +82,13 @@ export function createAvatarLibrary({ loadAsset } = {}) {
       const copyMaterial = (original) => {
         if (materials.has(original)) return materials.get(original);
         const material = original.clone();
+        if (id === 'courier' && !ghost && object.geometry.getAttribute('uv')) {
+          if (['woven cloth','heavy canvas','worn leather'].includes(original.name)) {
+            const leather=original.name==='worn leather';
+            material.bumpMap=surfaceDetail(leather?'leather':'cloth');material.bumpScale=leather?.003:.002;
+            material.roughness=leather?.57:.9;
+          }
+        }
         if (ghost) {
           material.color.copy(tint); material.vertexColors = false;
           material.emissive.copy(tint).multiplyScalar(.14);
@@ -223,6 +247,8 @@ export function createAvatarLibrary({ loadAsset } = {}) {
         disposed = true; mixer.stopAllAction(); mixer.uncacheRoot(model);
         for (const skeleton of skeletons) skeleton.dispose();
         for (const material of materials.values()) material.dispose();
+        for (const texture of detailTextures.values()) texture.dispose();
+        detailTextures.clear();
         // Geometry and original materials stay in the process-wide preload cache.
         materials.clear(); group.removeFromParent(); group.clear();
       },

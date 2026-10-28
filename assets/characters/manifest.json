@@ -6,9 +6,9 @@
   "rigBones": 24,
   "avatars": {
     "courier": {
-      "bytes": 954000,
-      "triangles": 30796,
-      "vertices": 18155,
+      "bytes": 1281900,
+      "triangles": 36320,
+      "vertices": 21541,
       "materialDraws": 6,
       "animations": [
         "idle",

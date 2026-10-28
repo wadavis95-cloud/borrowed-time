@@ -248,6 +248,7 @@ export function createTunnel(scene, courseLength) {
   const stone = new THREE.MeshStandardMaterial({ color: '#c2c6b9', ...masonry, bumpScale: .072, roughness: .95, side: THREE.DoubleSide });
   const floor = new THREE.MeshStandardMaterial({ color: '#a8b5b2', ...paving, bumpScale: .035, roughness: .91 });
   const trim = new THREE.MeshStandardMaterial({ color: '#c8c5ac', ...dressed, bumpScale: .028, roughness: .9 });
+  const detailStone = stone.clone(); detailStone.color.set('#c9c5b1'); detailStone.bumpScale = .055;
   const worn = new THREE.MeshStandardMaterial({ color: '#8e9c8b', ...dressed, bumpScale: .045, roughness: .98 });
   const iron = new THREE.MeshStandardMaterial({ color: '#516663', ...metal, bumpScale: .012, roughness: .72, metalness: .64 });
   const brass = new THREE.MeshStandardMaterial({ color: '#c4a66c', ...metal, bumpScale: .009, roughness: .6, metalness: .72 });
@@ -347,6 +348,50 @@ export function createTunnel(scene, courseLength) {
         instance(rubbleGeometry, n % 2 ? worn : trim, side * (4.08 + rng() * .5), s * .4, -rng() * 18, s * 1.5, s, s, rng(), rng() * 3);
       }
     }
+    // Opening detail study only: real relief and fittings, kept outside the lanes.
+    // Use an independent deterministic stream so later scenery stays unchanged.
+    if (index < 4) {
+      const detailRandom = random(811 + index);
+      for (const side of [-1, 1]) {
+        // Staggered masonry leaves recessed mortar, small chips and uneven faces.
+        for (let row=0;row<7;row++) for(let column=0;column<16;column++) {
+          const z=-.42-column*1.13-(row%2)*.52;
+          if(z < -17.8 || (row===1 && column===6))continue;
+          const inset=.025+detailRandom()*.024, height=.40+detailRandom()*.025;
+          box(detailStone,side*(4.665-inset),.29+row*.455,z,.11+inset,height,1.04+detailRandom()*.025,
+            (detailRandom()-.5)*.015,(detailRandom()-.5)*.012);
+          if((column+row*3)%13===0) {
+            // A dark shallow missing corner reads as damage without a new hazard.
+            box(worn,side*4.575,.10+row*.455,z+.43,.025,.10,.13,.12*side);
+          }
+        }
+        // Pipe flange rings, fasteners and stand-off brackets have actual profiles.
+        for (const z of [-2.2,-8.2,-14.2]) {
+          const flange=mesh(section,new THREE.TorusGeometry(.105,.023,6,16),iron,side*4.51,2.99,z);
+          flange.castShadow=true;flange.receiveShadow=true;
+          for(let bolt=0;bolt<4;bolt++) {
+            const a=bolt*Math.PI/2;
+            instance(cylinder,brass,side*4.51+Math.cos(a)*.105,2.99+Math.sin(a)*.105,z+.025,.018,.045,.018,Math.PI/2);
+          }
+          box(iron,side*4.46,2.82,z,.18,.06,.11);
+          box(iron,side*4.58,2.87,z,.04,.23,.18);
+        }
+        // Recessed drainage and its modeled grate sit on the service shoulder.
+        box(dark,side*4.02,.012,-5.5,.25,.025,2.1);
+        for(let slat=0;slat<15;slat++)box(iron,side*4.02,.034,-4.53-slat*.14,.23,.035,.042);
+        // A framed access hatch with inset panels and hinge barrels.
+        box(iron,side*4.53,1.36,-11.5,.13,1.42,.86);
+        box(dark,side*4.445,1.36,-11.5,.035,1.20,.66);
+        for(const z of [-11.82,-11.18])box(brass,side*4.41,1.35,z,.04,.13,.055);
+        for(const y of [.85,1.87])instance(cylinder,iron,side*4.405,y,-11.88,.034,.18,.034);
+        box(brass,side*4.39,1.4,-11.25,.06,.05,.15);
+        // Uneven fragments on the raised edge, away from every playable lane.
+        for(let n=0;n<9;n++) {
+          const size=.07+detailRandom()*.11;
+          instance(rubbleGeometry,worn,side*(4.18+detailRandom()*.14),.48,-detailRandom()*18,size,.05+size*.3,size*1.6,.15,detailRandom()*3);
+        }
+      }
+    }
     for (const x of [-3.85, -1.2, 1.2, 3.85]) {
       // Slim rails guide the three lanes while leaving paving visually dominant.
       box(timber, x, -.045, -9, .18, .035, 18);
@@ -360,7 +405,7 @@ export function createTunnel(scene, courseLength) {
       // Structural trim casts local depth shadows; the solid roof stays unshadowed
       // so stylized daylight can still reach the covered course.
       instances.castShadow = material === trim || material === worn;
-      instances.receiveShadow = material === trim || material === worn; instances.computeBoundingSphere(); section.add(instances);
+      instances.receiveShadow = material === trim || material === worn || material === detailStone; instances.computeBoundingSphere(); section.add(instances);
     }
     mergeStaticSurfaces(section);
   }

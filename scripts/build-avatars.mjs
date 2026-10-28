@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { gzipSync } from 'node:zlib';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 // GLTFExporter only needs the browser FileReader Blob adapter for binary output.
@@ -79,7 +79,7 @@ function makeSkeleton(p) {
   return { root, bones, byName, indices, points, hipY, chestY: hipY + chestY };
 }
 
-function createBuilder(rig) {
+function createBuilder(rig, detailed = false) {
   const materials = [
     ['woven cloth', .88, 0], ['skin', .76, 0], ['hair', .82, 0], ['worn leather', .61, 0], ['brushed metal', .32, .68], ['rubber', .94, 0], ['glass', .23, .5], ['identity mark', .58, .1], ['heavy canvas', .98, 0],
   ].map(([name, roughness, metalness]) => new THREE.MeshStandardMaterial({ name, color: '#ffffff', vertexColors: true, roughness, metalness, side: THREE.DoubleSide }));
@@ -102,6 +102,14 @@ function createBuilder(rig) {
       colors.push(base.r * variation, base.g * variation, base.b * variation);
       const w = typeof binding === 'function' ? binding(vec) : weights(binding);
       for (let k = 0; k < 4; k++) { skinIndices.push(w[k]?.[0] ?? 0); skinWeights.push(w[k]?.[1] ?? 0); }
+    }
+    if (detailed) {
+      // Rest-space projection: dense weave/grain follows the skinned garment.
+      const uv = [], normals = geometry.attributes.normal;
+      for (let i = 0; i < positions.count; i++) {
+        uv.push(Math.abs(normals.getX(i)) > .7 ? positions.getZ(i) : positions.getX(i), positions.getY(i));
+      }
+      geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     }
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(skinIndices, 4));
@@ -204,7 +212,7 @@ function createBuilder(rig) {
   }
   function finish() {
     // Indexed geometry and a single skeleton; at most eight material draws/avatar.
-    const keys = ['position', 'normal', 'color', 'skinIndex', 'skinWeight'];
+    const keys = ['position', 'normal', 'color', 'skinIndex', 'skinWeight', ...(detailed ? ['uv'] : [])];
     const arrays = Object.fromEntries(keys.map((key) => [key, []])); const indices = []; let vertices = 0;
     const geometry = new THREE.BufferGeometry(); const usedMaterials = [];
     for (let type = 0; type < buckets.length; type++) {
@@ -225,7 +233,7 @@ function createBuilder(rig) {
         const packed = new Uint8Array(arrays[key].length);
         for (let i = 0; i < packed.length; i += 4) { packed[i] = Math.round(arrays[key][i] * 255); packed[i + 1] = 255 - packed[i]; }
         geometry.setAttribute(key, new THREE.BufferAttribute(packed, 4, true));
-      } else geometry.setAttribute(key, new THREE.Float32BufferAttribute(arrays[key], 3));
+      } else geometry.setAttribute(key, new THREE.Float32BufferAttribute(arrays[key], key === 'uv' ? 2 : 3));
     }
     const normals = geometry.attributes.normal;
     for (let i = 0; i < normals.count; i++) {
@@ -288,7 +296,12 @@ function bodyAndLegs(id, p, r, b) {
   const coatColor = new THREE.Color(p.coat), yokeColor = new THREE.Color(id === 'courier' ? p.trim : p.coatLight);
   const torsoColor = id === 'courier' || runner ? (v) => coatColor.clone().lerp(yokeColor,
     THREE.MathUtils.smoothstep(v.y, cy - .115, cy - .095) * THREE.MathUtils.smoothstep(v.z, .018, .045)) : p.coat;
-  b.loft(torsoColor, 0, bodyBinding, [[hemY, p.waist * 1.13, .13], [h + .11, p.waist, .119], [cy - .19, p.shoulder * .79, .144], [cy - .067, p.shoulder * .96, .13], [cy + .006, p.shoulder * .79, .105], [cy + .075, .072, .06]], { steps: 26, segments: 28, folds: .009 });
+  b.loft(torsoColor, 0, bodyBinding, [[hemY, p.waist * 1.13, .13], [h + .11, p.waist, .119], [cy - .19, p.shoulder * .79, .144], [cy - .067, p.shoulder * .96, .13], [cy + .006, p.shoulder * .79, .105], [cy + .075, .072, .06]], { steps: 32, segments: 32, folds: p.refined ? .024 : .009,
+    modify: p.refined ? (point, angle) => {
+      // Broad gathering at the waist, rather than a smooth plastic torso.
+      const gathering = Math.exp(-(((point.y - h - .12) / .14) ** 2));
+      point.z += Math.sin(angle) * gathering * .012 * Math.sin(angle * 7 + point.y * 13);
+    } : undefined });
   // Shoulder and collar tailoring follows the torso, with piping that remains visible from behind.
   b.loft(p.trim, 0, 'chest', [[cy + .038, .076, .068], [cy + .106, .066, .059]], { steps: 5, segments: 20 });
   if (id === 'courier' || runner) {
@@ -498,6 +511,41 @@ function equipment(id, p, r, b) {
   }
 }
 
+// Rear-view detail study: broad tailored forms read at the gameplay camera.
+function refineCourier(p, r, b) {
+  const h = r.hipY, cy = r.chestY;
+  const torso = b.blendY('pelvis', 'chest', h + .1, cy - .05);
+  // A raised shoulder yoke has a hem and thickness, not a painted color stripe.
+  b.panel(p.coatLight, 0, 'chest', [[-.22,cy-.015,.082],[-.18,cy-.115,.13],[0,cy-.17,.16],[.18,cy-.115,.13],[.22,cy-.015,.082],[0,cy+.012,.112]], .014);
+  b.ribbon(p.trim, 0, 'chest', [[-.19,cy-.115,.145],[0,cy-.17,.178],[.19,cy-.115,.145]], .012,.004);
+  // Center seam and waist gathering; the lateral seams curve over the body.
+  b.tube('#542a3d',0,torso,[[0,cy-.18,.157],[0,h+.24,.147],[0,h+.09,.134]],.004,16);
+  for (const sign of [-1,1]) {
+    b.tube(p.coatLight,0,torso,[[sign*.1,cy-.20,.139],[sign*.08,h+.23,.143],[sign*.13,h+.08,.12]],.006,16);
+    b.panel('#683348',0,torso,[[sign*.08,h+.20,.13],[sign*.19,h+.22,.09],[sign*.19,h+.11,.10],[sign*.08,h+.095,.135]],.012);
+    // Rolled sleeve cuffs and leather elbow patches add contour during arm swing.
+    const arm=r.points[`foreArm${sign<0?'L':'R'}`], hand=r.points[`hand${sign<0?'L':'R'}`];
+    const side=sign<0?'L':'R';
+    b.ellipsoid('#67483e',3,`foreArm${side}`,[arm.x,arm.y-.015,.06],[.048,.074,.019]);
+    b.loft(p.coatLight,0,`foreArm${side}`,[[hand.y+.05,.045,.046,hand.x],[hand.y+.085,.048,.05,hand.x]],{steps:4,segments:20});
+    // Shoe heel stitching and separate welt are visible during the recovery stride.
+    const x=r.points[`foot${side}`].x;
+    b.ribbon('#bda587',3,`foot${side}`,[[x-.05,.055,.035],[x,.055,.095],[x+.05,.055,.035]],.008,.003);
+  }
+  // A contoured leather mail pouch sits at the back-right hip. Real gussets,
+  // flap, closure straps and a metal clasp give its silhouette an identity.
+  b.bevelBox('#704b36',3,'bag',[.265,h-.05,.17],[.29,.29,.16],.035,[.04,-.12,-.10]);
+  b.panel('#a77850',3,'bag',[[.11,h+.10,.23],[.39,h+.075,.22],[.38,h-.07,.28],[.26,h-.10,.29],[.12,h-.075,.27]],.012);
+  for (const x of [.17,.33]) {
+    b.ribbon('#4f382c',3,'bag',[[x,h+.07,.25],[x,h-.10,.291],[x,h-.17,.25]],.029,.007);
+    b.bevelBox(p.metal,4,'bag',[x,h-.065,.305],[.038,.044,.012],.006);
+  }
+  b.tube('#d1ae78',0,'bag',[[.12,h-.08,.284],[.15,h-.16,.266],[.27,h-.20,.261],[.38,h-.14,.25]],.003,20);
+  // Back strap pad and brass adjustment loop break up the diagonal strap.
+  b.ribbon('#8e6549',3,torso,[[-.15,cy-.04,.16],[-.09,cy-.16,.18],[.01,h+.26,.177]],.074,.015);
+  b.bevelBox(p.metal,4,torso,[-.065,cy-.19,.196],[.061,.048,.012],.005,[0,0,.65]);
+}
+
 function clipsFor(rig, id) {
   const p = profiles[id], clips = [];
   for (const [name, duration, frames] of [['idle', 3.4, 32], ['run', .72, 36], ['jump', 1, 30], ['stumble', .65, 20]]) {
@@ -652,19 +700,23 @@ function themedEquipment(id, p, r, b) {
 }
 
 export function authorAvatar(id) {
-  const p = profiles[id]; if (!p) throw new Error(`Unknown avatar: ${id}`);
-  const rig = makeSkeleton(p), builder = createBuilder(rig);
+  const p = id === 'courier' ? { ...profiles[id], refined: true } : profiles[id]; if (!p) throw new Error(`Unknown avatar: ${id}`);
+  const rig = makeSkeleton(p), builder = createBuilder(rig, id === 'courier');
   const style = p.style || id;
   bodyAndLegs(style, p, rig, builder); arms(style, p, rig, builder); faceAndHair(style, p, rig, builder);
   if (p.style) themedEquipment(id, p, rig, builder); else equipment(id, p, rig, builder);
+  if (id === 'courier') refineCourier(p, rig, builder);
   const mesh = builder.finish(); rig.root.name = `${id}_original_v3_1`;
-  rig.root.userData = { id, authoring: 'Original procedural Three.js contoured profiles, tailored panels and skinned meshes; not Blender-authored', license: 'Project original asset', height: p.height, version: '3.1.0-preview.1' };
+  rig.root.userData = { id, authoring: 'Original procedural Three.js contoured profiles, tailored panels and skinned meshes; not Blender-authored', license: 'Project original asset', height: p.height, version: id === 'courier' ? '8.11-detail-study' : '3.1.0-preview.1' };
   return { scene: rig.root, animations: clipsFor(rig, id), triangles: mesh.geometry.index.count / 3, vertices: mesh.geometry.attributes.position.count, materialDraws: mesh.material.length };
 }
 
 async function main() {
   const directory = new URL('../assets/characters/', import.meta.url); await mkdir(directory, { recursive: true }); const manifest = {};
+  const only = process.argv.find(arg => arg.startsWith('--avatar='))?.split('=')[1];
+  if (only && !profiles[only]) throw new Error(`Unknown avatar: ${only}`);
   for (const id of Object.keys(profiles)) {
+    if (only && id !== only) continue;
     if (process.argv.includes('--expansion-only') && !expansionIds.has(id)) continue;
     if (process.argv.includes('--new-only') && !themedProfiles[id]) continue;
     const asset = authorAvatar(id);
@@ -673,6 +725,13 @@ async function main() {
     await writeFile(new URL(`${id}.glb.gz`, directory), gzipSync(Buffer.from(result), { level: 9 }));
     manifest[id] = { bytes: result.byteLength, triangles: asset.triangles, vertices: asset.vertices, materialDraws: asset.materialDraws, animations: asset.animations.map((a) => a.name), height: profiles[id].height };
     console.log(`${id}: ${result.byteLength.toLocaleString()} bytes; ${asset.triangles.toLocaleString()} triangles`);
+  }
+  if (only) {
+    const path = new URL('manifest.json', directory);
+    const existing = JSON.parse(await readFile(path, 'utf8'));
+    Object.assign(existing.avatars, manifest);
+    await writeFile(path, JSON.stringify(existing, null, 2) + '\n');
+    return;
   }
   if (process.argv.includes('--expansion-only')) {
     await writeFile(new URL('expansion-manifest.json', directory), JSON.stringify(manifest, null, 2) + '\n');
