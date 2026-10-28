@@ -22,4 +22,4 @@ export async function exportStatic({raceOrigin,outdir}={}){
  await writeFile(resolve(outdir,'_headers'),'/client/*\n  Cache-Control: public, max-age=31536000, immutable\n/\n  Cache-Control: no-cache\n/index.html\n  Cache-Control: no-cache\n/runtime-config.js\n  Cache-Control: no-store\n');
  return {outdir,publicFiles:count,clientFiles:build.files.size,raceOrigin:url.origin};
 }
-if(process.argv[1]===fileURLToPath(import.meta.url))console.log(JSON.stringify(await exportStatic({raceOrigin:process.env.RACE_ORIGIN}),null,2));
+if(process.argv[1]===fileURLToPath(import.meta.url))console.log(JSON.stringify(await exportStatic({raceOrigin:process.env.RACE_ORIGIN,outdir:process.env.STATIC_OUTDIR}),null,2));

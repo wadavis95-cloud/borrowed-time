@@ -101,3 +101,24 @@ new protected dashboard and waiting local lobby. Phone acceptance remains open.
 
 Backups: backups/pre-split-delivery-20261028.bundle (verified complete Git history)
 and backups/pre-split-workspace-20261028.zip (existing uncommitted evidence).
+
+## Owner phone + Mac local race completed
+
+Snapshot artifacts/readiness/local-split-phone-after-20261028.json: mobile group
+has3 reports (no mobile group in pre-test baseline),1495 running frame samples,
+aggregate running-frame max26ms and no frames>50ms. All23 phone input
+acknowledgments <=64ms;9 echo RTTs <=11ms.983 periodic scheduling samples
+max2.29ms;982 periodic send intervals max51.95ms. Phone session includes lobby
+waiting:984 update gaps max421ms,27>100ms; excess arrival max370.69ms. Largest
+421ms peak timestamp predates first racing server history sample, so it must
+not be called the largest in-race freeze. Zero completed buffer holds and zero
+underruns reported in captured totals; no browser/graphics errors/context loss.
+Racing server history event-loop max13.48ms, no queued outbound bytes.
+
+Interpretation: application sends were regular while phone delivery/dispatch
+was uneven. This locates the observed interval excess after application send,
+without separating Wi-Fi, TCP/OS buffering and browser dispatch. Zero reported
+holds is encouraging but is not subjective acceptance or proof all freezes are
+fixed; user has only said the race finished. This local split+prediction setup
+cannot be causally compared to the earlier public8-hold race. Phone feel and
+later authorized public test remain pending. No deploy/submission occurred.
