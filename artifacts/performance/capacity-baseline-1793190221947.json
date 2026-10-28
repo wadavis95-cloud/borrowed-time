@@ -1,0 +1,755 @@
+{
+  "at": "2026-10-28T12:21:20.801Z",
+  "commit": "2270c3dfaa8d40af8f375ce633ef7bb2c113371c",
+  "options": {
+    "seconds": 20,
+    "profile": "baseline"
+  },
+  "host": {
+    "cpu": "Apple M5 Pro",
+    "logicalCpus": 18,
+    "memoryGB": 25.769803776,
+    "platform": "darwin",
+    "arch": "arm64",
+    "node": "v24.21.0"
+  },
+  "limitations": [
+    "Loopback only; not Render capacity, geographic latency, browser rendering or phone loading.",
+    "Driver and isolated server share this computer; driver pressure is measured separately.",
+    "Protocol ping RTT and lane confirmation do not include rendered-frame delay.",
+    "Cold downloads consume real bodies but have no WAN bandwidth shaping or browser decoding."
+  ],
+  "scenarios": [
+    {
+      "rooms": 1,
+      "racers": 4,
+      "burst": false,
+      "downloads": 0,
+      "explore": false,
+      "arrivalMs": 8.948458000000002,
+      "durationMs": 20001.069750000002,
+      "limits": {
+        "rooms": 25,
+        "sockets": 128
+      },
+      "activeRacersAtEnd": 4,
+      "metrics": {
+        "gaps": {
+          "count": 1584,
+          "p50": 50.410917000000154,
+          "p95": 51.31679200000144,
+          "p99": 51.56445800000074,
+          "max": 52.46858299999985,
+          "seen": 1584,
+          "truncated": false
+        },
+        "snapshotAge": {
+          "count": 1588,
+          "p50": 0,
+          "p95": 1,
+          "p99": 1,
+          "max": 1,
+          "seen": 1588,
+          "truncated": false
+        },
+        "rtt": {
+          "count": 76,
+          "p50": 0.3865409999998519,
+          "p95": 1.3502920000000813,
+          "p99": 1.9067919999997684,
+          "max": 1.9067919999997684,
+          "seen": 76,
+          "truncated": false
+        },
+        "laneConfirmation": {
+          "count": 26,
+          "p50": 30.908124999999927,
+          "p95": 45.30500000000029,
+          "p99": 45.35216699999728,
+          "max": 45.35216699999728,
+          "seen": 26,
+          "truncated": false
+        },
+        "joins": {
+          "count": 1,
+          "p50": 8.881165999999993,
+          "p95": 8.881165999999993,
+          "p99": 8.881165999999993,
+          "max": 8.881165999999993,
+          "seen": 1,
+          "truncated": false
+        },
+        "bytes": 5267300,
+        "snapshots": 1588,
+        "unexpectedCloses": 0,
+        "laneTimeouts": 0,
+        "errors": {}
+      },
+      "perClientSnapshotsPerSecond": 19.848938329911075,
+      "outboundBytesPerSecond": 263350.91401798645,
+      "http": {
+        "requests": 0,
+        "transferBytes": 0,
+        "failures": 0,
+        "visitorMs": {
+          "count": 0,
+          "p50": null,
+          "p95": null,
+          "p99": null,
+          "max": null,
+          "seen": 0,
+          "truncated": false
+        }
+      },
+      "server": {
+        "cpuOneCorePct": {
+          "count": 41,
+          "p50": 3.1948019133769407,
+          "p95": 6.725228541726989,
+          "p99": 7.41521622667826,
+          "max": 7.41521622667826
+        },
+        "rssMB": {
+          "count": 41,
+          "p50": 78.495744,
+          "p95": 79.757312,
+          "p99": 79.773696,
+          "max": 79.773696
+        },
+        "heapMB": {
+          "count": 41,
+          "p50": 11.56432,
+          "p95": 13.4122,
+          "p99": 13.494936,
+          "max": 13.494936
+        },
+        "simulationBacklogMs": {
+          "count": 41,
+          "p50": 18.591064453125,
+          "p95": 28.306640625,
+          "p99": 31.2919921875,
+          "max": 31.2919921875
+        },
+        "eventLoopMs": {
+          "p95": 11.386879,
+          "p99": 11.517951,
+          "max": 11.960319
+        }
+      },
+      "driver": {
+        "cpuOneCorePct": 1.7503813764761254,
+        "eventLoopP95Ms": 11.214847
+      }
+    },
+    {
+      "rooms": 5,
+      "racers": 20,
+      "burst": false,
+      "downloads": 0,
+      "explore": false,
+      "arrivalMs": 20.539707999996608,
+      "durationMs": 20000.707749999998,
+      "limits": {
+        "rooms": 25,
+        "sockets": 128
+      },
+      "activeRacersAtEnd": 20,
+      "metrics": {
+        "gaps": {
+          "count": 7900,
+          "p50": 50.52145799999926,
+          "p95": 51.56208399999741,
+          "p99": 51.94658399999753,
+          "max": 52.97545899999386,
+          "seen": 7900,
+          "truncated": false
+        },
+        "snapshotAge": {
+          "count": 7920,
+          "p50": 0,
+          "p95": 1,
+          "p99": 1,
+          "max": 2,
+          "seen": 7920,
+          "truncated": false
+        },
+        "rtt": {
+          "count": 380,
+          "p50": 0.5304580000010901,
+          "p95": 1.4520420000008016,
+          "p99": 1.8898750000007567,
+          "max": 1.9402909999989788,
+          "seen": 380,
+          "truncated": false
+        },
+        "laneConfirmation": {
+          "count": 142,
+          "p50": 18.383084000000963,
+          "p95": 47.596291000001656,
+          "p99": 52.3557909999945,
+          "max": 52.75616699999955,
+          "seen": 142,
+          "truncated": false
+        },
+        "joins": {
+          "count": 5,
+          "p50": 3.8800410000003467,
+          "p95": 6.192749999998341,
+          "p99": 6.192749999998341,
+          "max": 6.192749999998341,
+          "seen": 5,
+          "truncated": false
+        },
+        "bytes": 26290739,
+        "snapshots": 7920,
+        "unexpectedCloses": 0,
+        "laneTimeouts": 0,
+        "errors": {}
+      },
+      "perClientSnapshotsPerSecond": 19.799299352294174,
+      "outboundBytesPerSecond": 1314490.4334697858,
+      "http": {
+        "requests": 0,
+        "transferBytes": 0,
+        "failures": 0,
+        "visitorMs": {
+          "count": 0,
+          "p50": null,
+          "p95": null,
+          "p99": null,
+          "max": null,
+          "seen": 0,
+          "truncated": false
+        }
+      },
+      "server": {
+        "cpuOneCorePct": {
+          "count": 41,
+          "p50": 8.26900045510216,
+          "p95": 13.589957988434792,
+          "p99": 18.52355515234002,
+          "max": 18.52355515234002
+        },
+        "rssMB": {
+          "count": 41,
+          "p50": 81.723392,
+          "p95": 82.345984,
+          "p99": 82.362368,
+          "max": 82.362368
+        },
+        "heapMB": {
+          "count": 41,
+          "p50": 12.7234,
+          "p95": 14.308912,
+          "p99": 14.77312,
+          "max": 14.77312
+        },
+        "simulationBacklogMs": {
+          "count": 41,
+          "p50": 23.31640625,
+          "p95": 30.3017578125,
+          "p99": 32.28466796875,
+          "max": 32.28466796875
+        },
+        "eventLoopMs": {
+          "p95": 11.583487,
+          "p99": 13.025279,
+          "max": 18.120703
+        }
+      },
+      "driver": {
+        "cpuOneCorePct": 4.021622684827241,
+        "eventLoopP95Ms": 11.190271
+      }
+    },
+    {
+      "rooms": 15,
+      "racers": 60,
+      "burst": false,
+      "downloads": 0,
+      "explore": false,
+      "arrivalMs": 60.443249999996624,
+      "durationMs": 20001.129457999996,
+      "limits": {
+        "rooms": 25,
+        "sockets": 128
+      },
+      "activeRacersAtEnd": 60,
+      "metrics": {
+        "gaps": {
+          "count": 23700,
+          "p50": 50.57762499999808,
+          "p95": 51.85420799998974,
+          "p99": 52.549416000001656,
+          "max": 54.64787499999511,
+          "seen": 23700,
+          "truncated": false
+        },
+        "snapshotAge": {
+          "count": 23760,
+          "p50": 0,
+          "p95": 1,
+          "p99": 1,
+          "max": 3,
+          "seen": 23760,
+          "truncated": false
+        },
+        "rtt": {
+          "count": 1140,
+          "p50": 0.9110829999990528,
+          "p95": 5.457209000000148,
+          "p99": 5.702665999997407,
+          "max": 5.7277089999988675,
+          "seen": 1140,
+          "truncated": false
+        },
+        "laneConfirmation": {
+          "count": 394,
+          "p50": 26.44458300000406,
+          "p95": 51.069125000001804,
+          "p99": 53.731957999996666,
+          "max": 53.99054199999955,
+          "seen": 394,
+          "truncated": false
+        },
+        "joins": {
+          "count": 15,
+          "p50": 3.9130829999994603,
+          "p95": 6.292207999998936,
+          "p99": 6.292207999998936,
+          "max": 6.292207999998936,
+          "seen": 15,
+          "truncated": false
+        },
+        "bytes": 78705911,
+        "snapshots": 23760,
+        "unexpectedCloses": 0,
+        "laneTimeouts": 0,
+        "errors": {}
+      },
+      "perClientSnapshotsPerSecond": 19.79888189972237,
+      "outboundBytesPerSecond": 3935073.324997626,
+      "http": {
+        "requests": 0,
+        "transferBytes": 0,
+        "failures": 0,
+        "visitorMs": {
+          "count": 0,
+          "p50": null,
+          "p95": null,
+          "p99": null,
+          "max": null,
+          "seen": 0,
+          "truncated": false
+        }
+      },
+      "server": {
+        "cpuOneCorePct": {
+          "count": 41,
+          "p50": 16.280574522284592,
+          "p95": 24.00266329688964,
+          "p99": 26.0770713661201,
+          "max": 26.0770713661201
+        },
+        "rssMB": {
+          "count": 41,
+          "p50": 91.99616,
+          "p95": 92.585984,
+          "p99": 92.585984,
+          "max": 92.585984
+        },
+        "heapMB": {
+          "count": 41,
+          "p50": 13.370176,
+          "p95": 17.118272,
+          "p99": 18.908888,
+          "max": 18.908888
+        },
+        "simulationBacklogMs": {
+          "count": 41,
+          "p50": 23.632568359375,
+          "p95": 32.6279296875,
+          "p99": 33.569091796875,
+          "max": 33.569091796875
+        },
+        "eventLoopMs": {
+          "p95": 13.000703,
+          "p99": 14.573567,
+          "max": 16.367615
+        }
+      },
+      "driver": {
+        "cpuOneCorePct": 7.245145845603177,
+        "eventLoopP95Ms": 11.436031
+      }
+    },
+    {
+      "rooms": 25,
+      "racers": 100,
+      "burst": false,
+      "downloads": 0,
+      "explore": false,
+      "arrivalMs": 118.70025000000896,
+      "durationMs": 20000.899542,
+      "limits": {
+        "rooms": 25,
+        "sockets": 128
+      },
+      "activeRacersAtEnd": 100,
+      "metrics": {
+        "gaps": {
+          "count": 39500,
+          "p50": 50.599207999999635,
+          "p95": 51.97854200001166,
+          "p99": 52.627707999999984,
+          "max": 54.26979200000642,
+          "seen": 39500,
+          "truncated": false
+        },
+        "snapshotAge": {
+          "count": 39600,
+          "p50": 0,
+          "p95": 1,
+          "p99": 1,
+          "max": 3,
+          "seen": 39600,
+          "truncated": false
+        },
+        "rtt": {
+          "count": 1900,
+          "p50": 1.078458000003593,
+          "p95": 4.664916000008816,
+          "p99": 6.470917000013287,
+          "max": 6.532791000005091,
+          "seen": 1900,
+          "truncated": false
+        },
+        "laneConfirmation": {
+          "count": 623,
+          "p50": 23.05762499998673,
+          "p95": 43.102834000004805,
+          "p99": 53.287374999999884,
+          "max": 54.08712500000547,
+          "seen": 623,
+          "truncated": false
+        },
+        "joins": {
+          "count": 25,
+          "p50": 4.622290999992401,
+          "p95": 7.288249999997788,
+          "p99": 7.309124999999767,
+          "max": 7.309124999999767,
+          "seen": 25,
+          "truncated": false
+        },
+        "bytes": 131694771,
+        "snapshots": 39600,
+        "unexpectedCloses": 0,
+        "laneTimeouts": 0,
+        "errors": {}
+      },
+      "perClientSnapshotsPerSecond": 19.7991094934724,
+      "outboundBytesPerSecond": 6584442.400875692,
+      "http": {
+        "requests": 0,
+        "transferBytes": 0,
+        "failures": 0,
+        "visitorMs": {
+          "count": 0,
+          "p50": null,
+          "p95": null,
+          "p99": null,
+          "max": null,
+          "seen": 0,
+          "truncated": false
+        }
+      },
+      "server": {
+        "cpuOneCorePct": {
+          "count": 41,
+          "p50": 20.330184967515684,
+          "p95": 27.64301140241735,
+          "p99": 68.37258181098616,
+          "max": 68.37258181098616
+        },
+        "rssMB": {
+          "count": 41,
+          "p50": 94.158848,
+          "p95": 95.469568,
+          "p99": 95.469568,
+          "max": 95.469568
+        },
+        "heapMB": {
+          "count": 41,
+          "p50": 16.79152,
+          "p95": 19.498664,
+          "p99": 20.001176,
+          "max": 20.001176
+        },
+        "simulationBacklogMs": {
+          "count": 41,
+          "p50": 25.5673828125,
+          "p95": 33.571533203125,
+          "p99": 33.628173828125,
+          "max": 33.628173828125
+        },
+        "eventLoopMs": {
+          "p95": 14.327807,
+          "p99": 15.998975,
+          "max": 18.153471
+        }
+      },
+      "driver": {
+        "cpuOneCorePct": 10.7588760969539,
+        "eventLoopP95Ms": 11.493375
+      }
+    },
+    {
+      "rooms": 25,
+      "racers": 100,
+      "burst": true,
+      "downloads": 0,
+      "explore": false,
+      "arrivalMs": 114.37920799999847,
+      "durationMs": 20000.259082999997,
+      "limits": {
+        "rooms": 25,
+        "sockets": 128
+      },
+      "activeRacersAtEnd": 100,
+      "metrics": {
+        "gaps": {
+          "count": 39400,
+          "p50": 50.6237919999985,
+          "p95": 52.04045800000313,
+          "p99": 52.74216699998942,
+          "max": 53.47316699998919,
+          "seen": 39400,
+          "truncated": false
+        },
+        "snapshotAge": {
+          "count": 39500,
+          "p50": 0,
+          "p95": 1,
+          "p99": 1,
+          "max": 3,
+          "seen": 39500,
+          "truncated": false
+        },
+        "rtt": {
+          "count": 1900,
+          "p50": 1.1813750000001164,
+          "p95": 6.488249999994878,
+          "p99": 6.755250000001979,
+          "max": 6.766833000001498,
+          "seen": 1900,
+          "truncated": false
+        },
+        "laneConfirmation": {
+          "count": 592,
+          "p50": 25.505292000001646,
+          "p95": 46.24100000000908,
+          "p99": 50.853415999998106,
+          "max": 53.64758299999812,
+          "seen": 592,
+          "truncated": false
+        },
+        "joins": {
+          "count": 25,
+          "p50": 81.80879100000311,
+          "p95": 111.29987499999697,
+          "p99": 113.71604200000002,
+          "max": 113.71604200000002,
+          "seen": 25,
+          "truncated": false
+        },
+        "bytes": 131268007,
+        "snapshots": 39500,
+        "unexpectedCloses": 0,
+        "laneTimeouts": 0,
+        "errors": {}
+      },
+      "perClientSnapshotsPerSecond": 19.74974415885171,
+      "outboundBytesPerSecond": 6563315.327828747,
+      "http": {
+        "requests": 0,
+        "transferBytes": 0,
+        "failures": 0,
+        "visitorMs": {
+          "count": 0,
+          "p50": null,
+          "p95": null,
+          "p99": null,
+          "max": null,
+          "seen": 0,
+          "truncated": false
+        }
+      },
+      "server": {
+        "cpuOneCorePct": {
+          "count": 41,
+          "p50": 20.688990136720488,
+          "p95": 27.97721264749385,
+          "p99": 41.70415434841213,
+          "max": 41.70415434841213
+        },
+        "rssMB": {
+          "count": 41,
+          "p50": 96.976896,
+          "p95": 98.14016,
+          "p99": 98.14016,
+          "max": 98.14016
+        },
+        "heapMB": {
+          "count": 41,
+          "p50": 17.27448,
+          "p95": 21.690416,
+          "p99": 21.849936,
+          "max": 21.849936
+        },
+        "simulationBacklogMs": {
+          "count": 41,
+          "p50": 25.61572265625,
+          "p95": 33.633056640625,
+          "p99": 35.657470703125,
+          "max": 35.657470703125
+        },
+        "eventLoopMs": {
+          "p95": 14.532607,
+          "p99": 16.236543,
+          "max": 17.891327
+        }
+      },
+      "driver": {
+        "cpuOneCorePct": 11.285118810878156,
+        "eventLoopP95Ms": 11.517951
+      }
+    },
+    {
+      "rooms": 25,
+      "racers": 100,
+      "burst": false,
+      "downloads": 20,
+      "explore": false,
+      "arrivalMs": 120.28116600000067,
+      "durationMs": 20019.725250000018,
+      "limits": {
+        "rooms": 25,
+        "sockets": 128
+      },
+      "activeRacersAtEnd": 100,
+      "metrics": {
+        "gaps": {
+          "count": 39500,
+          "p50": 50.60862499999348,
+          "p95": 52.03970799999661,
+          "p99": 52.57116699998733,
+          "max": 55.534583000000566,
+          "seen": 39500,
+          "truncated": false
+        },
+        "snapshotAge": {
+          "count": 39600,
+          "p50": 0,
+          "p95": 1,
+          "p99": 2,
+          "max": 10,
+          "seen": 39600,
+          "truncated": false
+        },
+        "rtt": {
+          "count": 2000,
+          "p50": 1.293708000011975,
+          "p95": 5.438624999995227,
+          "p99": 5.568415999994613,
+          "max": 5.589542000001529,
+          "seen": 2000,
+          "truncated": false
+        },
+        "laneConfirmation": {
+          "count": 654,
+          "p50": 25.209499999997206,
+          "p95": 54.53904199998942,
+          "p99": 55.62279200000921,
+          "max": 55.848542000007,
+          "seen": 654,
+          "truncated": false
+        },
+        "joins": {
+          "count": 25,
+          "p50": 4.665624999994179,
+          "p95": 7.720499999995809,
+          "p99": 8.630707999996957,
+          "max": 8.630707999996957,
+          "seen": 25,
+          "truncated": false
+        },
+        "bytes": 131527985,
+        "snapshots": 39600,
+        "unexpectedCloses": 0,
+        "laneTimeouts": 0,
+        "errors": {}
+      },
+      "perClientSnapshotsPerSecond": 19.78049124325518,
+      "outboundBytesPerSecond": 6569919.584685603,
+      "http": {
+        "requests": 580,
+        "transferBytes": 334603580,
+        "failures": 0,
+        "visitorMs": {
+          "count": 20,
+          "p50": 80.93150000000605,
+          "p95": 152.26108299999032,
+          "p99": 162.5102920000063,
+          "max": 162.5102920000063,
+          "seen": 20,
+          "truncated": false
+        }
+      },
+      "server": {
+        "cpuOneCorePct": {
+          "count": 41,
+          "p50": 20.16969154504294,
+          "p95": 26.563732283895057,
+          "p99": 112.2027367928431,
+          "max": 112.2027367928431
+        },
+        "rssMB": {
+          "count": 41,
+          "p50": 155.942912,
+          "p95": 156.368896,
+          "p99": 156.418048,
+          "max": 156.418048
+        },
+        "heapMB": {
+          "count": 41,
+          "p50": 18.125208,
+          "p95": 25.258408,
+          "p99": 27.270608,
+          "max": 27.270608
+        },
+        "simulationBacklogMs": {
+          "count": 41,
+          "p50": 27.29931640625,
+          "p95": 34.628173828125,
+          "p99": 35.65234375,
+          "max": 35.65234375
+        },
+        "eventLoopMs": {
+          "p95": 14.630911,
+          "p99": 16.359423,
+          "max": 17.612799
+        }
+      },
+      "driver": {
+        "cpuOneCorePct": 19.577541405069965,
+        "eventLoopP95Ms": 11.493375
+      }
+    }
+  ],
+  "limits": {
+    "room26": "SERVER_FULL",
+    "socket129": "HTTP 503",
+    "remainingRooms": 0
+  }
+}
