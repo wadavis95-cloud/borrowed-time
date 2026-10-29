@@ -31,7 +31,7 @@ test('unconfirmed free hop and paid abilities stay server-only, and failed sends
  for(const action of ['jump','longJump','boost'])assert.equal(view.anticipate(action,receipt()),false);
  const display=view.sample(2067);assert.equal(display.game.jumpRemaining,0);assert.equal(display.game.boostRemaining,0);assert.equal(display.game.timeSpent,0);
  const accepted=snapshot(1100,1);Object.assign(accepted.you.game,{jumpKind:'long',jumpRemaining:1.2,jumpDuration:1.2,timeLeft:46,timeSpent:4});view.push(accepted,2100);
- const next=view.sample(2110);assert.ok(next.game.jumpRemaining>0);assert.equal(view.current().timeLeft,46);assert.equal(view.current().timeSpent,4);
+ const next=view.sample(2110);assert.equal(next.game.jumpRemaining,0,'confirmed jump waits for the buffered course clock');assert.ok(view.sample(2250).game.jumpRemaining>0,'the confirmed jump appears when its buffered timeline reaches takeoff');assert.equal(view.current().timeLeft,46);assert.equal(view.current().timeSpent,4);
 });
 test('private rejection and visibility suspension restore authoritative local targets',()=>{
  const {view}=pair();view.anticipate('left',receipt());view.sample(2067);

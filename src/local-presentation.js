@@ -7,9 +7,9 @@ const maxSpeed=CONFIG.topSpeed*Math.max(ABILITIES.boost.multiplier,ABILITIES.lon
 
 // Render-only lane intentions. Rules, collisions, balances and results are never
 // simulated here; snapshots remain the only authoritative game state.
-export function createLocalPresentation({maxPending=60,intentTtlMs=250,maxPredictionMs=120,onCount=()=>{}}={}){
+export function createLocalPresentation({maxPending=60,intentTtlMs=250,maxPredictionMs=120,forwardBufferMs=0,onCount=()=>{}}={}){
   if(!Number.isSafeInteger(maxPending)||maxPending<1||maxPending>60||!finite(intentTtlMs)||intentTtlMs===0
-    ||!finite(maxPredictionMs)||maxPredictionMs>120)throw new RangeError('Invalid local presentation bounds');
+    ||!finite(maxPredictionMs)||maxPredictionMs>120||!finite(forwardBufferMs)||forwardBufferMs>150)throw new RangeError('Invalid local presentation bounds');
   let latest=null,receivedAt=0,pending=[],lastQueued=0,velocity=0,projectionBlocked=false;
   let lastSample=null,wasAnticipated=false;
   let cursor=null,cursorAt=null,offsets=[],history=[],recovering=false,forceAnchor=false;
@@ -87,9 +87,11 @@ export function createLocalPresentation({maxPending=60,intentTtlMs=250,maxPredic
       if(lastSample!==null&&at-lastSample>250){pending=[];projectionBlocked=true;clearMotion();}
       expire(at);lastSample=at;
       const state=latest.you.game,running=active();
-      const simTime=simulationTime(latest,receivedAt),desired=at-Math.min(...offsets);
+      const simTime=simulationTime(latest,receivedAt),desired=at-Math.min(...offsets)-(running?forwardBufferMs:0);
       const frameMs=cursorAt===null?0:Math.max(0,at-cursorAt);
-      if(cursor===null)cursor=clamp(desired,simTime,simTime+(running&&!projectionBlocked?maxPredictionMs:0));
+      // Start from confirmed history. With no history yet, the existing bounded
+      // clock easing builds the reserve gradually rather than freezing startup.
+      if(cursor===null)cursor=clamp(desired,running?history[0].time:simTime,simTime+(running&&!projectionBlocked?maxPredictionMs:0));
       else if(!running||forceAnchor) {cursor=running?Math.max(cursor,simTime):simTime;recovering=false;}
       else if(projectionBlocked)cursor=clamp(cursor,simTime,simTime+maxPredictionMs);
       else {
@@ -148,6 +150,6 @@ export function createLocalPresentation({maxPending=60,intentTtlMs=250,maxPredic
     },
     suspend(){pending=[];projectionBlocked=true;clearMotion();},
     reset(){latest=null;receivedAt=0;clearRound();retiredRounds.clear();},
-    diagnostics:()=>({pending:pending.length,corrections,expired}),
+    diagnostics:()=>({pending:pending.length,corrections,expired,forwardBufferMs,maxPredictionMs}),
   };
 }

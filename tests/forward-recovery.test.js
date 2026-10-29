@@ -22,7 +22,7 @@ for(const gap of [100,200,300,500])test(`forward recovery after ${gap}ms gap adv
  assert.ok(r.maxStep<=30*.016*1.36,`single frame advanced ${r.maxStep}m`);
  assert.ok(r.maxClockStep<=.016*1.36,'course and hazard clocks must recover together');
  assert.ok(r.maxLead<=120);
- assert.ok(Math.abs(r.last.game.distance-r.atEnd*.03)<1,'recovery must converge rather than leave permanent lag');
+ assert.ok(Math.abs(r.last.game.distance-(r.atEnd-125)*.03)<1,'recovery must converge to the configured reserve rather than add permanent lag');
  assert.equal(r.last.game.timeSpent,0);
 });
 test('fast confirmed travel receives the same bounded recovery without fabricating purchases',()=>{

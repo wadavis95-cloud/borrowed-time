@@ -94,9 +94,9 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError, onI
 
 // Buffer real snapshots on a server-time timeline; rules remain authoritative.
 export function createRaceView(options={}) {
-  const {anticipateLocalLanes=false,onLocalCount=key=>telemetry.count(key),...bufferOptions}=options;
+  const {anticipateLocalLanes=false,localForwardBufferMs=125,onLocalCount=key=>telemetry.count(key),...bufferOptions}=options;
   const buffer=createMovementBuffer({onMetric:(key,ms)=>telemetry.observe(key,ms),onUnderrun:()=>telemetry.count('bufferUnderruns'),...bufferOptions});
-  const local=anticipateLocalLanes?createLocalPresentation({onCount:onLocalCount}):null;
+  const local=anticipateLocalLanes?createLocalPresentation({forwardBufferMs:localForwardBufferMs,onCount:onLocalCount}):null;
   let latest=null,course=[],debris=[];
   const rendered=new Map();
   let correctionCount=0,maxCorrectionMeters=0,lastRenderAt=null;
