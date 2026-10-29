@@ -1,10 +1,10 @@
 import {timingSafeEqual} from 'node:crypto';
 import {monitorEventLoopDelay,performance} from 'node:perf_hooks';
-import {METRIC_BINS as BINS,PEAK_METRICS,SPIKE_THRESHOLDS} from '../metric-schema.js';
+import {METRIC_BINS as BINS,PEAK_METRICS,SPIKE_THRESHOLDS,CONTROL_METRICS,CLIENT_COUNTERS,CLIENT_PHASES} from '../metric-schema.js';
 export {BINS};
 const RETENTION_MS=30*60*1000,MAX_HISTORY=1800,MAX_REPORTS=6000;
-const META_KEYS=['map','inputMode','mode','device'];
-const CLIENT_KEYS=new Set([...META_KEYS,...Object.keys(BINS),'peaks','bufferUnderruns','bufferDelay','bufferHold','frame','gap','rtt','input','load','mapFirst','mapRepeat','longTasks','errors','graphicsErrors','contextLosses','disconnects','slowFrames','frames']);
+const META_KEYS=['map','inputMode','mode','device','phase'];
+const CLIENT_KEYS=new Set([...META_KEYS,...Object.keys(BINS),'peaks',...CLIENT_COUNTERS]);
 const COUNTERS=['connections','connectionRejects','roomRejects','disconnects','slowClients','invalidMessages','rateLimits','messagesIn','bytesIn','messagesOut','bytesOut','snapshots','httpRequests','httpErrors','http4xx','http5xx','monitorBytes','telemetryBytesIn','assetBytes','pageBytes','otherBytes','httpAborts','telemetryAccepted','telemetryRejected'];
 export function validReport(report){
  if(!report||typeof report!=='object'||Array.isArray(report))return false;
@@ -17,7 +17,7 @@ export function validReport(report){
    }
    continue;
   }
-  if(META_KEYS.includes(key)){const allowed=key==='map'?['tunnel','pirate','jungle','frozen','orbital','desert']:key==='inputMode'?['touch','keyboard','unknown']:key==='device'?['mobile','desktop','unknown']:['solo','online','demo'];if(!allowed.includes(value))return false;continue;}
+  if(META_KEYS.includes(key)){const allowed=key==='map'?['tunnel','pirate','jungle','frozen','orbital','desert']:key==='inputMode'?['touch','keyboard','unknown']:key==='device'?['mobile','desktop','unknown']:key==='phase'?CLIENT_PHASES:['solo','online','demo'];if(!allowed.includes(value))return false;continue;}
   if(BINS[key]){if(!Array.isArray(value)||value.length!==8||!value.every(v=>Number.isInteger(v)&&v>=0&&v<=100000))return false;}
   else if(!Number.isInteger(value)||value<0||value>100000)return false;
  }
@@ -71,14 +71,14 @@ export function createMonitoring({token='',state=()=>({}),now=Date.now,autoStart
   for(let i=reports.length-1;i>=0&&client.recentSpikes.length<24;i--){
    const r=reports[i];
    for(const [metric,threshold]of Object.entries(SPIKE_THRESHOLDS)){
-    const peak=r.report.peaks?.[metric];if(peak&&peak.ms>threshold&&client.recentSpikes.length<24)client.recentSpikes.push({metric,ms:peak.ms,at:peak.at,receivedAt:r.at,map:r.report.map??'unknown',device:r.report.device??'unknown',mode:r.report.mode??'unknown'});
+    const peak=r.report.peaks?.[metric];if(peak&&peak.ms>threshold&&client.recentSpikes.length<24)client.recentSpikes.push({metric,ms:peak.ms,at:peak.at,receivedAt:r.at,map:r.report.map??'unknown',device:r.report.device??'unknown',mode:r.report.mode??'unknown',phase:r.report.phase??'unknown'});
    }
   }
-  const group=field=>[...new Set(reports.map(r=>r.report[field]).filter(Boolean))].map(value=>{
-   const selected=reports.filter(r=>r.report[field]===value),frame=summary(selected,'frame');
-   return {name:value,reports:selected.length,frames:frame.count,frameP95UpperMs:frame.p95UpperMs,frameP95OverMs:frame.p95OverMs,load:summary(selected,'load'),mapFirst:summary(selected,'mapFirst'),mapRepeat:summary(selected,'mapRepeat'),gap:summary(selected,'gap'),rtt:summary(selected,'rtt'),input:summary(selected,'input'),bufferHold:summary(selected,'bufferHold'),bufferDelay:summary(selected,'bufferDelay'),scheduleLag:summary(selected,'scheduleLag'),sendGap:summary(selected,'sendGap'),arrivalExcess:summary(selected,'arrivalExcess')};
+  const group=field=>[...new Set(reports.map(r=>r.report[field]??(field==='phase'?'unknown':null)).filter(Boolean))].map(value=>{
+   const selected=reports.filter(r=>(r.report[field]??(field==='phase'?'unknown':null))===value),frame=summary(selected,'frame');
+   return {name:value,reports:selected.length,frames:frame.count,frameP95UpperMs:frame.p95UpperMs,frameP95OverMs:frame.p95OverMs,load:summary(selected,'load'),mapFirst:summary(selected,'mapFirst'),mapRepeat:summary(selected,'mapRepeat'),gap:summary(selected,'gap'),rtt:summary(selected,'rtt'),input:summary(selected,'input'),bufferHold:summary(selected,'bufferHold'),bufferDelay:summary(selected,'bufferDelay'),scheduleLag:summary(selected,'scheduleLag'),sendGap:summary(selected,'sendGap'),arrivalExcess:summary(selected,'arrivalExcess'),...Object.fromEntries(CONTROL_METRICS.map(key=>[key,summary(selected,key)])),...Object.fromEntries(CLIENT_COUNTERS.filter(key=>key.startsWith('control')||key.startsWith('lane')||key==='telemetryDropped').map(key=>[key,selected.reduce((sum,r)=>sum+(r.report[key]||0),0)]))};
   });
-  client.byMap=group('map');client.byInput=group('inputMode');client.byMode=group('mode');client.byDevice=group('device');
+  client.byMap=group('map');client.byInput=group('inputMode');client.byMode=group('mode');client.byDevice=group('device');client.byPhase=group('phase');
   return {enabled,startedAt:started,uptimeSeconds:(now()-started)/1000,totals:{...totals},current:history.at(-1)||null,history:chartHistory(),serverSpikes:history.filter(p=>p.eventLoopMaxMs>50||p.simulationBacklogMs>100).slice(-24).map(({at,eventLoopMaxMs,simulationBacklogMs,cpuPct})=>({at,eventLoopMaxMs,simulationBacklogMs,cpuPct})),client,notes:['Application JSON and declared completed HTTP body bytes; excludes TLS/WS/HTTP headers, aborted partial bodies and provider accounting.','Browser metrics are untrusted aggregate samples from up to the last thirty minutes (report-count cap can shorten coverage), not unique people. Histogram p95 values are bucket upper bounds; the last bucket includes overflow.','History and totals reset on process restart. No persistence, external alerts, billing integration or cold-start measurement.']};
  }
  function response(res,status,body){const text=body===undefined?'':JSON.stringify(body);count('monitorBytes',Buffer.byteLength(text));res.writeHead(status,{'Content-Length':Buffer.byteLength(text),'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'});res.end(text);}

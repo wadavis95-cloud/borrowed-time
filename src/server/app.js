@@ -275,6 +275,13 @@ export function createGameServer({
       }
       if(message?.type==='probe'&&Number.isFinite(message.at)){send(socket,{type:'probe',at:message.at});return;}
       const result = rooms.handle(id, message);
+      // A snapshot inputSeq acknowledges processing, which may include a rejected
+      // move. Keep acceptance private to its sender and outside the v2 cache.
+      if(message?.type==='input'&&Number.isSafeInteger(message.seq)&&message.seq>0
+        &&typeof message.roundId==='string'&&message.roundId.length>0&&message.roundId.length<=64){
+        send(socket,{type:'inputResult',seq:message.seq,roundId:message.roundId,accepted:result.ok,
+          ...(!result.ok?{code:result.code}:{})});
+      }
       if (!result.ok) {
         if(result.code==='RATE_LIMIT')monitor.count('rateLimits');
         if(result.code==='SERVER_FULL')monitor.count('roomRejects');

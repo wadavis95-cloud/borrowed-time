@@ -47,7 +47,7 @@ export function createMovementBuffer({minDelayMs=75,initialDelayMs=100,maxDelayM
     }else finishHold(now);
     let right=queue.findIndex(item=>item.time>=cursor);if(right<0)right=queue.length-1;
     const after=queue[right],before=queue[Math.max(0,right-1)],duration=after.time-before.time;
-    return {before:before.snapshot,after:after.snapshot,latest:newest.snapshot,intervalMs:duration,predictionMs,t:duration>0?clamp((cursor-before.time)/duration,0,1):1};
+    return {before:before.snapshot,after:after.snapshot,latest:newest.snapshot,latestReceivedAt:newest.receivedAt,intervalMs:duration,predictionMs,t:duration>0?clamp((cursor-before.time)/duration,0,1):1};
   }
   return {push,sample,reset,suspend(){holdStart=null;suspended=true;canPredict=false;},diagnostics:()=>({bufferedSnapshots:queue.length,targetDelayMs:targetDelay,underruns,worstHoldMs:worstHold,predictedSamples,maxPredictionMs:maxPredicted})};
 }

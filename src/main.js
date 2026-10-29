@@ -12,6 +12,8 @@ import { createDemoRace } from './demo.js';
 import {MUSIC_TRACKS} from './music.js';
 import { createGameAudio } from './audio.js';
 import { createInputMode } from './input.js';
+import {bindGameplayButton,bindCanvasGestures} from './gameplay-input.js';
+import {createControlTiming} from './control-timing.js';
 import { loadClassicGraphics, createMapLoader, withDeadline } from './loading.js';
 import { createRaceUI } from './race-ui.js';
 import { finishPresentation } from './race-presentation.js';
@@ -38,6 +40,8 @@ let soloRace = null;
 const soloScores=createSessionScores(),characterChoices={};
 let characterPickerKey='',portraitRequest=0;
 let connection = null, snapshot = null, raceView = createRaceView();
+const controlTiming=createControlTiming({observe:(key,ms)=>telemetry.observe(key,ms),count:key=>telemetry.count(key)});
+let controlPhase=null;
 let networkStatus = '', connectionGeneration = 0, rosterKey = '';
 let lastOverlay = '', lastEvent = 0, toastUntil = 0;
 let standingsKey = '';
@@ -55,6 +59,12 @@ const inputMode = createInputMode({ onChange(mode) {
 const controlHint = () => inputMode.mode === 'touch'
   ? 'Swipe to move · Swipe up to hop · Tap abilities'
   : 'A / D move · W hop · Q boost · E long jump';
+function updateTelemetryContext() {
+  const phase=mode==='demo'?'demo':mode!=='online'?'solo':
+    ['won','lost'].includes(snapshot?.you.game.phase)||snapshot?.room.phase==='finished'?'results':snapshot?.room.phase||'lobby';
+  if(phase!==controlPhase){controlTiming.reset();controlPhase=phase;}
+  telemetry.context(snapshot?.room.mapId||game.mapId,inputMode.mode,mode==='online'?'online':mode==='demo'?'demo':'solo',phase);
+}
 for (const id of MAP_IDS) {
   const map = MAPS[id];
   const button = document.createElement('button');
@@ -190,6 +200,7 @@ function showNetworkError(message = '') {
   $('network-error').hidden = !message;
 }
 function resetVisuals() {
+  controlTiming.reset();
   abilityCoach.reset();
   raceUI.reset();
   renderer?.reset();
@@ -241,7 +252,7 @@ function joinRace(type) {
   networkStatus = 'connecting';
   snapshot = null;
   rosterKey = '';
-  raceView = createRaceView();
+  raceView = createRaceView({anticipateLocalLanes:type!=='demo'});
   game = createGame({ mapId: selectedMapId,avatarId:characterChoices[selectedMapId] });
   resetVisuals();
   showNetworkError();
@@ -249,6 +260,7 @@ function joinRace(type) {
     onStatus(status) {
       if (generation !== connectionGeneration) return;
       networkStatus = status;
+      if(status!=='open'){controlTiming.reset();raceView.suspend();}
       updateRoom();
       updateHUD();
     },
@@ -259,14 +271,22 @@ function joinRace(type) {
         returnToMenu();showNetworkError(message);$('join-code').focus();
       } else showNetworkError(message);
     },
-    onSnapshot(next) {
+    onInputResult(result) {
+      if(generation!==connectionGeneration)return;
+      raceView.inputResult(result);
+      if(telemetry.enabled)controlTiming.result(result);
+    },
+    onSnapshot(next,meta) {
       if (generation !== connectionGeneration) return;
       const starting = next.room.phase === 'countdown' && snapshot?.room.phase !== 'countdown';
       if (next.room.roundId !== snapshot?.room.roundId || next.room.mapId !== snapshot?.room.mapId) resetVisuals();
       snapshot = next;
+      updateTelemetryContext();
+      const receivedAt=meta?.receivedAt??performance.now();
+      if(mode==='online'&&telemetry.enabled)controlTiming.confirm(next,receivedAt);
       // Local preview renders its simulation directly; online races retain interpolation.
       if(mode==='demo')game=next.you.game;
-      else {raceView.push(next,performance.now());game=raceView.current();}
+      else {raceView.push(next,receivedAt);game=raceView.current();}
       updateRoom();
       updateHUD();
       if (starting) showCourse();
@@ -374,10 +394,15 @@ function togglePause() {
   accumulator = 0;
   updateHUD();
 }
-function act(action) {
+function act(action,trace) {
   if (!renderer || graphicsLoading || graphicsError || mode === 'demo') return;
   if (mode === 'online') {
-    if (networkStatus === 'open' && snapshot?.room.phase === 'racing' && game.phase === 'running') connection.input(action);
+    if (networkStatus === 'open' && snapshot?.room.phase === 'racing' && game.phase === 'running') {
+      updateTelemetryContext();
+      const receipt=connection.input(action);
+      if(receipt&&trace&&telemetry.enabled)controlTiming.sent(action,receipt,trace,snapshot.you.game);
+      if(receipt)raceView.anticipate(action,receipt);
+    }
     return;
   }
   if (action === 'left') moveLane(game, -1);
@@ -559,40 +584,30 @@ $('sound-button').addEventListener('click', async () => {
   button.disabled = false;
 });
 for (const [id, action] of [['boost-button','boost'], ['long-jump-button','longJump'], ['left-button','left'], ['right-button','right'], ['hop-button','jump']]) {
-  $(id).addEventListener('click', () => act(action));
+  bindGameplayButton($(id),action,act);
 }
 document.addEventListener('keydown', event => {
+  const eventAt=performance.now();
   if ($('character-dialog').open || $('guide-dialog').open || event.altKey || event.ctrlKey || event.metaKey || event.target.closest('input,textarea,select,[contenteditable="true"]')) return;
   const actions = { ArrowLeft:'left', KeyA:'left', ArrowRight:'right', KeyD:'right', ArrowUp:'jump', KeyW:'jump', KeyQ:'boost', KeyE:'longJump', Digit1:'boost', Digit2:'longJump' };
   if (actions[event.code] || ['KeyP', 'Escape'].includes(event.code)) {
     event.preventDefault();
     inputMode.keyboard();
     if (event.repeat) return;
-    if (actions[event.code]) act(actions[event.code]);
+    if (actions[event.code]) act(actions[event.code],{eventAt,recognizedAt:eventAt,source:'keyboard'});
     else togglePause();
   }
 });
 document.addEventListener('pointerdown', event => {
-  // Keep an explicitly clicked on-screen control in place until its click fires.
+  // Keep an explicitly pressed mouse control in place through the interaction.
   if (event.pointerType === 'mouse' && event.target.closest('.touch-controls')) return;
   inputMode.pointer(event.pointerType);
 }, { passive: true });
-let touchStart = null;
-canvas.addEventListener('pointerdown', event => {
-  touchStart = { x:event.clientX, y:event.clientY };
-  canvas.setPointerCapture(event.pointerId);
-});
-canvas.addEventListener('pointerup', event => {
-  if (!touchStart) return;
-  const dx = event.clientX - touchStart.x, dy = event.clientY - touchStart.y;
-  if (Math.abs(dx) > 25 && Math.abs(dx) > Math.abs(dy)) act(dx < 0 ? 'left' : 'right');
-  else if (dy < -25 || (Math.abs(dx) < 10 && Math.abs(dy) < 10)) act('jump');
-  touchStart = null;
-});
+bindCanvasGestures(canvas,act);
 canvas.addEventListener('webglcontextlost',()=>telemetry.count('contextLosses'));
-canvas.addEventListener('pointercancel', () => { touchStart = null; });
 // Solo pauses on tab switches. A multiplayer clock belongs to the server and keeps running.
 document.addEventListener('visibilitychange', () => {
+  controlTiming.reset();
   raceView.suspend();
   if (mode === 'solo' && document.hidden && game.phase === 'running') { pauseGame(game); updateHUD(); }
   if(document.hidden)mapLoader?.cancelMeasurement();
@@ -607,7 +622,7 @@ $('close-guide').addEventListener('click', () => $('guide-dialog').close());
 
 function frame(now) {
   if(renderer&&!graphicsError)ensureMapGraphics(game.mapId);
-  telemetry.context(game.mapId,inputMode.mode,mode==='online'?'online':mode==='demo'?'demo':'solo');
+  updateTelemetryContext();
   const frameMs=now-lastFrame;
   if(!document.hidden&&!graphicsLoading&&game.phase==='running')telemetry.frame(frameMs);
   const dt = Math.min(frameMs / 1000, .1);
@@ -621,7 +636,20 @@ function frame(now) {
   const view = mode==='demo'&&connection?.view ? {game:connection.view(),opponents:connection.opponents()} : mode !== 'solo' && snapshot ? raceView.sample(now) : soloRace ? {game:soloRace.view(),opponents:soloRace.opponents()} : null;
   if (renderer && !graphicsLoading && !graphicsError) {
     try {
-      renderer.draw(view?.game || game, now / 1000, dt, view?.opponents || []);
+      const pose=renderer.draw(view?.game || game, now / 1000, dt, view?.opponents || []);
+      if(!document.hidden&&mode==='online'&&telemetry.enabled&&view?.provenance){
+        const submittedAt=performance.now(),source=view.provenance;
+        if(pose){
+          if(source.anticipatedLane)controlTiming.anticipated(pose,source.anticipatedLane,submittedAt);
+          // Confirmed timing still requires authoritative sequence coverage.
+          controlTiming.rendered(pose,{...source,state:view.game,isPredicted:false},submittedAt);
+        }
+        if(view.game.phase==='running'&&Number.isFinite(source.renderedServerTime)&&Number.isFinite(source.latestServerTime)){
+          // Receipt-relative age excludes unknown one-way transit/clock offset.
+          telemetry.observe('renderStateAge',Math.max(0,submittedAt-source.latestReceivedAt+source.latestServerTime-source.renderedServerTime));
+          telemetry.observe('renderLead',Math.max(0,source.renderedServerTime-source.latestServerTime));
+        }
+      }
       if(!document.hidden){const timing=mapLoader?.drawn(game.mapId);if(timing){telemetry.observe(timing.reused?'mapRepeat':'mapFirst',timing.ms);void telemetry.flush();}}
       if(!firstRendered&&telemetry.enabled){firstRendered=true;telemetry.ready(performance.now());}
     } catch {

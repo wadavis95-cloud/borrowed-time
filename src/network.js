@@ -2,11 +2,12 @@ import {raceEndpoint} from './endpoints.js';
 import {createDeliveryTiming} from './delivery-timing.js';
 // Transport sends intentions; it never decides whether an ability or movement succeeds.
 import {createMovementBuffer} from './movement-buffer.js';
+import {createLocalPresentation} from './local-presentation.js';
 import {createSnapshotDecoder} from './race-protocol.js';
 import {telemetry} from './telemetry.js';
 import { CONFIG, ABILITIES, createGame } from './game.js';
 
-export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
+export function connectRace({ initialMessage, onSnapshot, onStatus, onError, onInputResult }) {
   const url = new URL(raceEndpoint('/race'));
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
   const socket = new WebSocket(url);
@@ -30,8 +31,8 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
 
   function send(message) {
     if (closed || socket.readyState !== WebSocket.OPEN) return false;
-    socket.send(JSON.stringify(message));
-    return true;
+    try { socket.send(JSON.stringify(message)); return true; }
+    catch { return false; }
   }
   socket.addEventListener('open', () => {
     if (closed) return;
@@ -48,10 +49,14 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
     if (message.type === 'snapshot') {
       try{message=decode(message);}catch(error){onError(error.message);socket.close();return;}
       const visible=!document.hidden;if(!visible||!wasVisible){delivery.reset();lastSnapshotAt=null;pendingInputs.clear();}wasVisible=visible;
-      const at=performance.now();if(visible&&wasVisible)delivery.sample(message.timing,at);if(lastSnapshotAt!==null)telemetry.observe('gap',at-lastSnapshotAt);lastSnapshotAt=at;
+      const at=performance.now();
       if (roundId !== message.room.roundId) { roundId = message.room.roundId; sequence = 0;pendingInputs.clear(); }
-      for(const [seq,sentAt]of pendingInputs){if(seq<=message.you.inputSeq){telemetry.observe('input',performance.now()-sentAt);pendingInputs.delete(seq);}}
-      onSnapshot(message);
+      // The coordinator updates phase attribution before this packet's measurements.
+      onSnapshot(message,{receivedAt:at});
+      if(visible&&wasVisible)delivery.sample(message.timing,at);if(lastSnapshotAt!==null)telemetry.observe('gap',at-lastSnapshotAt);lastSnapshotAt=at;
+      for(const [seq,sentAt]of pendingInputs){if(seq<=message.you.inputSeq){telemetry.observe('input',at-sentAt);pendingInputs.delete(seq);}}
+    } else if (message.type === 'inputResult') {
+      if(message.roundId===roundId&&Number.isSafeInteger(message.seq)&&message.seq>0&&message.seq<=sequence&&typeof message.accepted==='boolean')onInputResult?.(message);
     } else if (message.type === 'error') {
       onError(message.message, message.code);
     } else if (message.type === 'left') {
@@ -70,9 +75,11 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
   return {
     send,
     input(action) {
-      if (roundId === null) return false;
-      const seq=++sequence;if(probing){pendingInputs.set(seq,performance.now());if(pendingInputs.size>60)pendingInputs.delete(pendingInputs.keys().next().value);}
-      return send({ type: 'input', action, seq, roundId });
+      if (roundId === null) return null;
+      const seq=++sequence,sentAt=performance.now();
+      if(!send({ type: 'input', action, seq, roundId }))return null;
+      if(probing){pendingInputs.set(seq,sentAt);if(pendingInputs.size>60)pendingInputs.delete(pendingInputs.keys().next().value);}
+      return {seq,roundId,sentAt};
     },
     close() {
       clearInterval(probeTimer);send({ type: 'leave' });
@@ -85,7 +92,9 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError }) {
 
 // Buffer real snapshots on a server-time timeline; rules remain authoritative.
 export function createRaceView(options={}) {
-  const buffer=createMovementBuffer({onMetric:(key,ms)=>telemetry.observe(key,ms),onUnderrun:()=>telemetry.count('bufferUnderruns'),...options});
+  const {anticipateLocalLanes=false,onLocalCount=key=>telemetry.count(key),...bufferOptions}=options;
+  const buffer=createMovementBuffer({onMetric:(key,ms)=>telemetry.observe(key,ms),onUnderrun:()=>telemetry.count('bufferUnderruns'),...bufferOptions});
+  const local=anticipateLocalLanes?createLocalPresentation({onCount:onLocalCount}):null;
   let latest=null,course=[],debris=[];
   const rendered=new Map();
   let correctionCount=0,maxCorrectionMeters=0,lastRenderAt=null;
@@ -146,7 +155,7 @@ export function createRaceView(options={}) {
       if(newRound){const generated=createGame({seed:snapshot.room.seed,mapId:snapshot.room.mapId});course=generated.obstacles;debris=generated.debris;buffer.reset();clearMotion();correctionCount=0;maxCorrectionMeters=0;}
       if(snapshot.debris)debris=snapshot.debris;
       if(!newRound&&latest.you.game.phase==='ready'&&snapshot.you.game.phase==='running'){buffer.reset();clearMotion();}
-      latest=snapshot;buffer.push(snapshot,receivedAt);
+      latest=snapshot;buffer.push(snapshot,receivedAt);local?.reconcile(snapshot,receivedAt);
     },
     sample(now){
       const pair=buffer.sample(now);if(!pair)return null;
@@ -161,10 +170,23 @@ export function createRaceView(options={}) {
         const old=before.players.find(p=>p.id===player.id),next=after.players.find(p=>p.id===player.id);
         return next?present(player.id,motion(old,next,player,t,intervalMs),old,next,pair,now):{...player};
       });
-      return {game,opponents};
+      // Seq coverage follows the drawn interpolation, rather than the latest HUD.
+      const direct=before.you.game.phase!==after.you.game.phase||current.you.game.phase!==after.you.game.phase;
+      const source=direct?current:t>0?after:before;
+      const renderedServerTime=Number.isFinite(before.serverTime)&&Number.isFinite(after.serverTime)
+        ? direct?current.serverTime:blend(before.serverTime,after.serverTime,t)+pair.predictionMs : null;
+      const view={game,opponents,provenance:{inputSeq:source.you.inputSeq,roundId:current.room.roundId,
+        // Boost feel already uses latest authority; lane/jump use the buffer.
+        boostInputSeq:current.you.inputSeq,forwardPredictionMs:pair.predictionMs,
+        renderedServerTime,latestServerTime:current.serverTime,latestReceivedAt:pair.latestReceivedAt}};
+      // Only the own-player timeline changes. Opponent buffer output is intact.
+      const own=local?.sample(now);
+      return own?{...view,game:{...game,...own.game},provenance:own.provenance}:view;
     },
     current:()=>latest?{...latest.you.game,obstacles:course,debris,raceElapsed:latest.room.raceElapsed}:null,
-    suspend(){buffer.suspend();clearMotion();},
-    diagnostics:()=>({...buffer.diagnostics(),correctionCount,maxCorrectionMeters}),
+    anticipate:(action,receipt)=>local?.enqueue(receipt?{...receipt,action}:null)??false,
+    inputResult(result){local?.result(result);},
+    suspend(){buffer.suspend();clearMotion();local?.suspend();},
+    diagnostics:()=>({...buffer.diagnostics(),correctionCount,maxCorrectionMeters,...(local?{local:local.diagnostics()}:{})}),
   };
 }

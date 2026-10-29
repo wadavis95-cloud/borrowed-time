@@ -27,9 +27,11 @@ test('compact snapshot transport preserves optional timing metadata and old pack
  const old={...s};delete old.timing;assert.equal(decoder(encoder(old)).timing,undefined);
 });
 
-test('all timing peaks and histogram counters fit the existing ingress cap',async()=>{
- const {makeReport,addObservation}=await import('../src/telemetry.js');const {METRIC_BINS}=await import('../src/metric-schema.js');
+test('all encoded timing peaks and histogram counters fit the existing ingress cap',async()=>{
+ const {makeReport,addObservation,encodeTelemetryReports}=await import('../src/telemetry.js');const {METRIC_BINS}=await import('../src/metric-schema.js');
+ const {validReport}=await import('../src/server/monitoring.js');
  const report={...makeReport(),map:'orbital',mode:'online',device:'mobile',inputMode:'touch'};
  for(const key of Object.keys(METRIC_BINS)){addObservation(report,key,999999999,1793225000000);report[key].fill(100000);}
- assert.ok(Buffer.byteLength(JSON.stringify(report))<=2048,JSON.stringify(report).length+' bytes');
+ const encoded=encodeTelemetryReports(report);assert.ok(encoded.length>0);
+ for(const body of encoded){assert.ok(Buffer.byteLength(body)<=2048,Buffer.byteLength(body)+' bytes');assert.equal(validReport(JSON.parse(body)),true);}
 });

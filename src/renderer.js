@@ -436,6 +436,8 @@ export function createRenderer(canvas) {
     camera.lookAt(lookTarget);
     renderer.render(scene, camera);
     hasDrawn = true;
+    // Software submission only: these are the eased values actually drawn.
+    return {lane:view.lane,jumpHeight:view.jumpHeight,boostFeel:view.boostFeel};
   }
 
   const retainedGeometries = new Set([stoneGeometry, boxGeometry, ringGeometry]);
