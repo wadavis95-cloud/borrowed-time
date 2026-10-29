@@ -26,11 +26,11 @@ test('trace validation rejects extra fields, unbounded arrays and free-form labe
  const valid={at:1000,reason:'recovery',frameMs:16,excessMs:60,samples:[[16,76,100,120,0,0]]};assert.equal(validCatchupTrace(valid),true);
  for(const e of [{...valid,player:'me'},{...valid,reason:'secret'},{...valid,samples:Array(7).fill(valid.samples[0])},{...valid,samples:[[16,76,Infinity,120,0,0]]}])assert.equal(validCatchupTrace(e),false);
 });
-test('presenter identifies collision anchor without changing configured reserve or prediction',()=>{
+test('buffered ordinary collision keeps tracking without changing reserve or prediction',()=>{
  const p=createLocalPresentation({forwardBufferMs:125});
  const snap=(time,extra={})=>({serverTime:time,room:{roundId:'one',phase:'racing',mapId:'tunnel',raceElapsed:time/1000},you:{id:'me',inputSeq:0,game:{...state(time*.03),lane:1,elapsed:time/1000,...extra}}});
  p.reconcile(snap(1000),1000);p.sample(1000);p.reconcile(snap(1050,{stunRemaining:.3,hitFlash:.3}),1050);
- assert.equal(p.sample(1050).provenance.forwardClockReason,'collision');assert.equal(p.diagnostics().forwardBufferMs,125);assert.equal(p.diagnostics().maxPredictionMs,120);
+ assert.equal(p.sample(1050).provenance.forwardClockReason,'tracking');assert.equal(p.diagnostics().forwardBufferMs,125);assert.equal(p.diagnostics().maxPredictionMs,120);
 });
 
 test('trace travels through the existing bounded telemetry and protected monitoring',async()=>{

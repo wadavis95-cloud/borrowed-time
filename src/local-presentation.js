@@ -52,11 +52,15 @@ export function createLocalPresentation({maxPending=60,intentTtlMs=250,maxPredic
         const observed=clamp((state.distance-old.you.game.distance)*1000/(simTime-oldSim),0,maxSpeed);
         velocity=finite(state.speed)?Math.min(velocity,observed):observed;
       }
-      // Distinguish plausible late travel from a collision or a discontinuity.
+      // Ordinary collisions keep the confirmed forward timeline buffered. Hit
+      // feedback and balances still come from the latest snapshot below. Only
+      // backwards authority/discontinuities (or legacy zero reserve) reanchor.
       const distanceJump=old&&Math.abs(state.distance-old.you.game.distance)>maxSpeed*Math.max(0,simTime-oldSim)/1000+6;
-      forceAnchor=forceAnchor||!!(state.stunRemaining>0||state.hitFlash>0||distanceJump);
+      const collision=state.stunRemaining>0||state.hitFlash>0;
+      const backwards=old&&state.distance<old.you.game.distance;
+      forceAnchor=forceAnchor||!!(distanceJump||backwards||collision&&forwardBufferMs===0);
       if(distanceJump)forceAnchorReason='discontinuity';
-      else if(state.stunRemaining>0||state.hitFlash>0)forceAnchorReason='collision';
+      else if(backwards||collision&&forwardBufferMs===0)forceAnchorReason=collision?'collision':'discontinuity';
       if(history.at(-1)?.time===simTime)history.pop();
       history.push({time:simTime,state,seq});if(history.length>64)history.shift();
       offsets.push(at-simTime);if(offsets.length>40)offsets.shift();

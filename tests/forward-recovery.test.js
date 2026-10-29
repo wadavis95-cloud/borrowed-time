@@ -66,3 +66,43 @@ test('collision authority does not rewind an already displayed debris clock',()=
  const after=v.sample(1110);assert.equal(after.game.distance,30);
  assert.ok(after.game.raceElapsed>=before.game.raceElapsed);
 });
+
+test('buffered collision feedback is immediate without consuming the forward reserve',()=>{
+ const v=createRaceView({anticipateLocalLanes:true,onMetric(){},onUnderrun(){}});
+ let previous=null,maxStep=0,maxClockStep=0,firstHit=null;
+ for(let at=0;at<=3000;at+=1){
+  if(at%50===0){
+   const s=state(at),hit=at>=1000&&at<1500;
+   // A normal authoritative collision slows forward progress; it never
+   // teleports the racer backwards. Repeat the effect over several packets.
+   const distance=at<=1000?at*.03:at<=1500?30+(at-1000)*.012:36+(at-1500)*.03;
+   Object.assign(s.you.game,{distance,speed:hit?12:30,hits:at>=1000?1:0,
+    hitFlash:hit?.45:0,stunRemaining:hit?.5:0,timeLeft:at>=1000?40:59,timeSpent:4});
+   v.push(s,at);
+   if(at===1000){
+    firstHit=v.sample(at);
+    assert.equal(firstHit.game.hits,1);assert.equal(firstHit.game.hitFlash,.45);
+    assert.equal(firstHit.game.stunRemaining,.5);assert.equal(firstHit.game.timeLeft,40);
+    assert.equal(firstHit.game.timeSpent,4);
+    const clockStep=firstHit.game.raceElapsed-previous.game.raceElapsed;
+    assert.ok(clockStep<=.008*1.36,`collision clock skipped ${clockStep*1000}ms on an 8ms frame`);
+    assert.ok(firstHit.provenance.recoveryLagMs>90,'a collision must not consume the confirmed reserve');
+    previous=firstHit;
+   }
+  }
+  if(at%16)continue;
+  const shown=v.sample(at);
+  if(previous){
+   maxStep=Math.max(maxStep,shown.game.distance-previous.game.distance);
+   maxClockStep=Math.max(maxClockStep,shown.game.raceElapsed-previous.game.raceElapsed);
+   assert.ok(shown.game.distance>=previous.game.distance-1e-9);
+   assert.ok(shown.game.raceElapsed>=previous.game.raceElapsed-1e-9);
+  }
+  assert.ok(shown.provenance.forwardPredictionMs<=120);
+  previous=shown;
+ }
+ assert.ok(maxStep<=30*.016*1.36,`collision recovery advanced ${maxStep}m in a frame`);
+ assert.ok(maxClockStep<=.016*1.36);
+ assert.ok(v.sample(3000).provenance.recoveryLagMs>90,'repeated stun packets must not reanchor the cursor');
+ assert.ok(firstHit.game.distance<30,'visual travel remains on the retained confirmed timeline');
+});
