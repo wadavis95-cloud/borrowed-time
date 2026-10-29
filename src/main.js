@@ -43,6 +43,7 @@ let characterPickerKey='',portraitRequest=0;
 let connection = null, snapshot = null, raceView = createRaceView();
 const controlTiming=createControlTiming({observe:(key,ms)=>telemetry.observe(key,ms),count:key=>telemetry.count(key)});
 const motionDiagnostics=createMotionDiagnostics((key,ms)=>telemetry.observe(key,ms));
+let shaderPreparing=false;
 let controlPhase=null;
 let networkStatus = '', connectionGeneration = 0, rosterKey = '';
 let lastOverlay = '', lastEvent = 0, toastUntil = 0;
@@ -62,7 +63,7 @@ const controlHint = () => inputMode.mode === 'touch'
   ? 'Swipe to move · Swipe up to hop · Tap abilities'
   : 'A / D move · W hop · Q boost · E long jump';
 function updateTelemetryContext() {
-  const phase=mode==='demo'?'demo':mode!=='online'?'solo':
+  const phase=shaderPreparing?'preparing':mode==='demo'?'demo':mode!=='online'?'solo':
     ['won','lost'].includes(snapshot?.you.game.phase)||snapshot?.room.phase==='finished'?'results':snapshot?.room.phase||'lobby';
   if(phase!==controlPhase){controlTiming.reset();controlPhase=phase;}
   telemetry.context(snapshot?.room.mapId||game.mapId,inputMode.mode,mode==='online'?'online':mode==='demo'?'demo':'solo',phase,raceWindow(phase,snapshot?.room.raceElapsed));
@@ -167,7 +168,15 @@ async function prepareGraphics() {
       mapLoader=createMapLoader({load:avatarLibrary.preloadAvatars,isLoaded:avatarLibrary.isAvatarLoaded,
         onChange({loading,progress,error}){graphicsLoading=loading;if(progress!==undefined)graphicsProgress=Math.round(progress*100);if(error){graphicsError=error.message;telemetry.count('graphicsErrors');}updateHUD();}});
       await mapLoader.prepare(selectedMapId,{measure:false});
-      renderer = createRenderer(canvas);
+      renderer = createRenderer(canvas,{onProgram:()=>telemetry.count('shaderProgramsCreated')});
+      if(selectedMapId==='tunnel'&&new URLSearchParams(location.search).get('warmup')!=='off'){
+        shaderPreparing=true;updateTelemetryContext();updateOverlay();
+        try{
+          const prepared=await renderer.warmup(game);
+          if(prepared){telemetry.observe('shaderWarmup',prepared.durationMs);telemetry.observe('shaderCompile',prepared.compileMs);telemetry.count('shaderWarmups');}
+        }catch(error){telemetry.count('shaderWarmupFailures');console.warn('Tunnel graphics preparation did not complete:',error);}
+        finally{shaderPreparing=false;}
+      }
     } else {
       renderer = await createUnityRenderer(canvas, { onProgress(progress) {
         graphicsProgress = Math.round(progress * 100);
@@ -446,7 +455,7 @@ function updateOverlay() {
   canvas.closest('.arena').classList.toggle('briefing', brief);
   if (graphicsLoading) {
     $('screen-overlay').hidden = false;
-    overlay('INTO THE LIGHT', 'Preparing your escape.', `Loading ${getMap(game.mapId).name}… ${graphicsProgress}%`, 'Loading…', true);
+    overlay('INTO THE LIGHT', 'Preparing your escape.', shaderPreparing?'Preparing Tunnel Escape graphics…':`Loading ${getMap(game.mapId).name}… ${graphicsProgress}%`, 'Loading…', true);
     return;
   }
   if (graphicsError) {

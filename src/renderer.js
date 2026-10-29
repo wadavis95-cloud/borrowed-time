@@ -1,5 +1,6 @@
 // Visual state only: course rules and the shared hazard clock live in game.js.
 import * as THREE from 'three';
+import {runShaderWarmup} from './shader-warmup.js';
 import { getMap } from './maps.js';
 import { createAtmosphere } from './graphics/atmosphere.js';
 import { createFinish } from './graphics/finish.js';
@@ -81,7 +82,7 @@ function stripeTexture() {
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; return texture;
 }
 
-export function createRenderer(canvas) {
+export function createRenderer(canvas,{onProgram=()=>{}}={}) {
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
@@ -122,6 +123,11 @@ export function createRenderer(canvas) {
   rim.position.set(3, 5, -10); rim.target.position.set(0, 1, 0); scene.add(rim, rim.target);
   const lampLeft = new THREE.PointLight('#ffba76', 12, 12, 2), lampRight = new THREE.PointLight('#ffba76', 12, 12, 2);
   lampLeft.position.set(-4.05, 2.55, -3); lampRight.position.set(4.05, 2.55, -11); scene.add(lampLeft, lampRight);
+  let warmupWork=null,warmGroup=null;
+  const warmAvatars=[],seenPrograms=new Set();
+  function rememberPrograms(running=false){
+    for(const program of renderer.info.programs||[])if(!seenPrograms.has(program.id)&&seenPrograms.size<512){seenPrograms.add(program.id);if(running)onProgram();}
+  }
   let currentMapId = 'tunnel';
   let world = createWorld(scene, currentMapId, CONFIG.courseLength);
   let atmosphere = createAtmosphere(scene,currentMapId);
@@ -271,6 +277,41 @@ export function createRenderer(canvas) {
   const boostTrails = new THREE.InstancedMesh(boxGeometry, trailMaterial, 14);
   boostTrails.frustumCulled = false; boostTrails.visible = false; scene.add(boostTrails);
 
+  function ensureLocalAvatar(state){
+    const avatarKey = `${state.avatarId || 'courier'}:${state.playerColor || ''}`;
+    if (localAvatarKey !== avatarKey) {
+      if (localAvatar) { scene.remove(localAvatar.group); localAvatar.dispose(); }
+      localAvatar = createAvatar(state.avatarId || 'courier', { color: state.playerColor, ghost: false });
+      localAvatarKey = avatarKey; scene.add(localAvatar.group);
+    }
+  }
+
+  function warmup(state){
+    if(state.mapId!=='tunnel')return Promise.resolve(null);
+    if(warmupWork)return warmupWork;
+    warmupWork=(async()=>{
+      ensureLocalAvatar(state);
+      warmGroup=new THREE.Group();warmGroup.name='tunnel-shader-warmup';warmGroup.visible=false;scene.add(warmGroup);
+      for(const [i,type]of ['rubble','barrier','gap'].entries()){
+        const item=makeObstacle({id:`warm-${type}`,type,length:8});warmGroup.add(item);item.position.set((i-1)*2,0,-10);
+      }
+      for(let lane=0;lane<3;lane++){
+        const item=makeDebris({id:`warm-debris-${lane}`,lane});warmGroup.add(item.group);
+        item.group.position.set((lane-1)*2,0,-14);item.chunk.position.y=3;item.dustMaterial.opacity=.35;
+      }
+      for(const id of getMap('tunnel').avatars)for(const ghost of [false,true]){
+        const avatar=createAvatar(id,{ghost});warmAvatars.push(avatar);warmGroup.add(avatar.group);
+        avatar.group.position.set(ghost?2:-2,0,-8);avatar.update({...state,phase:'running',visualLane:1,reducedMotion:true},0);
+      }
+      const target=new THREE.WebGLRenderTarget(256,256,{depthBuffer:true});
+      const variants=[warmGroup,boostTrails];
+      scene.traverse(node=>{if(node.name==='local-contact-particles'||node.name==='local-contact-ripple')variants.push(node);});
+      try{return await runShaderWarmup({renderer,scene,camera,target,variants});}
+      finally{target.dispose();warmGroup.visible=false;rememberPrograms();}
+    })();
+    return warmupWork;
+  }
+
   function draw(state, animationTime, dt = 1 / 60, opponents = []) {
     if (disposed) return;
     if (contextLost || renderer.getContext().isContextLost()) throw new Error('The browser lost the 3D graphics context. Reload the game to restore the tunnel.');
@@ -317,12 +358,7 @@ export function createRenderer(canvas) {
     atmosphere.update(distance,elapsed,reducedMotion);
     finish.update(state,dt,reducedMotion);
 
-    const avatarKey = `${state.avatarId || 'courier'}:${state.playerColor || ''}`;
-    if (localAvatarKey !== avatarKey) {
-      if (localAvatar) { scene.remove(localAvatar.group); localAvatar.dispose(); }
-      localAvatar = createAvatar(state.avatarId || 'courier', { color: state.playerColor, ghost: false });
-      localAvatarKey = avatarKey; scene.add(localAvatar.group);
-    }
+    ensureLocalAvatar(state);
     const view = motion.update(state, dt, opponents);
     const visualLane = view.lane, boostFeel = view.boostFeel;
     Object.assign(localVisualState, state, { reducedMotion, visualLane, visualLaneVelocity: view.laneVelocity });
@@ -435,6 +471,7 @@ export function createRenderer(canvas) {
     lookTarget.y = 1.95 + view.cameraJump * .06;
     camera.lookAt(lookTarget);
     renderer.render(scene, camera);
+    rememberPrograms(state.phase==='running');
     hasDrawn = true;
     // Software submission only: these are the eased values actually drawn.
     return {lane:view.lane,jumpHeight:view.jumpHeight,boostFeel:view.boostFeel};
@@ -475,7 +512,10 @@ export function createRenderer(canvas) {
   }
   function dispose() {
     if (disposed) return;
-    disposed = true; movementEffects.dispose(); world.dispose(); atmosphere.dispose(); finish.dispose(); resizeObserver.disconnect(); canvas.removeEventListener('webglcontextlost', onContextLost);
+    disposed = true;
+    for(const avatar of warmAvatars){avatar.group.removeFromParent();avatar.dispose();}
+    warmAvatars.length=0;
+    movementEffects.dispose(); world.dispose(); atmosphere.dispose(); finish.dispose(); resizeObserver.disconnect(); canvas.removeEventListener('webglcontextlost', onContextLost);
     // GLB geometry belongs to the reusable preload cache. Detach avatar clones
     // before disposing scene-owned graphics; each clone disposes its own materials.
     if (localAvatar) { scene.remove(localAvatar.group); localAvatar.dispose(); localAvatar = null; }
@@ -495,5 +535,5 @@ export function createRenderer(canvas) {
     for (const texture of textures) texture.dispose();
     obstacleCache.clear(); debrisCache.clear(); ghosts.clear(); renderer.dispose();
   }
-  return { draw, reset, dispose };
+  return { draw, reset, dispose, warmup };
 }
