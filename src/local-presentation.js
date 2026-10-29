@@ -11,8 +11,8 @@ export function createLocalPresentation({maxPending=60,intentTtlMs=250,maxPredic
   if(!Number.isSafeInteger(maxPending)||maxPending<1||maxPending>60||!finite(intentTtlMs)||intentTtlMs===0
     ||!finite(maxPredictionMs)||maxPredictionMs>120)throw new RangeError('Invalid local presentation bounds');
   let latest=null,receivedAt=0,pending=[],lastQueued=0,velocity=0,projectionBlocked=false;
-  let previousDraw=null,correction=null,lastSample=null,wasAnticipated=false;
-  let cursor=null,cursorAt=null,offsets=[],needsCorrection=false;
+  let lastSample=null,wasAnticipated=false;
+  let cursor=null,cursorAt=null,offsets=[],history=[],recovering=false,forceAnchor=false;
   let corrections=0,expired=0;
   const retiredRounds=new Set();
   const simulationTime=(value,at)=>finite(value.room.raceElapsed)?value.room.raceElapsed*1000
@@ -27,8 +27,8 @@ export function createLocalPresentation({maxPending=60,intentTtlMs=250,maxPredic
     for(const input of pending){if(at-input.sentAt>intentTtlMs){expired++;onCount('laneExpired');}else kept.push(input);}
     pending=kept;if(recordCorrection)changedTarget(before);
   }
-  function clearMotion(){previousDraw=null;correction=null;lastSample=null;wasAnticipated=false;needsCorrection=false;}
-  function resetClock(){cursor=null;cursorAt=null;offsets=[];}
+  function clearMotion(){lastSample=null;wasAnticipated=false;recovering=false;}
+  function resetClock(){cursor=null;cursorAt=null;offsets=[];history=[];forceAnchor=false;}
   function clearRound(){pending=[];lastQueued=0;velocity=0;projectionBlocked=false;clearMotion();resetClock();}
   return {
     reconcile(snapshot,at){
@@ -52,7 +52,11 @@ export function createLocalPresentation({maxPending=60,intentTtlMs=250,maxPredic
         const observed=clamp((state.distance-old.you.game.distance)*1000/(simTime-oldSim),0,maxSpeed);
         velocity=finite(state.speed)?Math.min(velocity,observed):observed;
       }
-      needsCorrection=!!previousDraw&&previousDraw.projectionMs>0&&!reversed&&!phaseChanged;
+      // Distinguish plausible late travel from a collision or a discontinuity.
+      const distanceJump=old&&Math.abs(state.distance-old.you.game.distance)>maxSpeed*Math.max(0,simTime-oldSim)/1000+6;
+      forceAnchor=forceAnchor||!!(state.stunRemaining>0||state.hitFlash>0||distanceJump);
+      if(history.at(-1)?.time===simTime)history.pop();
+      history.push({time:simTime,state,seq});if(history.length>64)history.shift();
       offsets.push(at-simTime);if(offsets.length>40)offsets.shift();
       latest=snapshot;receivedAt=at;projectionBlocked=false;
       pending=pending.filter(input=>input.seq>seq);
@@ -84,40 +88,62 @@ export function createLocalPresentation({maxPending=60,intentTtlMs=250,maxPredic
       expire(at);lastSample=at;
       const state=latest.you.game,running=active();
       const simTime=simulationTime(latest,receivedAt),desired=at-Math.min(...offsets);
+      const frameMs=cursorAt===null?0:Math.max(0,at-cursorAt);
       if(cursor===null)cursor=clamp(desired,simTime,simTime+(running&&!projectionBlocked?maxPredictionMs:0));
-      else if(!running)cursor=simTime;
+      else if(!running||forceAnchor) {cursor=running?Math.max(cursor,simTime):simTime;recovering=false;}
       else if(projectionBlocked)cursor=clamp(cursor,simTime,simTime+maxPredictionMs);
-      else{
-        const dt=cursorAt===null?0:Math.max(0,at-cursorAt),rate=clamp(1+(desired-cursor-dt)/500,.85,1.1);
-        cursor=clamp(cursor+dt*rate,simTime,simTime+maxPredictionMs);
+      else {
+        const behind=simTime-cursor;
+        // A short delivery interruption recovers on physical drawing frames,
+        // rather than jumping the clock to the new snapshot in a single frame.
+        if(behind>500||cursor<history[0].time){cursor=simTime;recovering=false;}
+        else {
+          const rate=clamp(1+(desired-cursor-frameMs)/500,.85,behind>0||recovering?1.35:1.1);
+          cursor=Math.min(cursor+frameMs*rate,simTime+maxPredictionMs);
+          recovering=cursor<simTime;
+        }
       }
+      forceAnchor=false;
       cursorAt=at;
       const projectionMs=running?Math.max(0,cursor-simTime):0;
       const extra=projectionMs/1000;
+      let visualInputSeq=latest.you.inputSeq;
       const game={...state,lane:running?target():state.lane,raceElapsed:latest.room.raceElapsed};
       if(running){
         game.distance=state.distance+velocity*extra;
-        if(needsCorrection){
-          // Compare both positions at the same simulation time. Resetting the
-          // clock on each arrival would replay jumps and falling-debris impacts.
-          const expected=previousDraw.distance+previousDraw.velocity*clamp(cursor-previousDraw.cursor,0,120)/1000;
-          const offset=expected-game.distance;
-          correction=Math.abs(offset)<=6&&!(state.stunRemaining>0)&&!(state.hitFlash>0)?{offset,at}:null;
-          needsCorrection=false;
+        // Interpolate retained, confirmed own snapshots when the visual clock
+        // is temporarily behind authority. Use that same clock for jump/debris.
+        let before=history[0],after=history.at(-1);
+        for(const entry of history){if(entry.time<=cursor)before=entry;if(entry.time>=cursor){after=entry;break;}}
+        if(cursor<simTime&&before&&after){
+          // Conservative sequence coverage prevents an older jump pose from
+          // being reported as the rendered response to a newer command.
+          visualInputSeq=cursor>=after.time?after.seq:before.seq;
+          const a=before.state,b=after.state,span=after.time-before.time;
+          const t=span>0?clamp((cursor-before.time)/span,0,1):1;
+          game.distance=a.distance+(b.distance-a.distance)*t;
+          if(Number.isFinite(a.elapsed)&&Number.isFinite(b.elapsed))game.elapsed=a.elapsed+(b.elapsed-a.elapsed)*t;
+          game.jumpDuration=b.jumpDuration;game.jumpKind=b.jumpKind;game.jumpRemaining=b.jumpRemaining||0;
+          const sameArc=a.jumpRemaining>0&&a.jumpRemaining>=b.jumpRemaining&&a.jumpDuration===b.jumpDuration&&(b.jumpRemaining===0||a.jumpKind===b.jumpKind);
+          if(sameArc){game.jumpRemaining=Math.max(0,a.jumpRemaining-(cursor-before.time)/1000);game.jumpKind=game.jumpRemaining>0?a.jumpKind:null;}
+          else if(b.jumpRemaining>0&&span>0){
+            const start=span/1000-(b.jumpDuration-b.jumpRemaining),along=(cursor-before.time)/1000;
+            game.jumpRemaining=along<start?0:Math.max(0,b.jumpDuration-(along-start));
+            if(!game.jumpRemaining)game.jumpKind=null;
+          }
+        }else{
+          if(Number.isFinite(game.elapsed))game.elapsed+=extra;
+          game.jumpRemaining=Math.max(0,(state.jumpRemaining||0)-extra);
+          if(!game.jumpRemaining)game.jumpKind=null;
         }
-        if(correction){const t=clamp((at-correction.at)/300,0,1);game.distance+=correction.offset*(1-t*t*(3-2*t));if(t===1)correction=null;}
         game.distance=clamp(game.distance,0,CONFIG.courseLength-.001);
-        if(Number.isFinite(game.elapsed))game.elapsed+=extra;
-        if(Number.isFinite(game.raceElapsed))game.raceElapsed+=extra;
-        game.jumpRemaining=Math.max(0,(state.jumpRemaining||0)-extra);
-        if(!game.jumpRemaining)game.jumpKind=null;
+        if(Number.isFinite(game.raceElapsed))game.raceElapsed=cursor/1000;
       }
       const anticipatedLane=running&&pending.length&&game.lane!==state.lane
         ?{seq:pending.at(-1).seq,roundId:latest.room.roundId,targetLane:game.lane}:null;
       wasAnticipated=!!anticipatedLane;
-      previousDraw={at,distance:game.distance,velocity,projectionMs,cursor};
-      return {game,provenance:{inputSeq:latest.you.inputSeq,boostInputSeq:latest.you.inputSeq,roundId:latest.room.roundId,
-        anticipatedLane,forwardPredictionMs:projectionMs,renderedServerTime:Number.isFinite(latest.serverTime)?latest.serverTime+projectionMs:null,
+      return {game,provenance:{inputSeq:visualInputSeq,boostInputSeq:latest.you.inputSeq,roundId:latest.room.roundId,
+        anticipatedLane,forwardPredictionMs:projectionMs,recoveryLagMs:Math.max(0,simTime-cursor),renderedServerTime:Number.isFinite(latest.serverTime)?latest.serverTime+cursor-simTime:null,
         latestServerTime:latest.serverTime,latestReceivedAt:receivedAt}};
     },
     suspend(){pending=[];projectionBlocked=true;clearMotion();},

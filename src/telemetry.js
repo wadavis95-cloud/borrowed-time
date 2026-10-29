@@ -10,7 +10,7 @@ export function addObservation(report,key,ms,at=Date.now()){
   report.peaks??={};report.peaks[key]={ms,at:Math.round(at/100)*100};
  }
 }
-const REPORT_BYTES=2048,MAX_QUEUED_REPORTS=4,META_KEYS=['map','inputMode','mode','device','phase'];
+const REPORT_BYTES=2048,MAX_QUEUED_REPORTS=4,META_KEYS=['map','inputMode','mode','device','phase','raceWindow'];
 const hasSamples=report=>Object.keys(METRIC_BINS).some(key=>report[key]?.some(value=>value>0))||CLIENT_COUNTERS.some(key=>report[key]>0)||Object.keys(report.peaks||{}).length>0;
 // Return complete JSON request bodies. Histograms travel with their peak, and
 // counters occur in exactly one part so a split cannot inflate the totals.
@@ -41,7 +41,7 @@ export function detectDevice(nav=globalThis.navigator){
  return /Windows|Macintosh|Linux|CrOS/i.test(nav.userAgent||'')?'desktop':'unknown';
 }
 export function createTelemetry({request=globalThis.fetch,visible=()=>true,device=detectDevice(),now=Date.now}={}){
- let context={map:'tunnel',inputMode:'unknown',mode:'solo',device,phase:'unknown'},report=makeReport(),enabled=false,loaded=false,sending=null;
+ let context={map:'tunnel',inputMode:'unknown',mode:'solo',device,phase:'unknown',raceWindow:'unknown'},report=makeReport(),enabled=false,loaded=false,sending=null;
  const queue=[];
  const dropped=body=>{
   // Keep an undelivered loss count until a later normal report can carry it.
@@ -69,10 +69,10 @@ export function createTelemetry({request=globalThis.fetch,visible=()=>true,devic
  return {
   async init(){try{const r=await request(globalThis.location?raceEndpoint('/ops/config'):'/ops/config',{cache:'no-store',signal:AbortSignal.timeout(5000)});enabled=r.ok&&(await r.json()).enabled===true;}catch{}return enabled;},
   get enabled(){return enabled;},
-  context(map,inputMode,mode,phase='unknown'){
-   if(context.map!==map||context.inputMode!==inputMode||context.mode!==mode||context.phase!==phase){
+  context(map,inputMode,mode,phase='unknown',raceWindow='unknown'){
+   if(context.map!==map||context.inputMode!==inputMode||context.mode!==mode||context.phase!==phase||context.raceWindow!==raceWindow){
     // Capture under the old context before switching, including during a send.
-    capture();context={map,inputMode,mode,device,phase};void drain();
+    capture();context={map,inputMode,mode,device,phase,raceWindow};void drain();
    }
   },
   observe(key,ms){if(enabled&&visible())addObservation(report,key,ms,now());},

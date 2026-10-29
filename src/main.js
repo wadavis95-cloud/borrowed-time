@@ -14,6 +14,7 @@ import { createGameAudio } from './audio.js';
 import { createInputMode } from './input.js';
 import {bindGameplayButton,bindCanvasGestures} from './gameplay-input.js';
 import {createControlTiming} from './control-timing.js';
+import {raceWindow,createMotionDiagnostics} from './startup-timing.js';
 import { loadClassicGraphics, createMapLoader, withDeadline } from './loading.js';
 import { createRaceUI } from './race-ui.js';
 import { finishPresentation } from './race-presentation.js';
@@ -41,6 +42,7 @@ const soloScores=createSessionScores(),characterChoices={};
 let characterPickerKey='',portraitRequest=0;
 let connection = null, snapshot = null, raceView = createRaceView();
 const controlTiming=createControlTiming({observe:(key,ms)=>telemetry.observe(key,ms),count:key=>telemetry.count(key)});
+const motionDiagnostics=createMotionDiagnostics((key,ms)=>telemetry.observe(key,ms));
 let controlPhase=null;
 let networkStatus = '', connectionGeneration = 0, rosterKey = '';
 let lastOverlay = '', lastEvent = 0, toastUntil = 0;
@@ -63,7 +65,7 @@ function updateTelemetryContext() {
   const phase=mode==='demo'?'demo':mode!=='online'?'solo':
     ['won','lost'].includes(snapshot?.you.game.phase)||snapshot?.room.phase==='finished'?'results':snapshot?.room.phase||'lobby';
   if(phase!==controlPhase){controlTiming.reset();controlPhase=phase;}
-  telemetry.context(snapshot?.room.mapId||game.mapId,inputMode.mode,mode==='online'?'online':mode==='demo'?'demo':'solo',phase);
+  telemetry.context(snapshot?.room.mapId||game.mapId,inputMode.mode,mode==='online'?'online':mode==='demo'?'demo':'solo',phase,raceWindow(phase,snapshot?.room.raceElapsed));
 }
 for (const id of MAP_IDS) {
   const map = MAPS[id];
@@ -200,6 +202,7 @@ function showNetworkError(message = '') {
   $('network-error').hidden = !message;
 }
 function resetVisuals() {
+  motionDiagnostics.reset();
   controlTiming.reset();
   abilityCoach.reset();
   raceUI.reset();
@@ -607,6 +610,7 @@ bindCanvasGestures(canvas,act);
 canvas.addEventListener('webglcontextlost',()=>telemetry.count('contextLosses'));
 // Solo pauses on tab switches. A multiplayer clock belongs to the server and keeps running.
 document.addEventListener('visibilitychange', () => {
+  motionDiagnostics.reset();
   controlTiming.reset();
   raceView.suspend();
   if (mode === 'solo' && document.hidden && game.phase === 'running') { pauseGame(game); updateHUD(); }
@@ -621,6 +625,7 @@ $('guide-button').addEventListener('click', () => {
 $('close-guide').addEventListener('click', () => $('guide-dialog').close());
 
 function frame(now) {
+  const frameWorkAt=performance.now();
   if(renderer&&!graphicsError)ensureMapGraphics(game.mapId);
   updateTelemetryContext();
   const frameMs=now-lastFrame;
@@ -636,7 +641,11 @@ function frame(now) {
   const view = mode==='demo'&&connection?.view ? {game:connection.view(),opponents:connection.opponents()} : mode !== 'solo' && snapshot ? raceView.sample(now) : soloRace ? {game:soloRace.view(),opponents:soloRace.opponents()} : null;
   if (renderer && !graphicsLoading && !graphicsError) {
     try {
+      const diagnostic=mode==='online'&&telemetry.enabled&&!document.hidden;
+      if(diagnostic)motionDiagnostics.sample(view?.game||game,snapshot?.room.roundId,now);else motionDiagnostics.reset();
+      const drawAt=diagnostic?performance.now():0;
       const pose=renderer.draw(view?.game || game, now / 1000, dt, view?.opponents || []);
+      if(diagnostic)telemetry.observe('drawWork',performance.now()-drawAt);
       if(!document.hidden&&mode==='online'&&telemetry.enabled&&view?.provenance){
         const submittedAt=performance.now(),source=view.provenance;
         if(pose){
@@ -673,6 +682,7 @@ function frame(now) {
     catch { audio.reset(); } // Optional sound must never interrupt rendering.
   }
   if (now > toastUntil) $('event-toast').classList.remove('visible');
+  if(mode==='online'&&telemetry.enabled&&!document.hidden)telemetry.observe('frameWork',performance.now()-frameWorkAt);
   requestAnimationFrame(frame);
 }
 updateHUD();

@@ -41,6 +41,7 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError, onI
   });
   socket.addEventListener('message', ({ data }) => {
     if (closed) return;
+    const processingAt=performance.now();
     let message;
     try { message = JSON.parse(data); } catch { return; }
     if(message.type!=='probe')lastMessage = performance.now();
@@ -53,6 +54,7 @@ export function connectRace({ initialMessage, onSnapshot, onStatus, onError, onI
       if (roundId !== message.room.roundId) { roundId = message.room.roundId; sequence = 0;pendingInputs.clear(); }
       // The coordinator updates phase attribution before this packet's measurements.
       onSnapshot(message,{receivedAt:at});
+      if(visible)telemetry.observe('snapshotWork',performance.now()-processingAt);
       if(visible&&wasVisible)delivery.sample(message.timing,at);if(lastSnapshotAt!==null)telemetry.observe('gap',at-lastSnapshotAt);lastSnapshotAt=at;
       for(const [seq,sentAt]of pendingInputs){if(seq<=message.you.inputSeq){telemetry.observe('input',at-sentAt);pendingInputs.delete(seq);}}
     } else if (message.type === 'inputResult') {
