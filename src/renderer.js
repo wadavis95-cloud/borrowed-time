@@ -1,6 +1,7 @@
 // Visual state only: course rules and the shared hazard clock live in game.js.
 import * as THREE from 'three';
 import {runShaderWarmup} from './shader-warmup.js';
+import {createRaceObjects,obstacleVisualKey,debrisVisualKey,opponentVisualKey} from './race-objects.js';
 import { getMap } from './maps.js';
 import { createAtmosphere } from './graphics/atmosphere.js';
 import { createFinish } from './graphics/finish.js';
@@ -16,7 +17,7 @@ import { radialTexture, masonrySurface, beveledBoxGeometry, roofSlabGeometry, ro
 const clamp = THREE.MathUtils.clamp;
 const VISIBLE_METRES = 255;
 const finite = (value, fallback = 0) => Number.isFinite(value) ? value : fallback;
-const opponentKey = (opponent) => opponent.id || `${opponent.avatarId}:${opponent.color}`;
+const opponentKey = opponentVisualKey;
 
 /** Pure presentation state shared by the actual renderer and regression tests.
  * Actors keep the exact rules-owned height; only the camera follows a soft arc. */
@@ -82,7 +83,7 @@ function stripeTexture() {
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; return texture;
 }
 
-export function createRenderer(canvas,{onProgram=()=>{}}={}) {
+export function createRenderer(canvas,{onProgram=()=>{},onObject=()=>{},onMissingObject=()=>{}}={}) {
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
@@ -148,7 +149,20 @@ export function createRenderer(canvas,{onProgram=()=>{}}={}) {
   const ringGeometry = new THREE.RingGeometry(.88, 1.02, 40);
   const object = new THREE.Object3D();
   const localVisualState = {};
-  const obstacleCache = new Map(), debrisCache = new Map(), ghosts = new Map();
+  const raceObjects=createRaceObjects({
+    makeObstacle(obstacle){onObject();const group=makeObstacle(obstacle);group.visible=false;return group;},
+    makeDebris(event){onObject();const entry=makeDebris(event);entry.group.visible=false;return entry;},
+    makeGhost(opponent){
+      onObject();const avatar=createAvatar(opponent.avatarId||'engineer',{ghost:true,color:opponent.color});
+      avatar.group.visible=false;scene.add(avatar.group);
+      return {avatar,visualState:{}};
+    },
+    dispose(entry){if(entry.avatar){entry.avatar.group.removeFromParent();entry.avatar.dispose();}else disposeDynamicGroup(entry.group||entry);}
+  });
+  const {obstacles:obstacleCache,debris:debrisCache,ghosts}=raceObjects;
+  const missingObjects=new Set();
+  function missing(key){if(!missingObjects.has(key)){missingObjects.add(key);onMissingObject();}}
+
   const motion = createPresentationMotion({ reducedMotion });
   const movementEffects = createMotionEffects(scene);
   let localAvatar = null, localAvatarKey = '', disposed = false, contextLost = false, hasDrawn = false;
@@ -281,16 +295,29 @@ export function createRenderer(canvas,{onProgram=()=>{}}={}) {
     const avatarKey = `${state.avatarId || 'courier'}:${state.playerColor || ''}`;
     if (localAvatarKey !== avatarKey) {
       if (localAvatar) { scene.remove(localAvatar.group); localAvatar.dispose(); }
-      localAvatar = createAvatar(state.avatarId || 'courier', { color: state.playerColor, ghost: false });
+      onObject();localAvatar = createAvatar(state.avatarId || 'courier', { color: state.playerColor, ghost: false });
       localAvatarKey = avatarKey; scene.add(localAvatar.group);
     }
+  }
+
+  // Called during setup/countdown, never as an obstacle enters view.
+  function prepare(state,opponents=[]){
+    const mapId = getMap(state.mapId).id;
+    if (mapId !== currentMapId) {
+      reset(); raceObjects.clear(); world.dispose(); atmosphere.dispose(); finish.dispose(); currentMapId = mapId;
+      world = createWorld(scene, currentMapId, CONFIG.courseLength);
+      atmosphere = createAtmosphere(scene,currentMapId);
+      finish = createFinish(scene,currentMapId,CONFIG.courseLength);
+    }
+    ensureLocalAvatar(state);
+    raceObjects.prepare(state,opponents);
   }
 
   function warmup(state){
     if(state.mapId!=='tunnel')return Promise.resolve(null);
     if(warmupWork)return warmupWork;
     warmupWork=(async()=>{
-      ensureLocalAvatar(state);
+      prepare(state);
       warmGroup=new THREE.Group();warmGroup.name='tunnel-shader-warmup';warmGroup.visible=false;scene.add(warmGroup);
       for(const [i,type]of ['rubble','barrier','gap'].entries()){
         const item=makeObstacle({id:`warm-${type}`,type,length:8});warmGroup.add(item);item.position.set((i-1)*2,0,-10);
@@ -318,13 +345,6 @@ export function createRenderer(canvas,{onProgram=()=>{}}={}) {
     // Preserve the entire last frame on pause, including pending lane movement,
     // camera hit response, rival animations and boost particles.
     if (state.phase === 'paused' && hasDrawn) { renderer.render(scene, camera); return; }
-    const mapId = getMap(state.mapId).id;
-    if (mapId !== currentMapId) {
-      reset(); world.dispose(); atmosphere.dispose(); finish.dispose(); currentMapId = mapId;
-      world = createWorld(scene, currentMapId, CONFIG.courseLength);
-      atmosphere = createAtmosphere(scene,currentMapId);
-      finish = createFinish(scene,currentMapId,CONFIG.courseLength);
-    }
     const distance = state.distance || 0;
     // Hazards, dust and actors freeze with solo pause. The online view provides
     // its interpolated authoritative race clock even after a runner finishes.
@@ -358,7 +378,6 @@ export function createRenderer(canvas,{onProgram=()=>{}}={}) {
     atmosphere.update(distance,elapsed,reducedMotion);
     finish.update(state,dt,reducedMotion);
 
-    ensureLocalAvatar(state);
     const view = motion.update(state, dt, opponents);
     const visualLane = view.lane, boostFeel = view.boostFeel;
     Object.assign(localVisualState, state, { reducedMotion, visualLane, visualLaneVelocity: view.laneVelocity });
@@ -370,23 +389,13 @@ export function createRenderer(canvas,{onProgram=()=>{}}={}) {
     shadowMaterial.opacity = Math.max(.10, .46 - localAvatar.group.position.y * .13 + landingPulse * .08);
 
     const visibleOpponents = opponents.slice(0, 3);
-    const opponentKeys = new Set(visibleOpponents.map(opponentKey));
-    for (const [key, record] of ghosts) {
-      if (!opponentKeys.has(key)) { scene.remove(record.avatar.group); record.avatar.dispose(); ghosts.delete(key); }
-      else record.avatar.group.visible = false;
-    }
+    // Keep the roster's rigs alive even when they leave the visible range.
+    for(const record of ghosts.values())record.avatar.group.visible=false;
     for (const opponent of visibleOpponents) {
       const relative = opponent.distance - distance;
       if (opponent.connected === false || opponent.phase === 'disconnected' || !Number.isFinite(relative) || !Number.isFinite(opponent.lane) || relative < -18 || relative > VISIBLE_METRES) continue;
-      const key = opponentKey(opponent);
-      let record = ghosts.get(key);
-      if (record && (record.id !== opponent.avatarId || record.color !== opponent.color)) {
-        scene.remove(record.avatar.group); record.avatar.dispose(); ghosts.delete(key); record = null;
-      }
-      if (!record) {
-        record = { avatar: createAvatar(opponent.avatarId || 'engineer', { ghost: true, color: opponent.color }), id: opponent.avatarId, color: opponent.color, visualState: {} };
-        ghosts.set(key, record); scene.add(record.avatar.group);
-      }
+      const key=opponentKey(opponent),record=ghosts.get(key);
+      if(!record){missing(`ghost:${key}`);continue;}
       const track = view.opponents.get(key);
       Object.assign(record.visualState, { phase: opponent.phase, distance: opponent.distance,
         jumpRemaining: opponent.jumpRemaining, jumpDuration: opponent.jumpDuration,
@@ -399,9 +408,9 @@ export function createRenderer(canvas,{onProgram=()=>{}}={}) {
     for (const obstacle of state.obstacles || []) {
       const relative = obstacle.z - distance;
       if (relative < -18 || relative > VISIBLE_METRES) continue;
-      const key = `${obstacle.id}:${obstacle.type}:${obstacle.length || 0}`;
-      let group = obstacleCache.get(key);
-      if (!group) { group = makeObstacle(obstacle); obstacleCache.set(key, group); }
+      const key = obstacleVisualKey(obstacle);
+      const group = obstacleCache.get(key);
+      if(!group){missing(`obstacle:${key}`);continue;}
       if (group.userData.barrel && !reducedMotion) group.userData.barrel.rotation.x = elapsed * .9;
       group.visible = true; group.position.set((obstacle.lane - 1) * LANE_WIDTH, 0, -relative * DISTANCE_SCALE);
     }
@@ -411,8 +420,8 @@ export function createRenderer(canvas,{onProgram=()=>{}}={}) {
       if (relative < -18 || relative > VISIBLE_METRES) continue;
       const phase = getDebrisPhase(event, elapsed);
       if (phase === 'waiting') continue;
-      let entry = debrisCache.get(event.id);
-      if (!entry) { entry = makeDebris(event); debrisCache.set(event.id, entry); }
+      const key=debrisVisualKey(event),entry=debrisCache.get(key);
+      if(!entry){missing(`debris:${key}`);continue;}
       entry.group.visible = true; entry.group.position.set((event.lane - 1) * LANE_WIDTH, 0, -relative * DISTANCE_SCALE);
       const warning = phase === 'warning', falling = phase === 'falling', landed = phase === 'landed';
       entry.ring.visible = entry.outline.visible = entry.countdown.visible = entry.fill.visible = !landed;
@@ -502,19 +511,18 @@ export function createRenderer(canvas,{onProgram=()=>{}}={}) {
     camera.position.set(0, 3.45, camera.aspect < .9 ? 9.3 : 7.3);
     camera.fov = camera.aspect < .9 ? 66 : 57; camera.updateProjectionMatrix();
     lookTarget.set(0, 1.95, -18); camera.lookAt(lookTarget);
-    // Match-specific signs/effects are released between seeds, keeping rematches
-    // bounded even when obstacle IDs and lengths differ from the previous race.
-    for (const entry of obstacleCache.values()) disposeDynamicGroup(entry);
-    for (const entry of debrisCache.values()) disposeDynamicGroup(entry.group);
-    obstacleCache.clear(); debrisCache.clear();
-    for (const entry of ghosts.values()) { scene.remove(entry.avatar.group); entry.avatar.dispose(); }
-    ghosts.clear();
+    // Reuse graphics across rematches; prepare reconciles the next course/roster.
+    for(const group of obstacleCache.values())group.visible=false;
+    for(const entry of debrisCache.values())entry.group.visible=false;
+    for(const record of ghosts.values()){record.avatar.group.visible=false;record.avatar.reset();}
+    missingObjects.clear();
   }
   function dispose() {
     if (disposed) return;
     disposed = true;
     for(const avatar of warmAvatars){avatar.group.removeFromParent();avatar.dispose();}
     warmAvatars.length=0;
+    raceObjects.clear();
     movementEffects.dispose(); world.dispose(); atmosphere.dispose(); finish.dispose(); resizeObserver.disconnect(); canvas.removeEventListener('webglcontextlost', onContextLost);
     // GLB geometry belongs to the reusable preload cache. Detach avatar clones
     // before disposing scene-owned graphics; each clone disposes its own materials.
@@ -535,5 +543,5 @@ export function createRenderer(canvas,{onProgram=()=>{}}={}) {
     for (const texture of textures) texture.dispose();
     obstacleCache.clear(); debrisCache.clear(); ghosts.clear(); renderer.dispose();
   }
-  return { draw, reset, dispose, warmup };
+  return { draw, reset, dispose, warmup, prepare };
 }

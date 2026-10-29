@@ -29,7 +29,7 @@ const raceUI=createRaceUI({reducedMotion:window.matchMedia('(prefers-reduced-mot
   onCue:cue=>audio.cue(cue.kind,cue.value),
   elements:{card:document.querySelector('.intro-card'),clock:$('time-value').closest('.clock-panel'),debit:$('clock-debit'),status:$('status-label'),trail:$('time-debit'),note:$('clock-feedback'),
     boost:$('boost-button'),jump:$('long-jump-button'),go:$('race-go'),title:$('overlay-title'),overlay:$('screen-overlay'),finishMark:$('finish-mark'),finishBadge:$('finish-badge')}});
-let renderer = null, graphicsError = '', graphicsLoading = true;
+let renderer = null, graphicsError = '', graphicsLoading = true, raceObjectsPending=true;
 let graphicsProgress = 0, avatarLibrary=null, mapLoader=null;
 const graphicsMessage = '3D graphics are unavailable. Try an up-to-date browser with graphics acceleration enabled, then reload.';
 let selectedMapId = 'tunnel';
@@ -168,7 +168,8 @@ async function prepareGraphics() {
       mapLoader=createMapLoader({load:avatarLibrary.preloadAvatars,isLoaded:avatarLibrary.isAvatarLoaded,
         onChange({loading,progress,error}){graphicsLoading=loading;if(progress!==undefined)graphicsProgress=Math.round(progress*100);if(error){graphicsError=error.message;telemetry.count('graphicsErrors');}updateHUD();}});
       await mapLoader.prepare(selectedMapId,{measure:false});
-      renderer = createRenderer(canvas,{onProgram:()=>telemetry.count('shaderProgramsCreated')});
+      renderer = createRenderer(canvas,{onProgram:()=>telemetry.count('shaderProgramsCreated'),
+        onObject:()=>telemetry.count('renderObjectCreates'),onMissingObject:()=>telemetry.count('renderObjectMisses')});
       if(selectedMapId==='tunnel'&&new URLSearchParams(location.search).get('warmup')!=='off'){
         shaderPreparing=true;updateTelemetryContext();updateOverlay();
         try{
@@ -211,6 +212,7 @@ function showNetworkError(message = '') {
   $('network-error').hidden = !message;
 }
 function resetVisuals() {
+  raceObjectsPending=true;
   motionDiagnostics.reset();
   controlTiming.reset();
   abilityCoach.reset();
@@ -241,9 +243,11 @@ function beginRun() {
   if (mode !== 'solo' || !renderer || graphicsLoading || graphicsError) return;
   soloSeed = freshCourseSeed(soloSeed);
   soloRace = createSoloRace({ seed: soloSeed, mapId: selectedMapId,avatarId:game.avatarId,scores:soloScores });
-  soloRace.start();
   game = soloRace.player;
   resetVisuals();
+  renderer.prepare?.(game,soloRace.opponents());raceObjectsPending=false;
+  lastFrame=performance.now();
+  soloRace.start();
   raceUI.startSolo();
   showNetworkError();
   updateHUD();
@@ -657,6 +661,10 @@ function frame(now) {
       const diagnostic=mode==='online'&&telemetry.enabled&&!document.hidden;
       if(diagnostic)motionDiagnostics.sample(view?.game||game,snapshot?.room.roundId,now);else motionDiagnostics.reset();
       const drawAt=diagnostic?performance.now():0;
+      const visualGame=view?.game||game,opponents=view?.opponents||[];
+      if(raceObjectsPending||visualGame.phase!=='running'){
+        renderer.prepare?.(visualGame,opponents);raceObjectsPending=false;
+      }
       const pose=renderer.draw(view?.game || game, now / 1000, dt, view?.opponents || []);
       if(diagnostic)telemetry.observe('drawWork',performance.now()-drawAt);
       if(!document.hidden&&mode==='online'&&telemetry.enabled&&view?.provenance){
