@@ -12,7 +12,7 @@ export function createLocalPresentation({maxPending=60,intentTtlMs=250,maxPredic
     ||!finite(maxPredictionMs)||maxPredictionMs>120||!finite(forwardBufferMs)||forwardBufferMs>150)throw new RangeError('Invalid local presentation bounds');
   let latest=null,receivedAt=0,pending=[],lastQueued=0,velocity=0,projectionBlocked=false;
   let lastSample=null,wasAnticipated=false;
-  let cursor=null,cursorAt=null,offsets=[],history=[],recovering=false,forceAnchor=false;
+  let cursor=null,cursorAt=null,offsets=[],history=[],recovering=false,forceAnchor=false,forceAnchorReason='none';
   let corrections=0,expired=0;
   const retiredRounds=new Set();
   const simulationTime=(value,at)=>finite(value.room.raceElapsed)?value.room.raceElapsed*1000
@@ -28,7 +28,7 @@ export function createLocalPresentation({maxPending=60,intentTtlMs=250,maxPredic
     pending=kept;if(recordCorrection)changedTarget(before);
   }
   function clearMotion(){lastSample=null;wasAnticipated=false;recovering=false;}
-  function resetClock(){cursor=null;cursorAt=null;offsets=[];history=[];forceAnchor=false;}
+  function resetClock(){cursor=null;cursorAt=null;offsets=[];history=[];forceAnchor=false;forceAnchorReason='none';}
   function clearRound(){pending=[];lastQueued=0;velocity=0;projectionBlocked=false;clearMotion();resetClock();}
   return {
     reconcile(snapshot,at){
@@ -55,6 +55,8 @@ export function createLocalPresentation({maxPending=60,intentTtlMs=250,maxPredic
       // Distinguish plausible late travel from a collision or a discontinuity.
       const distanceJump=old&&Math.abs(state.distance-old.you.game.distance)>maxSpeed*Math.max(0,simTime-oldSim)/1000+6;
       forceAnchor=forceAnchor||!!(state.stunRemaining>0||state.hitFlash>0||distanceJump);
+      if(distanceJump)forceAnchorReason='discontinuity';
+      else if(state.stunRemaining>0||state.hitFlash>0)forceAnchorReason='collision';
       if(history.at(-1)?.time===simTime)history.pop();
       history.push({time:simTime,state,seq});if(history.length>64)history.shift();
       offsets.push(at-simTime);if(offsets.length>40)offsets.shift();
@@ -89,23 +91,25 @@ export function createLocalPresentation({maxPending=60,intentTtlMs=250,maxPredic
       const state=latest.you.game,running=active();
       const simTime=simulationTime(latest,receivedAt),desired=at-Math.min(...offsets)-(running?forwardBufferMs:0);
       const frameMs=cursorAt===null?0:Math.max(0,at-cursorAt);
+      let clockReason='tracking';
       // Start from confirmed history. With no history yet, the existing bounded
       // clock easing builds the reserve gradually rather than freezing startup.
       if(cursor===null)cursor=clamp(desired,running?history[0].time:simTime,simTime+(running&&!projectionBlocked?maxPredictionMs:0));
-      else if(!running||forceAnchor) {cursor=running?Math.max(cursor,simTime):simTime;recovering=false;}
-      else if(projectionBlocked)cursor=clamp(cursor,simTime,simTime+maxPredictionMs);
+      else if(!running||forceAnchor) {clockReason=forceAnchor?forceAnchorReason:'tracking';cursor=running?Math.max(cursor,simTime):simTime;recovering=false;}
+      else if(projectionBlocked){clockReason='resume';cursor=clamp(cursor,simTime,simTime+maxPredictionMs);}
       else {
         const behind=simTime-cursor;
         // A short delivery interruption recovers on physical drawing frames,
         // rather than jumping the clock to the new snapshot in a single frame.
-        if(behind>500||cursor<history[0].time){cursor=simTime;recovering=false;}
+        if(behind>500||cursor<history[0].time){clockReason='long-gap';cursor=simTime;recovering=false;}
         else {
           const rate=clamp(1+(desired-cursor-frameMs)/500,.85,behind>0||recovering?1.35:1.1);
+          if(rate>1.01)clockReason='recovery';
           cursor=Math.min(cursor+frameMs*rate,simTime+maxPredictionMs);
           recovering=cursor<simTime;
         }
       }
-      forceAnchor=false;
+      forceAnchor=false;forceAnchorReason='none';
       cursorAt=at;
       const projectionMs=running?Math.max(0,cursor-simTime):0;
       const extra=projectionMs/1000;
@@ -145,7 +149,7 @@ export function createLocalPresentation({maxPending=60,intentTtlMs=250,maxPredic
         ?{seq:pending.at(-1).seq,roundId:latest.room.roundId,targetLane:game.lane}:null;
       wasAnticipated=!!anticipatedLane;
       return {game,provenance:{inputSeq:visualInputSeq,boostInputSeq:latest.you.inputSeq,roundId:latest.room.roundId,
-        anticipatedLane,forwardPredictionMs:projectionMs,recoveryLagMs:Math.max(0,simTime-cursor),renderedServerTime:Number.isFinite(latest.serverTime)?latest.serverTime+cursor-simTime:null,
+        anticipatedLane,forwardClockReason:clockReason,forwardPredictionMs:projectionMs,recoveryLagMs:Math.max(0,simTime-cursor),renderedServerTime:Number.isFinite(latest.serverTime)?latest.serverTime+cursor-simTime:null,
         latestServerTime:latest.serverTime,latestReceivedAt:receivedAt}};
     },
     suspend(){pending=[];projectionBlocked=true;clearMotion();},

@@ -1,3 +1,4 @@
+import {createCatchupTrace} from './catchup-trace.js';
 // The coordinator: browser inputs, solo rules, multiplayer snapshots, 3D scene, and HUD.
 import {telemetry} from './telemetry.js';
 import {assetUrl} from './asset-versions.js';
@@ -42,6 +43,7 @@ const soloScores=createSessionScores(),characterChoices={};
 let characterPickerKey='',portraitRequest=0;
 let connection = null, snapshot = null, raceView = createRaceView();
 const controlTiming=createControlTiming({observe:(key,ms)=>telemetry.observe(key,ms),count:key=>telemetry.count(key)});
+const catchupTrace=createCatchupTrace({emit:event=>telemetry.trace(event)});
 const motionDiagnostics=createMotionDiagnostics((key,ms)=>telemetry.observe(key,ms));
 let shaderPreparing=false;
 let controlPhase=null;
@@ -212,6 +214,7 @@ function showNetworkError(message = '') {
   $('network-error').hidden = !message;
 }
 function resetVisuals() {
+  catchupTrace.reset();
   raceObjectsPending=true;
   motionDiagnostics.reset();
   controlTiming.reset();
@@ -659,7 +662,7 @@ function frame(now) {
   if (renderer && !graphicsLoading && !graphicsError) {
     try {
       const diagnostic=mode==='online'&&telemetry.enabled&&!document.hidden;
-      if(diagnostic)motionDiagnostics.sample(view?.game||game,snapshot?.room.roundId,now);else motionDiagnostics.reset();
+      if(diagnostic){motionDiagnostics.sample(view?.game||game,snapshot?.room.roundId,now);catchupTrace.sample(view?.game||game,snapshot?.room.roundId,now,view?.provenance);}else{motionDiagnostics.reset();catchupTrace.suspend();}
       const drawAt=diagnostic?performance.now():0;
       const visualGame=view?.game||game,opponents=view?.opponents||[];
       if(raceObjectsPending||visualGame.phase!=='running'){

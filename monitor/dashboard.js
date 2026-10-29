@@ -49,6 +49,11 @@ function render(data){
   ['Opponent buffer target · p99',p99(u.bufferDelay),`${u.bufferDelay?.count??0} target samples · max ${peak(u.bufferDelay)}`],
   ['Opponent buffer holds · p99',p99(u.bufferHold),`Max recovered hold ${peak(u.bufferHold)} · ${u.bufferUnderruns??0} underruns; includes ongoing holds without a completed duration`]]);
  const spikes=[];
+ for(const event of u.catchupTraces||[]){
+  const li=document.createElement('li');
+  li.textContent=`${new Date(event.at).toLocaleTimeString()} · ${event.device} / ${event.map} / ${event.raceWindow} · catch-up ${event.excessMs} ms equivalent · clock branch: ${event.reason}. Samples [frame, advance equivalent, update age, prediction, confirmed lag, flags]: ${event.samples.map(row=>row.join('/')).join(' → ')}. Branch labels are diagnostic context, not proof of network causation.`;
+  spikes.push(li);
+ }
  for(const event of u.recentSpikes||[]){const li=document.createElement('li');li.textContent=`${new Date(event.at).toLocaleTimeString()} client clock · ${event.device} / ${event.mode} / ${event.phase??'unknown'} / ${event.raceWindow??'unknown'} / ${event.map} · ${event.metric} ${format(event.ms)} ms (report received ${new Date(event.receivedAt).toLocaleTimeString()})`;spikes.push(li);}
  for(const event of data.serverSpikes||[]){const li=document.createElement('li');li.textContent=`${new Date(event.at).toLocaleTimeString()} server sample · event-loop max ${format(event.eventLoopMaxMs)} ms · simulation backlog ${format(event.simulationBacklogMs)} ms`;spikes.push(li);}
  if(!spikes.length){const li=document.createElement('li');li.textContent='No threshold-exceeding peaks recorded in the retained reports.';spikes.push(li);}$('spike-list').replaceChildren(...spikes);

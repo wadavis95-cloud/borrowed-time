@@ -1,8 +1,9 @@
+import {validCatchupTrace,CATCHUP_TRACE_LIMIT} from './catchup-trace.js';
 import {raceEndpoint} from './endpoints.js';
 // Fixed aggregate diagnostics only. No player IDs, names, URLs or error text leave the browser.
 import {METRIC_BINS,PEAK_METRICS,CLIENT_COUNTERS} from './metric-schema.js';
 export {METRIC_BINS} from './metric-schema.js';
-export function makeReport(){return {...Object.fromEntries(Object.keys(METRIC_BINS).map(key=>[key,Array(8).fill(0)])),peaks:{},...Object.fromEntries(CLIENT_COUNTERS.map(key=>[key,0]))};}
+export function makeReport(){return {catchupTraces:[],...Object.fromEntries(Object.keys(METRIC_BINS).map(key=>[key,Array(8).fill(0)])),peaks:{},...Object.fromEntries(CLIENT_COUNTERS.map(key=>[key,0]))};}
 export function addObservation(report,key,ms,at=Date.now()){
  if(!Number.isFinite(ms)||ms<0||ms>1e9)return;const bins=METRIC_BINS[key];if(!bins)return;
  let index=bins.findIndex(upper=>ms<=upper);if(index<0)index=bins.length-1;report[key][index]++;
@@ -11,13 +12,14 @@ export function addObservation(report,key,ms,at=Date.now()){
  }
 }
 const REPORT_BYTES=2048,MAX_QUEUED_REPORTS=4,META_KEYS=['map','inputMode','mode','device','phase','raceWindow'];
-const hasSamples=report=>Object.keys(METRIC_BINS).some(key=>report[key]?.some(value=>value>0))||CLIENT_COUNTERS.some(key=>report[key]>0)||Object.keys(report.peaks||{}).length>0;
+const hasSamples=report=>report.catchupTraces?.length>0||Object.keys(METRIC_BINS).some(key=>report[key]?.some(value=>value>0))||CLIENT_COUNTERS.some(key=>report[key]>0)||Object.keys(report.peaks||{}).length>0;
 // Return complete JSON request bodies. Histograms travel with their peak, and
 // counters occur in exactly one part so a split cannot inflate the totals.
 export function encodeTelemetryReports(report){
  if(!hasSamples(report))return [];
  const meta=Object.fromEntries(META_KEYS.filter(key=>report[key]!==undefined).map(key=>[key,report[key]]));
  const entries=[];
+ if(report.catchupTraces?.length)entries.push({catchupTraces:report.catchupTraces});
  for(const key of Object.keys(METRIC_BINS))if(report[key]?.some(value=>value>0)||report.peaks?.[key])entries.push({[key]:report[key]??Array(8).fill(0),...(report.peaks?.[key]?{peaks:{[key]:report.peaks[key]}}:{})});
  for(const key of CLIENT_COUNTERS)if(report[key]>0)entries.push({[key]:report[key]});
  const merge=(a,b)=>({...a,...b,...(a.peaks||b.peaks?{peaks:{...a.peaks,...b.peaks}}:{})});
@@ -77,6 +79,7 @@ export function createTelemetry({request=globalThis.fetch,visible=()=>true,devic
   },
   observe(key,ms){if(enabled&&visible())addObservation(report,key,ms,now());},
   frame(ms){if(enabled&&visible()){addObservation(report,'frame',ms,now());report.frames++;if(ms>50)report.slowFrames++;}},
+  trace(event){if(enabled&&visible()&&validCatchupTrace(event)&&report.catchupTraces.length<CATCHUP_TRACE_LIMIT)report.catchupTraces.push({...event,samples:event.samples.map(row=>[...row])});},
   count(key){if(enabled&&Object.hasOwn(report,key)&&typeof report[key]==='number')report[key]++;},
   ready(ms){if(!enabled||loaded)return;loaded=true;addObservation(report,'load',ms);void this.flush();},
   async flush(){if(!enabled)return;capture();await drain();},

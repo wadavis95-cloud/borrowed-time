@@ -24,7 +24,7 @@ const types = {
 };
 // This allowlist keeps server code, repository files, and secrets off HTTP.
 const publicFiles = new Set([
-  '/src/endpoints.js', '/src/delivery-timing.js', '/src/metric-schema.js', '/src/startup-timing.js', '/src/shader-warmup.js', '/src/race-objects.js', '/src/movement-buffer.js', '/src/race-protocol.js', '/src/asset-versions.js', '/src/racer-ai.js', '/src/telemetry.js', '/monitor/index.html', '/monitor/dashboard.js', '/monitor/dashboard.css',
+  '/src/endpoints.js', '/src/delivery-timing.js', '/src/metric-schema.js', '/src/startup-timing.js', '/src/catchup-trace.js', '/src/shader-warmup.js', '/src/race-objects.js', '/src/movement-buffer.js', '/src/race-protocol.js', '/src/asset-versions.js', '/src/racer-ai.js', '/src/telemetry.js', '/monitor/index.html', '/monitor/dashboard.js', '/monitor/dashboard.css',
   '/src/music.js', '/assets/music/CREDITS.txt', ...Object.values(MUSIC_TRACKS).map(track=>track.src),
   '/index.html', '/styles.css', '/favicon.svg', '/src/main.js', '/src/game.js',
   '/src/renderer.js', '/src/network.js', '/src/movement-feedback.js', '/src/race-presentation.js', '/src/race-ui.js', '/src/loading.js', '/src/finish-destinations.js', '/src/graphics/finish.js', '/src/graphics/readability.js', '/src/graphics/motion-effects.js', '/src/maps.js', '/src/graphics/worlds.js', '/src/graphics/map-obstacles.js',

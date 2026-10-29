@@ -1,15 +1,17 @@
+import {validCatchupTrace,CATCHUP_TRACE_LIMIT} from '../catchup-trace.js';
 import {timingSafeEqual} from 'node:crypto';
 import {monitorEventLoopDelay,performance} from 'node:perf_hooks';
 import {METRIC_BINS as BINS,PEAK_METRICS,SPIKE_THRESHOLDS,CONTROL_METRICS,CLIENT_COUNTERS,CLIENT_PHASES,RACE_WINDOWS,STARTUP_METRICS,SHADER_METRICS} from '../metric-schema.js';
 export {BINS};
 const RETENTION_MS=30*60*1000,MAX_HISTORY=1800,MAX_REPORTS=6000;
 const META_KEYS=['map','inputMode','mode','device','phase','raceWindow'];
-const CLIENT_KEYS=new Set([...META_KEYS,...Object.keys(BINS),'peaks',...CLIENT_COUNTERS]);
+const CLIENT_KEYS=new Set(['catchupTraces',...META_KEYS,...Object.keys(BINS),'peaks',...CLIENT_COUNTERS]);
 const COUNTERS=['connections','connectionRejects','roomRejects','disconnects','slowClients','invalidMessages','rateLimits','messagesIn','bytesIn','messagesOut','bytesOut','snapshots','httpRequests','httpErrors','http4xx','http5xx','monitorBytes','telemetryBytesIn','assetBytes','pageBytes','otherBytes','httpAborts','telemetryAccepted','telemetryRejected'];
 export function validReport(report){
  if(!report||typeof report!=='object'||Array.isArray(report))return false;
  for(const [key,value]of Object.entries(report)){
   if(!CLIENT_KEYS.has(key))return false;
+  if(key==='catchupTraces'){if(!Array.isArray(value)||value.length>CATCHUP_TRACE_LIMIT||!value.every(validCatchupTrace))return false;continue;}
   if(key==='peaks'){
    if(!value||typeof value!=='object'||Array.isArray(value))return false;
    for(const [metric,peak]of Object.entries(value)){
@@ -66,7 +68,14 @@ export function createMonitoring({token='',state=()=>({}),now=Date.now,autoStart
     maxMs:peak?.ms??null,maxAt:peak?.at??null,peakReports,overThreshold:thresholdIndex<0?null:hist.slice(thresholdIndex+1).reduce((a,b)=>a+b,0)};
   }
   for(const key of Object.keys(BINS))client[key]=summary(reports,key);
-  for(const key of [...CLIENT_KEYS].filter(k=>k!=='peaks'&&!BINS[k]&&!META_KEYS.includes(k)))client[key]=reports.reduce((sum,r)=>sum+(r.report[key]||0),0);
+  for(const key of [...CLIENT_KEYS].filter(k=>k!=='peaks'&&k!=='catchupTraces'&&!BINS[k]&&!META_KEYS.includes(k)))client[key]=reports.reduce((sum,r)=>sum+(r.report[key]||0),0);
+  client.catchupTraces=[];
+  for(let i=reports.length-1;i>=0&&client.catchupTraces.length<24;i--){
+   const r=reports[i];for(const event of [...(r.report.catchupTraces||[])].reverse()){
+    if(client.catchupTraces.length>=24)break;
+    client.catchupTraces.push({...event,receivedAt:r.at,map:r.report.map??'unknown',device:r.report.device??'unknown',phase:r.report.phase??'unknown',raceWindow:r.report.raceWindow??'unknown'});
+   }
+  }
   client.recentSpikes=[];
   for(let i=reports.length-1;i>=0&&client.recentSpikes.length<24;i--){
    const r=reports[i];
