@@ -83,6 +83,15 @@ function stripeTexture() {
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; return texture;
 }
 
+// Plain meshes need a depth variant that textured rubble and
+// skinned/instanced warmup actors do not exercise in the shadow pass.
+export function createShadowWarmupProbe(geometry,material){
+  const probe=new THREE.Mesh(geometry,material);
+  probe.name='warmup-plain-shadow-caster';probe.castShadow=true;probe.frustumCulled=false;
+  probe.position.set(0,1,-8);probe.scale.setScalar(.1);
+  return probe;
+}
+
 export function createRenderer(canvas,{onProgram=()=>{},onObject=()=>{},onMissingObject=()=>{}}={}) {
   let renderer;
   try {
@@ -127,7 +136,22 @@ export function createRenderer(canvas,{onProgram=()=>{},onObject=()=>{},onMissin
   let warmupWork=null,warmGroup=null;
   const warmAvatars=[],seenPrograms=new Set();
   function rememberPrograms(running=false){
-    for(const program of renderer.info.programs||[])if(!seenPrograms.has(program.id)&&seenPrograms.size<512){seenPrograms.add(program.id);if(running)onProgram();}
+    for(const program of renderer.info.programs||[])if(!seenPrograms.has(program.id)&&seenPrograms.size<512){
+      seenPrograms.add(program.id);if(running){
+        onProgram();
+        if(new URLSearchParams(location.search).get('shaderTrace')==='1'){
+          const matches=[];
+          scene.traverse(node=>{for(const material of Array.isArray(node.material)?node.material:[node.material]){
+            if(!material)continue;
+            const programs=renderer.properties.get(material).programs;
+            if(programs&&[...programs.values()].includes(program)&&matches.length<12)matches.push({object:node.name||node.type,material:material.name||material.type,instancingColor:Boolean(node.instanceColor),skinned:Boolean(node.isSkinnedMesh),visible:node.visible});
+          }});
+          const source=renderer.getContext().getShaderSource(program.vertexShader)||'';
+          const features=source.split('\n').filter(line=>/^#define (USE_|DEPTH_|FLIP_|DOUBLE_)/.test(line));
+          console.info('Race shader variant '+JSON.stringify({type:program.type,name:program.name,matches,features}));
+        }
+      }
+    }
   }
   let currentMapId = 'tunnel';
   let world = createWorld(scene, currentMapId, CONFIG.courseLength);
@@ -319,6 +343,7 @@ export function createRenderer(canvas,{onProgram=()=>{},onObject=()=>{},onMissin
     warmupWork=(async()=>{
       prepare(state);
       warmGroup=new THREE.Group();warmGroup.name='tunnel-shader-warmup';warmGroup.visible=false;scene.add(warmGroup);
+      warmGroup.add(createShadowWarmupProbe(boxGeometry,darkIron));
       for(const [i,type]of ['rubble','barrier','gap'].entries()){
         const item=makeObstacle({id:`warm-${type}`,type,length:8});warmGroup.add(item);item.position.set((i-1)*2,0,-10);
       }

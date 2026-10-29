@@ -8,6 +8,11 @@ export function createMotionEffects(scene) {
   const material=new THREE.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:.6,depthWrite:false,toneMapped:false});
   const geometry=new THREE.BoxGeometry(1,1,1);
   const particles=new THREE.InstancedMesh(geometry,material,capacity);particles.frustumCulled=false;particles.visible=false;particles.name='local-contact-particles';scene.add(particles);
+  // Fix the shader layout before warmup: setColorAt would otherwise allocate
+  // instanceColor and introduce USE_INSTANCING_COLOR on the first footstep.
+  const initialColor=new THREE.Color('#ffffff');
+  for(let i=0;i<capacity;i++)particles.setColorAt(i,initialColor);
+  particles.instanceColor.needsUpdate=true;
   const ringMaterial=new THREE.MeshBasicMaterial({color:'#d4e6d5',transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide,toneMapped:false});
   const ringGeometry=new THREE.RingGeometry(.25,.29,32);
   const ring=new THREE.Mesh(ringGeometry,ringMaterial);ring.rotation.x=-Math.PI/2;ring.visible=false;ring.name='local-contact-ripple';scene.add(ring);
