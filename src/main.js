@@ -80,7 +80,7 @@ for (const id of MAP_IDS) {
   copy.append(title, tagline); button.append(image, copy, votes);
   button.addEventListener('click', () => {
     if (mode !== 'solo') {
-      if (snapshot?.room.phase === 'lobby' && mode !== 'demo') connection?.send({ type: 'vote', mapId: id });
+      if (snapshot?.room.phase === 'voting' && mode !== 'demo') connection?.send({ type: 'vote', mapId: id });
       return;
     }
     selectedMapId = id; soloRace = null; game = createGame({ mapId: id,avatarId:characterChoices[id] }); ensureMapGraphics(id); resetVisuals(); updateHUD();
@@ -88,15 +88,15 @@ for (const id of MAP_IDS) {
   $('map-cards').append(button);
 }
 function updateMapPicker() {
-  const lobby = mode !== 'solo' && snapshot?.room.phase === 'lobby';
+  const lobby = mode !== 'solo' && snapshot?.room.phase === 'voting';
   $('map-picker').hidden = mode === 'solo' ? game.phase !== 'ready' : !lobby || mode === 'demo';
   const votes = snapshot?.room.votes || {};
   const ownVote = mode === 'solo' ? selectedMapId : votes[snapshot?.you.id];
-  const key = JSON.stringify([mode, lobby, ownVote, votes, graphicsLoading, graphicsError, networkStatus]);
+  const key = JSON.stringify([mode, lobby, ownVote, votes, graphicsLoading, graphicsError, networkStatus,snapshot?.room.voteCountdown]);
   if (mapPickerKey === key) return;
   mapPickerKey = key;
   $('map-picker-title').textContent = lobby ? 'Vote for your escape' : 'Choose your escape';
-  $('map-vote-note').textContent = lobby ? 'Most votes wins · Ties are random' : `${MAP_IDS.length} maps · Same ticking clock`;
+  $('map-vote-note').textContent = lobby ? `${snapshot.room.voteCountdown}s left · Most votes wins · Ties are random` : `${MAP_IDS.length} maps · Same ticking clock`;
   for (const button of $('map-cards').children) {
     const id = button.dataset.map;
     button.setAttribute('aria-pressed', String(ownVote === id));
@@ -281,6 +281,7 @@ function joinRace(type) {
     },
     onSnapshot(next,meta) {
       if (generation !== connectionGeneration) return;
+      const votingOpened=next.room.phase==='voting'&&snapshot?.room.phase!=='voting';
       const starting = next.room.phase === 'countdown' && snapshot?.room.phase !== 'countdown';
       if (next.room.roundId !== snapshot?.room.roundId || next.room.mapId !== snapshot?.room.mapId) resetVisuals();
       snapshot = next;
@@ -292,6 +293,7 @@ function joinRace(type) {
       else {raceView.push(next,receivedAt);game=raceView.current();}
       updateRoom();
       updateHUD();
+      if(votingOpened)$('map-picker').scrollIntoView({block:'start',behavior:'auto'});
       if (starting) showCourse();
     },
   };
@@ -315,7 +317,7 @@ function updateRoom() {
       ? snapshot.room.phase === 'finished' ? 'Demo complete' : '4 demo racers'
       : snapshot.room.phase === 'lobby'
       ? `${count}/4 racers · Share code to invite`
-      : snapshot.room.phase === 'countdown' ? 'Get ready'
+      : snapshot.room.phase === 'voting' ? `Vote for a map · ${snapshot.room.voteCountdown}s` : snapshot.room.phase === 'countdown' ? 'Get ready'
       : snapshot.room.phase === 'finished' ? 'Race complete'
       : `${count} racers`;
   }
@@ -467,13 +469,15 @@ function updateOverlay() {
         overlay('FOUR-PLAYER DEMO', 'Meet the runners.', '', 'Getting ready…', true, '');
         return;
       }
-      overlay('MAP VOTE OPEN', 'First to escape wins.', 'Abilities cost seconds from your clock.', host ? 'Start race →' : 'Waiting for host…', !host || count < 2, count < 2 ? 'Invite a friend with the lobby code.' : controlHint());
+      overlay('MULTIPLAYER LOBBY', 'First to escape wins.', 'Abilities cost seconds from your clock.', host ? 'Start match →' : 'Waiting for host…', !host || count < 2, count < 2 ? 'Invite a friend with the lobby code.' : host?'Start match to open a 7-second map vote.':'The host will open map voting.');
+    } else if(room.phase==='voting'){
+      overlay('MAP VOTING',`Vote for your map · ${room.voteCountdown}s`,'Choose a map above. The race starts automatically.','Voting…',true,'');
     } else if (room.phase === 'countdown') {
       overlay(getMap(room.mapId).name.toUpperCase(), `${Math.max(1,Math.min(3,room.countdown||1))}`, '', 'Starting…', true, controlHint());
     } else if (ended) {
       const result=finishPresentation(game,snapshot,mode);
       overlay(room.phase === 'finished' ? result.kind==='winner'?'RACE WON':'RACE COMPLETE' : 'RUN COMPLETE',result.title,result.detail,
-        result.waiting ? 'Racers still finishing…' : mode === 'demo' ? 'Watch again →' : host ? 'Back to voting →' : 'Waiting for host…',result.waiting||!host);
+        result.waiting ? 'Racers still finishing…' : mode === 'demo' ? 'Watch again →' : host ? 'Back to lobby →' : 'Waiting for host…',result.waiting||!host);
     }
     return;
   }
@@ -544,7 +548,7 @@ function updateHUD() {
     lastEvent = game.recentEvent.id;
     notify(game.recentEvent.text, game.recentEvent.kind);
   }
-  const key = [graphicsLoading, graphicsProgress, graphicsError, mode, networkStatus, game.phase, snapshot?.room.phase, snapshot?.room.countdown, snapshot?.room.hostId, snapshot?.room.winnerId, raceSnapshot?.room.phase, raceSnapshot?.room.winnerId, rosterKey].join(':');
+  const key = [graphicsLoading, graphicsProgress, graphicsError, mode, networkStatus, game.phase, snapshot?.room.phase, snapshot?.room.countdown, snapshot?.room.voteCountdown, snapshot?.room.hostId, snapshot?.room.winnerId, raceSnapshot?.room.phase, raceSnapshot?.room.winnerId, rosterKey].join(':');
   if (key !== lastOverlay) { updateOverlay(); lastOverlay = key; }
   raceUI.update(game,{mode,room:networkStatus==='disconnected'?undefined:snapshot?.room},performance.now());
 }

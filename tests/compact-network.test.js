@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {once} from 'node:events';
-import {createGameServer} from '../src/server/app.js';
+import {createGameServer as baseGameServer} from '../src/server/app.js';
+const createGameServer=(options={})=>baseGameServer({...options,roomOptions:{voteDurationMs:0,...options.roomOptions}});
 import {client,measurements} from '../scripts/perf/client.mjs';
 const networkTest=process.env.RUN_NETWORK_TESTS==='1'?test:test.skip;
 networkTest('compact and legacy clients share private purchases, changed debris, finish, rematch and host migration',async t=>{

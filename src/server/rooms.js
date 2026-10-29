@@ -23,8 +23,10 @@ export function createRoomManager({
   makeSeed = () => randomBytes(4).readUInt32LE(),
   random = Math.random,
   maxRooms = 25,
+  voteDurationMs = 7000,
   idleTimeoutMs = 5 * 60 * 1000,
 } = {}) {
+  if(!Number.isFinite(voteDurationMs)||voteDurationMs<0||voteDurationMs>60000)throw new RangeError('Invalid vote duration');
   const rooms = new Map();
   const connections = new Map();
 
@@ -52,7 +54,7 @@ export function createRoomManager({
     if (!room) return;
     connection.roomCode = null;
     const player = room.players.get(id);
-    if (room.phase === 'lobby') {
+    if (room.phase === 'lobby'||room.phase==='voting') {
       room.players.delete(id);
       delete room.votes[id];
     } else {
@@ -69,6 +71,7 @@ export function createRoomManager({
       return;
     }
     if (room.hostId === id) room.hostId = connected[0].id;
+    if(room.phase==='voting'&&connected.length<2){room.phase='lobby';room.voteEnd=null;room.votes={};}
     room.lastActivity = now();
     if (room.phase === 'racing' || room.phase === 'countdown') finishRound(room);
   }
@@ -95,6 +98,26 @@ export function createRoomManager({
     room.lastActivity = now();
   }
 
+  function startCountdown(room,at=now()){
+      const selected = resolveMapVote(Object.values(room.votes), room.mapId, random);
+      const previousMap=room.mapId;room.mapId=selected;
+      const used=new Set([...room.players.values()].map(p=>p.avatarChoices[selected]).filter(Boolean));
+      for(const player of room.players.values()){
+        let avatarId=player.avatarChoices[selected];
+        if(!avatarId){
+          const candidates=getMap(selected).avatars.filter(id=>!used.has(id));
+          avatarId=previousMap===selected&&candidates.includes(player.avatarId)?player.avatarId:candidates[Math.floor(random()*candidates.length)];
+        }
+        used.add(avatarId);player.avatarId=avatarId;player.name=AVATARS[avatarId].name;
+        player.game=createGame({seed:room.seed,mapId:selected,avatarId,playerColor:player.color});
+        player.game.lane=START_LANES[COLORS.indexOf(player.color)];
+      }
+      room.phase = 'countdown';
+      room.countdownEnd = at + 3000;
+      room.lastActivity = at;
+      room.voteEnd=null;
+  }
+
   function handle(id, message) {
     const connection = connections.get(id);
     if (!connection) return error('NOT_CONNECTED', 'Connect before joining a room.');
@@ -113,7 +136,7 @@ export function createRoomManager({
         const created = {
           code, phase: 'lobby', hostId: id, roundId: makeId(), seed: makeSeed(),
           mapId: getMap(message.mapId).id, votes: {},
-          winnerId: null, countdownEnd: null, lastStepAt: null, raceElapsed: 0,
+          winnerId: null, voteEnd:null, countdownEnd: null, lastStepAt: null, raceElapsed: 0,
           lastActivity: now(), players: new Map(), scores:createSessionScores(),scoreRound:0,
         };
         rooms.set(code, created);
@@ -146,7 +169,7 @@ export function createRoomManager({
       room.lastActivity=now();return {ok:true};
     }
     if (message.type === 'vote') {
-      if (room.phase !== 'lobby') return error('VOTING_CLOSED', 'Voting closes when the countdown begins.');
+      if (!(voteDurationMs===0&&room.phase==='lobby')&&(room.phase!=='voting'||now()>=room.voteEnd)) return error('VOTING_CLOSED', 'Voting opens when the host starts the match.');
       if (!isMapId(message.mapId)) return error('INVALID_MAP', 'Choose an available map.');
       room.votes[id] = message.mapId;
       room.lastActivity = now();
@@ -156,23 +179,10 @@ export function createRoomManager({
       if (room.hostId !== id) return error('HOST_ONLY', 'Only the host can start the race.');
       if (room.phase !== 'lobby') return error('ROUND_ACTIVE', 'This round has already started.');
       if (room.players.size < 2) return error('NEED_PLAYERS', 'Invite at least one other runner to start.');
-      const selected = resolveMapVote(Object.values(room.votes), room.mapId, random);
-      const previousMap=room.mapId;room.mapId=selected;
-      const used=new Set([...room.players.values()].map(p=>p.avatarChoices[selected]).filter(Boolean));
-      for(const player of room.players.values()){
-        let avatarId=player.avatarChoices[selected];
-        if(!avatarId){
-          const candidates=getMap(selected).avatars.filter(id=>!used.has(id));
-          avatarId=previousMap===selected&&candidates.includes(player.avatarId)?player.avatarId:candidates[Math.floor(random()*candidates.length)];
-        }
-        used.add(avatarId);player.avatarId=avatarId;player.name=AVATARS[avatarId].name;
-        player.game=createGame({seed:room.seed,mapId:selected,avatarId,playerColor:player.color});
-        player.game.lane=START_LANES[COLORS.indexOf(player.color)];
-      }
-      room.phase = 'countdown';
-      room.countdownEnd = now() + 3000;
-      room.lastActivity = now();
-      return { ok: true };
+      if(voteDurationMs>0){
+        room.phase='voting';room.voteEnd=now()+voteDurationMs;room.votes={};room.lastActivity=now();
+      }else startCountdown(room);
+      return {ok:true};
     }
     if (message.type === 'rematch') {
       if (room.hostId !== id) return error('HOST_ONLY', 'Only the host can prepare a rematch.');
@@ -184,7 +194,7 @@ export function createRoomManager({
       room.seed = seed === room.seed ? (seed + 1) >>> 0 : seed;
       room.votes = {};
       room.winnerId = null;
-      room.countdownEnd = null;
+      room.countdownEnd = null;room.voteEnd=null;
       room.lastStepAt = null;
       room.raceElapsed = 0;
       room.lastActivity = now();
@@ -226,7 +236,7 @@ export function createRoomManager({
   function tick(time = now()) {
     const notices = [];
     for (const room of rooms.values()) {
-      if (time - room.lastActivity >= idleTimeoutMs && room.phase !== 'racing' && room.phase !== 'countdown') {
+      if (time - room.lastActivity >= idleTimeoutMs && room.phase !== 'racing' && room.phase !== 'countdown'&&room.phase!=='voting') {
         for (const player of room.players.values()) {
           const connection = connections.get(player.id);
           if (connection?.roomCode === room.code) {
@@ -237,6 +247,7 @@ export function createRoomManager({
         rooms.delete(room.code);
         continue;
       }
+      if(room.phase==='voting'&&time>=room.voteEnd)startCountdown(room,time);
       if (room.phase === 'countdown' && time >= room.countdownEnd) {
         room.phase = 'racing';
         room.lastStepAt = room.countdownEnd;
@@ -285,6 +296,7 @@ export function createRoomManager({
         code: room.code, phase: room.phase, hostId: room.hostId,
         roundId: room.roundId, seed: room.seed, mapId: room.mapId, votes: { ...room.votes }, winnerId: room.winnerId,
         raceElapsed: room.raceElapsed,
+        voteCountdown:room.phase==='voting'?Math.max(0,Math.ceil((room.voteEnd-now())/1000)):0,
         countdown: room.phase === 'countdown' ? Math.max(0, Math.ceil((room.countdownEnd - now()) / 1000)) : 0,
       },
       you: { id, inputSeq:player.lastSeq, name: player.name, avatarChoices:{...player.avatarChoices}, game: structuredClone(ownGame) },

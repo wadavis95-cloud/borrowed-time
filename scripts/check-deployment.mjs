@@ -135,7 +135,9 @@ async function checkMultiplayer(target) {
     console.log('✓ Create and join share one two-player room');
 
     host.send({ type: 'start' });
-    await Promise.all([host, guest].map(client => client.until(inPhase('countdown'), 'receiving the countdown')));
+    await Promise.all([host, guest].map(client => client.until(inPhase('voting'), 'opening map voting')));
+    host.send({type:'vote',mapId:'tunnel'});guest.send({type:'vote',mapId:'tunnel'});
+    await Promise.all([host, guest].map(client => client.until(inPhase('countdown'), 'finishing the seven-second map vote',15000)));
     const [hostStart, guestStart] = await Promise.all([host, guest].map(client => client.until(inPhase('racing'), 'starting the race')));
     assert.equal(hostStart.room.roundId, guestStart.room.roundId, 'Clients started different rounds.');
     assert.equal(hostStart.room.seed, guestStart.room.seed, 'Clients received different course seeds.');

@@ -4,7 +4,9 @@ import { MAPS, MAP_IDS, getMap, resolveMapVote } from '../src/maps.js';
 import { createGame, startGame, updateGame, moveLane, jump } from '../src/game.js';
 import { chooseDemoAction } from '../src/demo.js';
 import { createRaceView } from '../src/network.js';
-import { createRoomManager } from '../src/server/rooms.js';
+import { createRoomManager as baseRoomManager } from '../src/server/rooms.js';
+// These tests isolate map rules; the production seven-second flow has dedicated tests.
+const createRoomManager=(options={})=>baseRoomManager({voteDurationMs:0,...options});
 
 test('six maps provide unique four-person rosters and reproducible courses', () => {
   assert.equal(MAP_IDS.length, 6);

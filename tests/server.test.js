@@ -2,8 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { WebSocket } from 'ws';
-import { createRoomManager } from '../src/server/rooms.js';
-import { createGameServer } from '../src/server/app.js';
+import { createRoomManager as baseRoomManager } from '../src/server/rooms.js';
+const createRoomManager=(options={})=>baseRoomManager({voteDurationMs:0,...options});
+import { createGameServer as baseGameServer } from '../src/server/app.js';
+const createGameServer=(options={})=>baseGameServer({...options,roomOptions:{voteDurationMs:0,...options.roomOptions}});
 
 function setup(options = {}) {
   let time = 1000;

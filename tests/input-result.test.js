@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {once} from 'node:events';
 import {WebSocket} from 'ws';
-import {createGameServer} from '../src/server/app.js';
+import {createGameServer as baseGameServer} from '../src/server/app.js';
+const createGameServer=(options={})=>baseGameServer({...options,roomOptions:{voteDurationMs:0,...options.roomOptions}});
 import {createSnapshotDecoder} from '../src/race-protocol.js';
 
 const networkTest=process.env.RUN_NETWORK_TESTS==='1'?test:test.skip;
